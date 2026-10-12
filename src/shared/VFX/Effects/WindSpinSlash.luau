@@ -1,8 +1,9 @@
 -- ModuleScript: ReplicatedStorage/Shared/VFX/Effects/WindSpinSlash
 -- Green wind spin-slash around the caster. Layers: steeply tilted vortex of
--- spinning crescent strokes (dark green body + lime/white highlights), a short
--- star flash, a grey wind ring + smoke on the ground, rising thin crescents,
--- leaves, sparkles and dark debris.
+-- spinning crescent strokes (dark green body, lime/white highlights, thin black
+-- ink strokes woven through), black needle streaks and white-hot spots shed along
+-- the spinning arc, a star flash that grows then snaps shut, a grey wind ring +
+-- smoke on the ground, rising thin crescents, leaves, sparkles and rock debris.
 --
 -- ctx.CFrame: the caster's root. The vortex is centred on the ground below it.
 -- It tilts toward SwirlTiltYaw (degrees from the caster's facing): that side
@@ -23,6 +24,10 @@ local ASSETS = {
 	WideDarkSlash = "rbxassetid://104673447334638", -- FlipbookTextures/Wide Dark Slash (Grid4x4)
 	GlowingDarkSlash = "rbxassetid://107491452097107", -- FlipbookTextures/Medium Glowing Dark Slash (Grid4x4)
 	GlowingSlash = "rbxassetid://13580352351", -- FlipbookTextures/Glowing Slash (Grid4x4)
+	ThinSlash = "rbxassetid://85263893313331", -- FlipbookTextures/Thin Basic Slash (Grid4x4)
+	StreakySlash = "rbxassetid://118897571793559", -- FlipbookTextures/Shaded Slash 5 (Grid4x4)
+	Needle = "rbxassetid://10614304526", -- StaticVFXTextures/Sideways Spec 41
+	Spike = "rbxassetid://6893847210", -- StaticVFXTextures/Sideways Spec 50
 	Crescent32 = "rbxassetid://17388445727", -- StaticVFXTextures/Crescent32
 	Crescent18 = "rbxassetid://17388365742", -- StaticVFXTextures/Crescent18
 	SmokeyShockwave = "rbxassetid://12318427672", -- StaticVFXTextures/Smokey Shockwave
@@ -43,15 +48,24 @@ local LEAF_MESH_LENGTH = 11 -- native Z length of LeafMesh, for scaling
 --   rot   start angle offset (deg). Each texture's arc sits at a different angle in
 --         its quad, so these phase the arcs into one ~180 deg crescent (an open C)
 --   life  multiplier on SwirlTime            flip  4x4 flipbook played once
---   kind  "dark" (darkens), "lime" (additive), "hot" (additive, near white)
+--   kind  "dark" (darkens), "lime" (additive), "hot" (additive, near white),
+--         "ink" (near-black thin strokes drawn over the lime)
+--   alpha starting transparency for "ink" layers (default 0.05)
 local VORTEX = {
-	{ tex = "WideDarkSlash", flip = true, kind = "dark", size = 0.9, h = 0.0, tilt = 0, spin = 0.97, rot = 55, life = 1.05 },
-	{ tex = "WideDarkSlash", flip = true, kind = "dark", size = 0.82, h = 0.12, tilt = 4, spin = 1.0, rot = 65, life = 1.05 },
+	{ tex = "WideDarkSlash", flip = true, kind = "dark", size = 0.9, h = 0.0, tilt = 0, spin = 0.97, rot = -35, life = 1.05 },
+	{ tex = "WideDarkSlash", flip = true, kind = "dark", size = 0.82, h = 0.12, tilt = 4, spin = 1.0, rot = -25, life = 1.05 },
 	{ tex = "GlowingDarkSlash", flip = true, kind = "lime", size = 1.1, h = -0.05, tilt = -3, spin = 0.98, rot = 5, life = 1 },
 	{ tex = "GlowingDarkSlash", flip = true, kind = "lime", size = 1.0, h = 0.18, tilt = 6, spin = 1.03, rot = 15, life = 1 },
 	{ tex = "Crescent32", kind = "lime", size = 1.05, h = 0.08, tilt = 2, spin = 1.0, rot = 10, life = 0.9 },
-	{ tex = "GlowingSlash", flip = true, kind = "hot", size = 0.98, h = 0.08, tilt = 2, spin = 1.02, rot = -45, life = 0.6 },
+	{ tex = "GlowingSlash", flip = true, kind = "hot", size = 0.98, h = 0.08, tilt = 2, spin = 1.02, rot = -45, life = 0.8 },
+	{ tex = "ThinSlash", flip = true, kind = "ink", size = 1.04, h = 0.05, tilt = 2, spin = 1.0, rot = 15, life = 0.9 },
+	{ tex = "ThinSlash", flip = true, kind = "ink", size = 0.9, h = 0.12, tilt = 4, spin = 1.04, rot = 35, life = 0.85 },
+	{ tex = "StreakySlash", flip = true, kind = "ink", size = 1.08, h = 0.0, tilt = 0, spin = 0.99, rot = 25, life = 0.95, alpha = 0.4 },
 }
+
+-- Which way the shed streaks orbit (+1/-1) so they travel with the spinning
+-- arcs; ParticleEmitter RotSpeed and the orbit angle turn opposite ways
+local ORBIT_SIGN = -1
 
 --------------------------------------------------------------------------------
 -- helpers
@@ -144,8 +158,9 @@ Effect.Defaults = {
 	Color = Color3.fromRGB(70, 235, 30), -- saturated lime
 	CoreColor = Color3.fromRGB(230, 255, 200), -- near-white highlight
 	DarkColor = Color3.fromRGB(18, 90, 28), -- dark green body
+	InkColor = Color3.fromRGB(6, 20, 9), -- thin black strokes and streaks
 	WindColor = Color3.fromRGB(205, 212, 222), -- grey wind ring + smoke
-	LeafColor = Color3.fromRGB(70, 200, 50),
+	LeafColor = Color3.fromRGB(50, 140, 45),
 	Scale = 1,
 	SwirlRadius = 12, -- studs
 	SwirlHeight = 4.5, -- studs above the ground (vortex centre)
@@ -156,14 +171,17 @@ Effect.Defaults = {
 	SpinDirection = 1, -- 1 or -1
 	SwirlTime = 0.27, -- life of the thick vortex
 	FlashSize = 14, -- glare half-width, studs
-	FlashTime = 0.05,
+	FlashTime = 0.07, -- glint, grows (25%), holds, then shrinks to nothing in the last 30%
+	StreakTime = 0.22, -- seconds black streaks and hot spots are shed along the arc
+	StreakCount = 3, -- black streaks shed per frame while StreakTime runs
 	RingSize = 26, -- half-width of the ground wind-ring texture, studs
 	LeafCount = 3,
+	LeafRiseCount = 2, -- upright leaves rising slowly inside the vortex
 	SparkleCount = 18,
 	SpotCount = 8,
 	SmokeCount = 18,
 	DebrisCount = 10,
-	DebrisColor = Color3.fromRGB(28, 32, 30),
+	DebrisColor = Color3.fromRGB(52, 42, 34), -- dark brown rock chips
 	LightBrightness = 1.5,
 }
 
@@ -201,7 +219,8 @@ function Effect.Play(ctx)
 	for _, layer in VORTEX do
 		local key = layer.h .. ":" .. layer.tilt
 		layerAttachments[key] = layerAttachments[key] or attachment(tilted(layer.h * radius, layer.tilt))
-		local isDark = layer.kind == "dark"
+		local kind = layer.kind
+		local isMatter = kind == "dark" or kind == "ink"
 		local size = radius * layer.size
 		local e = emitter(layerAttachments[key], flat({
 			Texture = ASSETS[layer.tex],
@@ -212,15 +231,18 @@ function Effect.Play(ctx)
 			RotSpeed = NumberRange.new(spin * layer.spin),
 			-- Additive lime stays saturated only over the dark layers behind it;
 			-- partial LightEmission turns the textures' dark pixels black
-			LightEmission = isDark and 0 or 1,
-			Brightness = layer.kind == "hot" and 1.5 or 1,
-			ZOffset = isDark and -1 or (layer.kind == "hot" and 2 or 1),
+			LightEmission = isMatter and 0 or 1,
+			Brightness = kind == "hot" and 1.5 or 1,
+			ZOffset = if kind == "dark" then -1 elseif kind == "ink" then 1.5 elseif kind == "hot" then 2 else 1,
 			Size = seq({ { 0, size * 0.92 }, { 0.25, size }, { 1, size * 1.1 } }),
-			Transparency = isDark and seq({ { 0, 0.15 }, { 0.6, 0.25 }, { 1, 1 } })
-				or seq({ { 0, 0 }, { 0.6, 0.05 }, { 1, 1 } }),
-			Color = if isDark
+			Transparency = if kind == "dark"
+				then seq({ { 0, 0.15 }, { 0.6, 0.25 }, { 1, 1 } })
+				elseif kind == "ink" then seq({ { 0, layer.alpha or 0.05 }, { 0.55, (layer.alpha or 0.05) + 0.15 }, { 1, 1 } })
+				else seq({ { 0, 0 }, { 0.6, 0.05 }, { 1, 1 } }),
+			Color = if kind == "dark"
 				then ColorSequence.new(p.DarkColor)
-				elseif layer.kind == "hot" then colors({ { 0, p.CoreColor }, { 0.5, p.CoreColor:Lerp(p.Color, 0.4) }, { 1, p.Color } })
+				elseif kind == "ink" then ColorSequence.new(p.InkColor)
+				elseif kind == "hot" then colors({ { 0, p.CoreColor }, { 0.5, p.CoreColor:Lerp(p.Color, 0.4) }, { 1, p.Color } })
 				else ColorSequence.new(p.Color),
 			FlipbookLayout = layer.flip and Enum.ParticleFlipbookLayout.Grid4x4 or Enum.ParticleFlipbookLayout.None,
 			FlipbookMode = Enum.ParticleFlipbookMode.OneShot,
@@ -237,21 +259,115 @@ function Effect.Play(ctx)
 	light.Parent = groundAttachment
 	ctx.Tween(light, 0.12, { Brightness = 0 })
 
-	ctx.Wait(0.015)
+	-- 2b. Black streaks and white-hot spots shed along the spinning arc -----------
+	-- One attachment orbits the vortex at its spin rate, shedding thin black
+	-- spikes along the arc's direction of travel, lime needles and hot spots.
+	local orbitCenter = tilted(0.08 * radius, 2)
+	local orbit = attachment(orbitCenter)
+	local inkStreaks = emitter(orbit, {
+		Texture = ASSETS.Spike,
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		Rotation = NumberRange.new(90), -- texture is vertical; lay it along the motion
+		EmissionDirection = p.SpinDirection > 0 and Enum.NormalId.Front or Enum.NormalId.Back,
+		SpreadAngle = Vector2.new(12, 12),
+		Speed = NumberRange.new(6 * s, 14 * s),
+		Drag = 8,
+		Lifetime = NumberRange.new(0.12, 0.22),
+		LightEmission = 0,
+		ZOffset = 2,
+		Color = ColorSequence.new(p.InkColor),
+		Size = seq({ { 0, 1.6 * s, 0.4 * s }, { 0.6, 1.2 * s }, { 1, 0 } }),
+		Squash = NumberSequence.new(0.4), -- short wedges, not long hairs
+		Transparency = seq({ { 0, 0.05 }, { 0.7, 0.2 }, { 1, 1 } }),
+	})
+	local limeStreaks = emitter(orbit, {
+		Texture = ASSETS.Needle,
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		Rotation = NumberRange.new(90),
+		EmissionDirection = p.SpinDirection > 0 and Enum.NormalId.Front or Enum.NormalId.Back,
+		SpreadAngle = Vector2.new(15, 15),
+		Speed = NumberRange.new(25 * s, 40 * s),
+		Drag = 6,
+		Lifetime = NumberRange.new(0.1, 0.18),
+		LightEmission = 1,
+		Brightness = 2,
+		ZOffset = 2,
+		Color = colors({ { 0, p.CoreColor }, { 1, p.Color } }),
+		Size = seq({ { 0, 1.4 * s }, { 1, 0 } }),
+	})
+	local hotSpots = emitter(orbit, {
+		Texture = ASSETS.SoftGlow,
+		Lifetime = NumberRange.new(0.04, 0.07),
+		LightEmission = 1,
+		Brightness = 3,
+		ZOffset = 2.2,
+		Color = colors({ { 0, p.CoreColor }, { 1, p.Color } }),
+		Size = seq({ { 0, 1.1 * s }, { 1, 0.3 * s } }),
+		Transparency = seq({ { 0, 0.1 }, { 1, 1 } }),
+	})
+	task.spawn(function()
+		local spinRadians = math.rad(p.SpinSpeed) * ORBIT_SIGN * p.SpinDirection
+		local angle = math.rad(startAngle)
+		local elapsed, step = 0, 0
+		while elapsed < p.StreakTime and ctx.Folder.Parent do
+			step += 1
+			local r = radius * (0.7 + math.random() * 0.25)
+			orbit.CFrame = orbitCenter
+				* CFrame.Angles(0, angle + spinRadians * elapsed + (math.random() - 0.5) * 0.6, 0)
+				* CFrame.new(r, (math.random() - 0.5) * 1.2 * s, 0)
+			ctx.Emit(inkStreaks, p.StreakCount)
+			if step % 2 == 0 then
+				ctx.Emit(limeStreaks, 1)
+			end
+			if step % 3 == 1 and elapsed < 0.1 then
+				ctx.Emit(hotSpots, 1)
+			end
+			ctx.Wait(1 / 60)
+			elapsed += 1 / 60
+		end
+	end)
 
-	-- 3. Star flash (gone by ~0.1s) ---------------------------------------------
+	ctx.Wait(0.01)
+
+	-- 3. Star flash: glint at 0.01s, full by ~0.03s, holds, then shrinks fast ----
 	local flashAttachment = attachment(CFrame.new(0, 6 * s, 0)) -- high enough that the glow clears the ground
 	local flashSize = p.FlashSize * s
+	-- Size over the flash's life: small glint, full size, hold, shrink to nothing.
+	-- `jitter` is the keypoint envelope (random size variation per flash).
+	local function flashCurve(scale, jitter)
+		jitter = jitter or 0
+		return seq({
+			{ 0, flashSize * scale * 0.08, jitter * 0.2 },
+			{ 0.25, flashSize * scale, jitter },
+			{ 0.7, flashSize * scale * 0.97, jitter },
+			{ 1, 0 },
+		})
+	end
+	local flashFade = seq({ { 0, 0 }, { 0.8, 0 }, { 1, 0.4 } })
 	local rays = emitter(flashAttachment, {
 		Texture = ASSETS.StarRays,
 		Lifetime = NumberRange.new(p.FlashTime),
-		Rotation = NumberRange.new(25, 35), -- one diagonal glare, like the reference
+		-- Star102 is an even X of rays; at about -15 it sits as a "+" (vertical and
+		-- horizontal rays), like the reference. + turns counter-clockwise.
+		Rotation = NumberRange.new(-20, -10),
 		LightEmission = 1,
 		Brightness = 5,
 		ZOffset = 3,
 		Color = colors({ { 0, Color3.new(1, 1, 1) }, { 1, p.Color } }),
-		Size = seq({ { 0, flashSize, flashSize * 0.2 }, { 1, flashSize * 0.85, flashSize * 0.2 } }),
-		Transparency = seq({ { 0, 0 }, { 0.5, 0.1 }, { 1, 1 } }),
+		Size = flashCurve(1, flashSize * 0.2),
+		Transparency = flashFade,
+	})
+	local longRay = emitter(flashAttachment, {
+		Texture = ASSETS.Needle,
+		Lifetime = NumberRange.new(p.FlashTime),
+		Rotation = NumberRange.new(-48, -40), -- the long thin ray up and to the right
+		LightEmission = 1,
+		Brightness = 4,
+		ZOffset = 3,
+		Color = colors({ { 0, p.CoreColor }, { 1, p.Color:Lerp(p.CoreColor, 0.3) } }),
+		Size = flashCurve(1.35),
+		Squash = NumberSequence.new(1.6), -- a hair-thin, long line
+		Transparency = flashFade,
 	})
 	local glow = emitter(flashAttachment, {
 		Texture = ASSETS.SoftGlow,
@@ -259,11 +375,12 @@ function Effect.Play(ctx)
 		LightEmission = 1,
 		Brightness = 3.5,
 		ZOffset = 2.5,
-		Color = colors({ { 0, p.Color:Lerp(p.CoreColor, 0.6) }, { 1, p.Color } }),
-		Size = seq({ { 0, flashSize * 0.5 }, { 1, flashSize * 0.45 } }),
-		Transparency = seq({ { 0, 0 }, { 0.5, 0.1 }, { 1, 1 } }),
+		Color = colors({ { 0, p.CoreColor }, { 1, p.Color } }),
+		Size = flashCurve(0.38),
+		Transparency = flashFade,
 	})
 	ctx.Emit(rays, 1)
+	ctx.Emit(longRay, 1)
 	ctx.Emit(glow, 1)
 
 	ctx.Wait(0.015)
@@ -282,13 +399,13 @@ function Effect.Play(ctx)
 	}))
 	local ringLines = emitter(groundAttachment, flat({
 		Texture = ASSETS.Swirls21,
-		Lifetime = NumberRange.new(0.35),
+		Lifetime = NumberRange.new(0.6),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(spin * 0.3),
 		LightEmission = 0,
 		Color = ColorSequence.new(p.WindColor),
 		Size = seq({ { 0, ringSize * 0.65 }, { 1, ringSize * 1.0 } }),
-		Transparency = seq({ { 0, 0.6 }, { 0.15, 0.45 }, { 0.5, 0.75 }, { 1, 1 } }),
+		Transparency = seq({ { 0, 0.6 }, { 0.15, 0.4 }, { 0.6, 0.65 }, { 1, 1 } }),
 	}))
 	ctx.Emit(ring, 1)
 	ctx.Emit(ringLines, 1)
@@ -336,6 +453,21 @@ function Effect.Play(ctx)
 			Transparency = seq({ { 0, 0 }, { 0.8, 0 }, { 1, 1 } }),
 		})
 	end
+	-- A couple of upright leaves lifted slowly inside the vortex
+	if p.LeafRiseCount > 0 then
+		MeshParticles.Burst(ctx, leaf, p.LeafRiseCount, {
+			Origin = ground + Vector3.new(0, 1 * s, 0),
+			SpawnRadius = radius * 0.45,
+			Direction = Vector3.yAxis,
+			Spread = 20,
+			Speed = NumberRange.new(3 * s, 5 * s),
+			Drag = 2,
+			Acceleration = Vector3.new(0, -6, 0),
+			SpinSpeed = NumberRange.new(120, 240),
+			Lifetime = NumberRange.new(0.7, 0.9),
+			Transparency = seq({ { 0, 0 }, { 0.8, 0 }, { 1, 1 } }),
+		})
+	end
 
 	ctx.Wait(0.03)
 
@@ -379,7 +511,7 @@ function Effect.Play(ctx)
 	local spots = emitter(area, flat({
 		Shape = Enum.ParticleEmitterShape.Disc,
 		Texture = ASSETS.SoftGlow,
-		Lifetime = NumberRange.new(0.5, 0.8),
+		Lifetime = NumberRange.new(0.3, 0.45),
 		LightEmission = 1,
 		Color = ColorSequence.new(p.Color),
 		Size = seq({ { 0, 1.3 * s, 0.4 * s }, { 1, 1 * s } }),
@@ -402,7 +534,7 @@ function Effect.Play(ctx)
 		LightEmission = 0,
 		LightInfluence = 0.4,
 		Color = ColorSequence.new(p.DebrisColor),
-		Size = seq({ { 0, 0.25 * s }, { 1, 0.1 * s } }),
+		Size = seq({ { 0, 0.35 * s, 0.15 * s }, { 1, 0.15 * s } }),
 		Transparency = seq({ { 0, 0 }, { 0.8, 0 }, { 1, 1 } }),
 	})
 	ctx.Emit(debris, p.DebrisCount)
