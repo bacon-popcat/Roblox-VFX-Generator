@@ -8,8 +8,9 @@
 --   -- take the screenshot now (Studio MCP screen_capture), then:
 --   Scrub.Clear()
 --
--- Each Play requires a fresh copy of the effect module, so source edits show up
--- without restarting Studio. The effect's math.random is seeded; emitter and
+-- Each Play requires a fresh copy of the whole Effects folder, so source edits
+-- show up without restarting Studio, including effects that require other
+-- effects (WindSpinSlashCombo). The effect's math.random is seeded; emitter and
 -- MeshParticles randomness is not, so particle scatter varies between runs.
 -- The ctx built here mirrors VFXPlayer's; keep the two in sync.
 
@@ -27,15 +28,16 @@ function VFXScrub.Clear()
 	end
 end
 
--- Require a fresh copy so edits since the last require are picked up
+-- Require a fresh copy so edits since the last require are picked up. The whole
+-- Effects folder is copied: require caches by module, so an effect that requires
+-- a sibling would otherwise get the stale cached sibling.
 local function loadFresh(name)
-	local source = effectsFolder:FindFirstChild(name)
-	assert(source, "VFXScrub: no effect named " .. tostring(name))
-	local copy = source:Clone()
-	copy.Name = "__scrub_" .. name
-	copy.Parent = effectsFolder -- keeps script.Parent.Parent requires working
-	local ok, def = pcall(require, copy)
-	copy:Destroy()
+	assert(effectsFolder:FindFirstChild(name), "VFXScrub: no effect named " .. tostring(name))
+	local copyFolder = effectsFolder:Clone()
+	copyFolder.Name = "__ScrubEffects"
+	copyFolder.Parent = effectsFolder.Parent -- keeps script.Parent.Parent requires working
+	local ok, def = pcall(require, copyFolder:FindFirstChild(name))
+	copyFolder:Destroy()
 	assert(ok, def)
 	return def
 end
