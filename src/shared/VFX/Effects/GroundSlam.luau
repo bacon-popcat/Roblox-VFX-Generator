@@ -1,4 +1,4 @@
--- ModuleScript: ReplicatedStorage/VFX/Effects/GroundSlam
+-- ModuleScript: ReplicatedStorage/Shared/VFX/Effects/GroundSlam
 -- Mesh-based example: expanding shockwave ring + flying rock chunks,
 -- plus normal particles for dust and a light pop.
 --
@@ -9,7 +9,9 @@
 
 local VFX = script.Parent.Parent
 local MeshParticles = require(VFX:WaitForChild("MeshParticles"))
-local meshFolder = VFX:FindFirstChild("Meshes")
+-- MeshFactory publishes templates to ReplicatedStorage.VFX.Meshes (Studio-only, not Shared.VFX)
+local meshRoot = game:GetService("ReplicatedStorage"):FindFirstChild("VFX")
+local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 
 local fallbacks = {}
 local function getTemplate(name)

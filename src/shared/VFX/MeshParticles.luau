@@ -1,4 +1,4 @@
--- ModuleScript: ReplicatedStorage/VFX/MeshParticles
+-- ModuleScript: ReplicatedStorage/Shared/VFX/MeshParticles
 -- Roblox ParticleEmitters only draw flat textures, so mesh "particles"
 -- are real MeshParts simulated here on the client.
 --

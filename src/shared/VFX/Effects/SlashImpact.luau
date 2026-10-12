@@ -1,4 +1,4 @@
--- ModuleScript: ReplicatedStorage/VFX/Effects/SlashImpact
+-- ModuleScript: ReplicatedStorage/Shared/VFX/Effects/SlashImpact
 -- Example effect. Everything tunable lives in Defaults so the harness
 -- can expose it as attributes.
 
@@ -46,6 +46,7 @@ function Effect.Play(ctx)
 	flash.Anchored = true
 	flash.CanCollide = false
 	flash.CanQuery = false
+	flash.CanTouch = false
 	flash.CastShadow = false
 	flash.Material = Enum.Material.Neon
 	flash.Color = p.Color

@@ -1,4 +1,4 @@
--- ModuleScript: ReplicatedStorage/VFX/VFXPlayer
+-- ModuleScript: ReplicatedStorage/Shared/VFX/VFXPlayer
 -- Plays effects by name. Each effect gets a "ctx" with helpers so that
 -- timing respects TimeScale (slow-mo in the harness) and cleanup is automatic.
 

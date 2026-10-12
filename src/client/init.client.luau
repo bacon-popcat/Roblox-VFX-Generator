@@ -1,5 +1,5 @@
--- LocalScript: StarterPlayer/StarterPlayerScripts/VFXHarness
--- Studio-only test bench for effects in ReplicatedStorage/VFX/Effects.
+-- LocalScript: StarterPlayer/StarterPlayerScripts/Client (the VFXHarness)
+-- Studio-only test bench for effects in ReplicatedStorage/Shared/VFX/Effects.
 --
 --   Click an effect button to play it on the target dummy.
 --   [R] replay   [L] loop   [ / ] slower / faster   [T] move target here

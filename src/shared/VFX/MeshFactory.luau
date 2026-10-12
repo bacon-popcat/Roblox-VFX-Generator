@@ -1,10 +1,10 @@
--- ModuleScript: ReplicatedStorage/VFX/MeshFactory
+-- ModuleScript: ReplicatedStorage/Shared/VFX/MeshFactory
 -- Authoring-time tool. Run it in Studio's Edit mode (command bar, a plugin,
 -- or the Studio MCP's execute_luau). The game itself never uses this module;
 -- it only uses the published mesh templates this creates.
 --
 -- Typical use:
---   local MF = require(game.ReplicatedStorage.VFX.MeshFactory)
+--   local MF = require(game.ReplicatedStorage.Shared.VFX.MeshFactory)
 --   local mesh = MF.Generators.Crescent({ Radius = 4, Width = 1.2, Arc = 170 })
 --   local preview = MF.Preview(mesh)           -- look at it / screenshot it
 --   preview:Destroy()
