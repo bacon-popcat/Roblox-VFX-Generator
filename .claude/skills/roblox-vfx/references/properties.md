@@ -41,7 +41,7 @@ Good for hit flashes and buffs: tween FillTransparency from ~0.4 to 1.
 Material Neon, Anchored, CanCollide/CanQuery/CanTouch/CastShadow false.
 Cylinder axis is local X: size (thickness, diameter, diameter).
 
-## Mesh templates (cloned from VFX/Meshes)
+## Mesh templates (cloned from ReplicatedStorage/VFX/Meshes)
 - Templates are already Anchored with collisions/queries/shadows off.
 - Energy look: Material Neon + Color. Matter look: Slate/Concrete/Ice + Color.
 - Gradient look: set `TextureID` to a gradient texture; MeshFactory meshes run U

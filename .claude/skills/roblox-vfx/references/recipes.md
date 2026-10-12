@@ -19,6 +19,19 @@ Duration 0.2-0.4.
 3. Sparks shed along the arc: small burst, VelocityParallel streaks.
 4. On contact: play an Impact effect at the hit point.
 
+## Spin slash / wind vortex (AoE swing around the caster)
+Duration ~0.3 for the vortex, ~1.5 with residue. See `src/shared/VFX/Effects/WindSpinSlash.luau`.
+1. Vortex: 4-6 flat spinning particles (VelocityPerpendicular, tilted attachment,
+   RotSpeed 800-1000), slash flipbooks played OneShot. Dark normal-blend layers under
+   additive lime ones. Phase each layer's start angle (every texture's arc sits at a
+   different angle in its quad) so together they form one ~180 deg crescent (an open C,
+   not a closed ring); verify with VFXScrub frames. Steep tilt (~20 deg) so one side
+   rises: reads as volume.
+2. Flash at ~0.015-0.065: star glare + soft glow above the caster, gone by 0.07.
+3. Ground: wind-ring texture lying flat (0.35-0.6s), smoke as flat haze on a Disc emitter.
+4. Thin bright crescents rising out of the vortex (0.06-0.27).
+5. Residue: leaves (MeshParticles), sparkles and glow spots on a Disc emitter, debris.
+
 ## Projectile (fireball, energy bolt)
 Persistent while flying, plus an impact on hit.
 1. Core: small bright sphere or glow particle, `LockedToPart = true`.

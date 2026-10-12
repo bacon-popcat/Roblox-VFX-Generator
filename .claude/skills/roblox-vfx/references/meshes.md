@@ -1,19 +1,23 @@
 # Making meshes
 
 Mesh assets for effects are generated with code, never sculpted.
-Tool: `ReplicatedStorage/VFX/MeshFactory`. Run it in Edit mode only (via
+Tool: `ReplicatedStorage/Shared/VFX/MeshFactory`. Run it in Edit mode only (via
 execute_luau). Effects must never require it.
 
 ```luau
-local MF = require(game.ReplicatedStorage.VFX.MeshFactory)
+local MF = require(game.ReplicatedStorage.Shared.VFX.MeshFactory)
 ```
 
 ## Workflow
 
-1. **Reuse first.** Look in `ReplicatedStorage/VFX/Meshes`. Each template has
+1. **Reuse first.** Look in `ReplicatedStorage/VFX/Meshes` (a Studio-only folder that
+   MeshFactory creates; it is not on disk and is separate from the code folder
+   `ReplicatedStorage/Shared/VFX`). Each template has
    `Generator`, `Params`, and `AssetId` attributes. If a close match exists, use it
    and scale it in the effect instead of making a new mesh.
    `MF.FindExisting(generator, params)` checks for an exact match.
+   The art library's `MigratedMeshes` folder also has ready-made meshes (see
+   `textures.md`, "Asset library").
 2. **Pick a generator** from the table below. Tune its params.
 3. **Preview before publishing.**
    ```luau
@@ -24,7 +28,7 @@ local MF = require(game.ReplicatedStorage.VFX.MeshFactory)
    no inside-out faces (looks dark or invisible from outside), sensible size.
    Destroy the preview after. Adjust params and repeat if needed.
 4. **Publish** with `MF.Make(name, generator, params)`. It reuses an exact match
-   if one exists, otherwise uploads and saves a template to `VFX/Meshes/<name>`.
+   if one exists, otherwise uploads and saves a template to `ReplicatedStorage/VFX/Meshes/<name>`.
    Names are PascalCase and describe the shape, not the effect:
    `CrescentThin170`, not `RangerSlash`.
 5. **Use it** in the effect: clone `Meshes.<Name>` for a single animated mesh, or

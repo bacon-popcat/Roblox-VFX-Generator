@@ -5,23 +5,27 @@ description: Create Roblox visual effects (particles, beams, trails, flashes, li
 
 # Roblox VFX
 
-Every effect you make is a ModuleScript in `ReplicatedStorage/VFX/Effects/<EffectName>`
-that follows the contract below. Never write free-form VFX scripts.
+Every effect you make is a ModuleScript in `ReplicatedStorage/Shared/VFX/Effects/<EffectName>`
+(on disk: `src/shared/VFX/Effects/<EffectName>.luau`, synced by Rojo) that follows the
+contract below. Never write free-form VFX scripts.
 
 ## Project layout
 
 ```
-ReplicatedStorage/VFX/
+ReplicatedStorage/Shared/VFX/      code, Rojo-synced from src/shared/VFX
 ├── VFXPlayer       plays effects by name (client-side), provides ctx
 ├── MeshParticles   simulates many MeshParts like particles
 ├── MeshFactory     authoring tool: generates + publishes meshes (Edit mode only)
-├── Effects/        one ModuleScript per effect
-└── Meshes/         published mesh templates (clone these)
-StarterPlayerScripts/VFXHarness   Studio-only test bench
+└── Effects/        one ModuleScript per effect
+ReplicatedStorage/VFX/Meshes/      published mesh templates (Studio-only, made by MeshFactory)
+ReplicatedStorage/Assets/VFX/      art library (Studio-only), see references/textures.md
+StarterPlayer/StarterPlayerScripts/Client   VFXHarness test bench (src/client/init.client.luau)
 ```
 
+Full structure, naming, and asset conventions: `VFX_STRUCTURE.md` at the repo root.
+
 Effects run on the client. Effects may require `MeshParticles`; they must never
-require `MeshFactory`.
+require `MeshFactory` or `VFXScrub` (edit-time tools).
 
 ## Workflow
 
@@ -82,7 +86,7 @@ Rules:
 - Never use `task.wait`, `wait`, or raw `TweenService`.
 - Set `Rate = 0` on burst emitters.
 - Set `CanCollide`, `CanQuery`, `CanTouch`, `CastShadow` to false on any visible part.
-- Get meshes by cloning templates from `VFX/Meshes`. If a template might be
+- Get meshes by cloning templates from `ReplicatedStorage/VFX/Meshes`. If a template might be
   missing, fall back to a plain Part (see `examples/GroundSlam.luau`).
 - `Linger` must cover the longest particle or mesh-particle lifetime.
 
@@ -92,7 +96,7 @@ Rules:
   (ring, slash, burst), secondary particles (sparks, debris), and residue (smoke,
   embers, fading glow). One emitter alone always looks cheap.
 - **Fast in, slow out.** The peak should arrive in 0.03-0.1s. Fading takes 3-6x longer.
-  Use `Quad`/`Expo` Out easing for expansion.
+  Use `Quad`/`Exponential` Out easing for expansion.
 - **Value contrast.** Near-white core, saturated mid, darker edges. A single flat
   color reads as weak.
 - **Size curves pop then shrink.** Particles usually start at full size or grow
