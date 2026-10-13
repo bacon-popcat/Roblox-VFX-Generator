@@ -25,8 +25,14 @@ VFX/                                  (repo root)
     │   ├── MeshFactory.luau          edit-time mesh generator/publisher
     │   ├── VFXScrub.luau             edit-time freeze-frame player for screenshots
     │   └── Effects/<Name>.luau       one ModuleScript per effect
-    ├── client/init.client.luau       VFXHarness test bench (Studio only)
-    └── server/init.server.luau       placeholder (VFX is client-only)
+    ├── shared/WindSword/             Wind Sword timings (init.luau) + Slash RemoteEvent (Slash.model.json)
+    ├── client/
+    │   ├── init.client.luau          VFXHarness test bench (Studio only)
+    │   └── WindSwordReplicator.client.luau   plays other players' Wind Sword slashes
+    ├── server/
+    │   ├── init.server.luau          placeholder
+    │   └── WindSwordServer.server.luau       validates and relays Wind Sword slashes
+    └── starterpack/WindSword/        the Wind Sword Tool (init.meta.json, Handle, WindSwordClient)
 ```
 
 | Disk | Studio | Class |
@@ -38,6 +44,10 @@ VFX/                                  (repo root)
 | `src/shared/VFX/Effects/<Name>.luau` | `ReplicatedStorage.Shared.VFX.Effects.<Name>` | ModuleScript |
 | `src/client/init.client.luau` | `StarterPlayer.StarterPlayerScripts.Client` | LocalScript |
 | `src/server/init.server.luau` | `ServerScriptService.Server` | Script |
+| `src/shared/WindSword/` | `ReplicatedStorage.Shared.WindSword` (+ `.Slash` RemoteEvent) | ModuleScript |
+| `src/client/WindSwordReplicator.client.luau` | `StarterPlayer.StarterPlayerScripts.Client.WindSwordReplicator` | LocalScript |
+| `src/server/WindSwordServer.server.luau` | `ServerScriptService.Server.WindSwordServer` | Script |
+| `src/starterpack/WindSword/` | `StarterPack.WindSword` | Tool (Handle part, `WindSwordClient` LocalScript) |
 | (not on disk) | `ReplicatedStorage.VFX.Meshes` | Folder of MeshFactory templates |
 | (not on disk) | `ReplicatedStorage.Assets.VFX` | Art library (asset cards) |
 | (runtime) | `Workspace.ActiveVFX.<Name>` | `ctx.Folder`, one per play |
@@ -47,7 +57,8 @@ VFX/                                  (repo root)
 Rojo rules that matter here:
 - File name = instance name. `.luau` = ModuleScript, `.client.luau` = LocalScript,
   `.server.luau` = Script. `init.*.luau` turns its folder into that script, so any other
-  file in `src/client/` becomes a child ModuleScript of the `Client` LocalScript.
+  file in `src/client/` becomes a child of the `Client` LocalScript (a `.luau` file a child
+  ModuleScript, a `.client.luau` file a child LocalScript).
 - Folders mapped with `$path` are Rojo-owned: Rojo can delete instances that aren't on
   disk. Never store Studio-made content (mesh templates, assets) under `Shared`,
   `Client`, or `Server`. Studio-only content goes in `ReplicatedStorage.VFX.Meshes` or
@@ -97,12 +108,14 @@ attachment `BladeTip`); keep `Tool.Grip` and the attachments in sync if you resi
 
 ### Magnet pull
 
-`MagnetPull`: purple gravity suction centred on the ground below `ctx.CFrame`. Runs for
-`Duration` (default 1.5 s): a translucent dome + ground disc pop in at `Radius` and shrink
-into the centre every `PulseInterval`, while dark shards (MeshParticles), specks,
-lightning, black streaks and thin lines are pulled in. It is only the suction part of the
-reference "gravity" effect; the black hole core (dark sphere, bright arcs, inner ring,
-star flash) was left out on purpose.
+`MagnetPull`: purple gravity suction centred on the ground below `ctx.CFrame`. With
+`BlackHole` (default on), a star glint (`FlashSize`, `FlashTime`) opens it, the pull starts
+60% of the way through with a burst of bolts and black streaks, and a dark swirling core
+(`CoreSize`) with a neon ring holds in the centre while bright arcs flash with each pulse.
+The pull runs for `Duration` (default 1.5 s): a translucent dome + ground disc pop in at
+`Radius` and shrink into the centre every `PulseInterval`, while dark shards
+(MeshParticles), specks, lightning, black streaks and thin lines are pulled in.
+`BlackHole = false` gives the suction only.
 
 ## Effect module contract
 

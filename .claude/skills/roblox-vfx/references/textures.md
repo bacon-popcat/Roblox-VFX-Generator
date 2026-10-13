@@ -33,6 +33,10 @@ Prefer these. Add new rows as textures are uploaded (name | id | use).
 | glowing ring 2 | rbxassetid://12946041355 | Thin bright ring with a soft glow; LightEmission 1 = neon ring |
 | Purple Lightning | rbxassetid://13013256540 | 4x4 flipbook (128 cells on a 512 sheet, NOT 8x8), soft lilac bolt column; reads as white smoke if Brightness > 1 |
 | Glowing Black Energy | rbxassetid://17511030724 | 4x4 flipbook, ragged black energy; tinted near-black = bold jagged dark streaks |
+| Blackhole Ripple | rbxassetid://13826100764 | 4x4 flipbook (Loop), black core with a swirling rim; camera-facing, raised half its size off the ground = a dark ball |
+| Blackhole spec | rbxassetid://73527526679754 | 4x4 flipbook, bright arcs hugging a core |
+| Blurry Black Hole | rbxassetid://107972524433656 | Soft dark disc; halo/shadow behind a core |
+| Spec31 | rbxassetid://16879822194 | Small solid speck; debris chips, suction specks |
 
 Gradient strips used as mesh `TextureID` should fade left to right (along U),
 matching the MeshFactory UV layout.

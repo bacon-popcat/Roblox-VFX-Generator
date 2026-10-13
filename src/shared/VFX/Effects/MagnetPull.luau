@@ -4,9 +4,12 @@
 -- shrink into the centre, several times a second), dark glass shards and specks
 -- pulled inward, flickering lilac lightning and black jagged streaks, thin
 -- vertical magenta/black lines, a violet ground haze and a pulsing light.
+-- With BlackHole on: a star glint opens it, then a dark swirling core with bright
+-- arcs and a neon ring sits in the centre, swallowing everything.
 --
 -- ctx.CFrame: the pull centre. The effect sits on the ground below it.
--- Runs for Duration seconds, then everything still flying finishes and fades.
+-- Runs for Duration seconds (after the glint), then everything still flying
+-- finishes and fades.
 --
 -- The dome is a camera-facing shell particle centred on the ground: the ground
 -- hides its lower half, so it reads as a dome standing on the disc.
@@ -29,6 +32,10 @@ local ASSETS = {
 	BlackEnergy = "rbxassetid://17511030724", -- FlipbookTextures/Glowing Black Energy (Grid4x4)
 	Needle = "rbxassetid://10614304526", -- StaticVFXTextures/Sideways Spec 41
 	Speck = "rbxassetid://16879822194", -- StaticVFXTextures/Spec31
+	CoreRipple = "rbxassetid://13826100764", -- FlipbookTextures/Blackhole Ripple (Grid4x4): black core, swirling rim
+	CoreArcs = "rbxassetid://73527526679754", -- FlipbookTextures/Blackhole spec (Grid4x4): bright arcs
+	CoreShadow = "rbxassetid://107972524433656", -- StaticVFXTextures/Blurry Black Hole
+	StarRays = "rbxassetid://17391818367", -- StaticVFXTextures/Star102
 }
 
 local WHITE = Color3.new(1, 1, 1)
@@ -86,25 +93,24 @@ local function findGround(ctx)
 	return origin - Vector3.new(0, 2.6, 0)
 end
 
--- Dark slabs and small cubes used as MeshParticles shards. Neon with a dark colour
--- renders flat and unlit, so sunlit faces don't turn grey.
-local shardTemplates
-local function getShardTemplates()
-	if not shardTemplates then
-		shardTemplates = {}
-		for _ = 1, 2 do
-			local part = Instance.new("Part")
-			part.Name = "Shard"
-			part.Anchored = true
-			part.CanCollide = false
-			part.CanQuery = false
-			part.CanTouch = false
-			part.CastShadow = false
-			part.Material = Enum.Material.Neon
-			table.insert(shardTemplates, part)
-		end
+-- Dark slab and cube templates for the MeshParticles shards (never parented; built
+-- per play so overlapping plays with different sizes/colours don't fight). Neon with
+-- a dark colour renders flat and unlit, so sunlit faces don't turn grey.
+local function makeShardTemplates(color)
+	local templates = {}
+	for _ = 1, 2 do
+		local part = Instance.new("Part")
+		part.Name = "Shard"
+		part.Anchored = true
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		part.CastShadow = false
+		part.Material = Enum.Material.Neon
+		part.Color = color
+		table.insert(templates, part)
 	end
-	return shardTemplates
+	return templates
 end
 
 --------------------------------------------------------------------------------
@@ -130,10 +136,19 @@ Effect.Defaults = {
 	InkRate = 14, -- black jagged streaks per second
 	LineRate = 20, -- thin vertical lines per second (half magenta, half black)
 	SpeckRate = 20, -- specks pulled inward per second
-	ShardCount = 14, -- shards pulled in over Duration (plus 5 already there at the start)
+	SpeckTime = 0.45, -- seconds for a speck to fly from the edge to the centre
+	ShardCount = 14, -- shards pulled in over Duration
+	CaughtShardCount = 5, -- shards already caught in the pull at the start
 	ShardSize = 5, -- studs
 	ShardPull = 20, -- studs/s^2 inward acceleration of the shards
 	LightBrightness = 2,
+	BlackHole = true, -- dark core in the centre (false = suction only)
+	CoreSize = 1.5, -- studs, core radius
+	CoreColor = Color3.fromRGB(130, 95, 255), -- tint on the core's swirling rim
+	CoreShadowColor = Color3.fromRGB(40, 15, 90), -- dark halo behind the core
+	ArcColor = Color3.fromRGB(205, 175, 255), -- bright violet arcs hugging the core
+	FlashSize = 8, -- studs, half-width of the opening star glint
+	FlashTime = 0.25, -- seconds; the pull starts 60% of the way through (0 = no glint)
 }
 
 Effect.Linger = 1.1 -- longest shard lifetime (1.05) + margin
@@ -147,6 +162,35 @@ function Effect.Play(ctx)
 	local anchor = ctx.Anchor(CFrame.new(ground))
 	local center = Instance.new("Attachment")
 	center.Parent = anchor
+
+	-- 0. Opening star glint (black hole only): grows, spins and snaps shut ------
+	if p.BlackHole and p.FlashTime > 0 then
+		local flashSize = p.FlashSize * s
+		local glint = Instance.new("Attachment")
+		glint.Position = Vector3.new(0, 1 * s, 0)
+		glint.Parent = anchor
+		local star = emitter(glint, {
+			Texture = ASSETS.StarRays,
+			Speed = NumberRange.new(0),
+			Lifetime = NumberRange.new(p.FlashTime),
+			-- Star102 is an X of rays; around -15 it sits as a "+". Spinning from +20
+			-- it passes through "+" near its peak.
+			Rotation = NumberRange.new(15, 25),
+			RotSpeed = NumberRange.new(-240),
+			LightEmission = 0.5, -- keeps the violet on bright ground
+			Brightness = 1.6,
+			ZOffset = 3,
+			Color = colors({
+				{ 0, Color3.fromRGB(215, 170, 255) },
+				{ 0.5, Color3.fromRGB(165, 95, 255) },
+				{ 1, Color3.fromRGB(120, 60, 230) },
+			}),
+			Size = seq({ { 0, flashSize * 0.2 }, { 0.2, flashSize }, { 0.6, flashSize * 0.6 }, { 1, 0 } }),
+			Transparency = seq({ { 0, 0 }, { 0.8, 0 }, { 1, 0.5 } }),
+		})
+		ctx.Emit(star, 1)
+		ctx.Wait(p.FlashTime * 0.6)
+	end
 
 	-- 1. Implosion pulse layers ------------------------------------------------
 	-- Shrink curve shared by the dome and the disc: a faint oversized first frame,
@@ -313,7 +357,7 @@ function Effect.Play(ctx)
 	-- 4. Specks pulled inward from an upper hemisphere ----------------------------
 	local speckShell = ctx.Anchor(CFrame.new(ground))
 	speckShell.Size = Vector3.one * radius * 2.2
-	local speckTime = 0.45
+	local speckTime = p.SpeckTime
 	local speckSpeed = radius * 1.1 / speckTime
 	local function speckEmitter(color, zOffset)
 		return emitter(speckShell, {
@@ -336,13 +380,10 @@ function Effect.Play(ctx)
 	local darkSpecks = speckEmitter(Color3.fromRGB(10, 8, 16), 0.8)
 
 	-- 5. Shards: dark slabs and cubes pulled into the centre ----------------------
-	local templates = getShardTemplates()
+	local templates = makeShardTemplates(p.ShardColor)
 	local shardSize = p.ShardSize * s
 	templates[1].Size = Vector3.new(shardSize, shardSize * 0.22, shardSize * 0.6) -- slab
 	templates[2].Size = Vector3.one * shardSize * 0.3 -- cube
-	for _, template in templates do
-		template.Color = p.ShardColor
-	end
 	local pullPoint = ground + Vector3.new(0, 1.5 * s, 0)
 	local shardIndex = 0
 	-- smoky far out, darker as they near the centre
@@ -372,7 +413,70 @@ function Effect.Play(ctx)
 		})
 	end
 
-	-- 6. Timeline ---------------------------------------------------------------
+	-- 6. Black hole core: held for the whole pull, arcs flash with each pulse ----
+	local coreArcs
+	if p.BlackHole then
+		local core = p.CoreSize * s
+		-- raised so the ground cuts only its bottom: reads as a ball sitting in the ring
+		local ball = Instance.new("Attachment")
+		ball.Position = Vector3.new(0, core * 0.5, 0)
+		ball.Parent = anchor
+		local coreLife = NumberRange.new(p.Duration + 0.25)
+		-- grows in over ~0.07 s, holds, collapses at the very end
+		local function held(size)
+			return seq({ { 0, 0 }, { 0.04, size }, { 0.9, size }, { 1, 0 } })
+		end
+		local shadow = emitter(ball, {
+			Texture = ASSETS.CoreShadow,
+			Speed = NumberRange.new(0),
+			Lifetime = coreLife,
+			LightEmission = 0,
+			ZOffset = 1.1,
+			Color = ColorSequence.new(p.CoreShadowColor),
+			Size = held(core * 1.25),
+		})
+		local ripple = emitter(ball, {
+			Texture = ASSETS.CoreRipple,
+			FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
+			FlipbookMode = Enum.ParticleFlipbookMode.Loop,
+			FlipbookFramerate = NumberRange.new(24),
+			Speed = NumberRange.new(0),
+			Lifetime = coreLife,
+			LightEmission = 0,
+			ZOffset = 1.2,
+			Color = ColorSequence.new(p.CoreColor),
+			Size = held(core * 1.05),
+		})
+		local coreRing = flatPulse({
+			Texture = ASSETS.ThinRing,
+			LightEmission = 1,
+			Brightness = 3,
+			ZOffset = 1.5, -- over the disc band
+			Color = ColorSequence.new(p.RingColor:Lerp(WHITE, 0.1)),
+			Size = held(core * 2),
+		})
+		coreRing.Lifetime = coreLife
+		ctx.Emit(shadow, 1)
+		ctx.Emit(ripple, 1)
+		ctx.Emit(coreRing, 1)
+		coreArcs = emitter(ball, {
+			Texture = ASSETS.CoreArcs,
+			FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
+			FlipbookMode = Enum.ParticleFlipbookMode.OneShot,
+			Speed = NumberRange.new(0),
+			Lifetime = NumberRange.new(p.PulseInterval * 1.2),
+			Rotation = NumberRange.new(-70, 70),
+			LightEmission = 1,
+			Brightness = 2,
+			ZOffset = 1.4,
+			Color = ColorSequence.new(p.ArcColor),
+			Size = seq({ { 0, core * 1.25, core * 0.15 }, { 1, core * 1.1, core * 0.1 } }),
+			Transparency = seq({ { 0, 0 }, { 0.7, 0.15 }, { 1, 1 } }),
+		})
+		light.Range = math.min(20, light.Range * 1.2)
+	end
+
+	-- 7. Timeline ---------------------------------------------------------------
 	local rates = {
 		{ bolts, p.BoltRate },
 		{ ink, p.InkRate },
@@ -381,14 +485,16 @@ function Effect.Play(ctx)
 		{ purpleSpecks, p.SpeckRate * 0.6 },
 		{ darkSpecks, p.SpeckRate * 0.4 },
 	}
+	if p.BlackHole then -- the hole tears open with a ring of bolts and black streaks
+		ctx.Emit(bolts, 8)
+		ctx.Emit(ink, 3)
+	end
 	local owed = {}
 	for i in rates do
 		owed[i] = math.random() -- random phase so the layers don't all fire on frame 1
 	end
-	if p.ShardCount > 0 then
-		for _ = 1, 5 do -- debris already caught in the pull, so the start isn't empty
-			spawnShard(true)
-		end
+	for _ = 1, p.CaughtShardCount do -- debris already caught, so the start isn't empty
+		spawnShard(true)
 	end
 	local shardEvery = p.Duration / math.max(p.ShardCount, 1)
 	local nextPulse, nextShard = 0, shardEvery
@@ -402,6 +508,9 @@ function Effect.Play(ctx)
 			ctx.Emit(disc, 2)
 			ctx.Emit(discBand, 1)
 			ctx.Emit(thinRing, 1)
+			if coreArcs then
+				ctx.Emit(coreArcs, 2) -- two random tilts so the arcs cross
+			end
 			light.Brightness = p.LightBrightness * 1.5
 			ctx.Tween(light, p.PulseInterval, { Brightness = p.LightBrightness * 0.4 })
 		end
