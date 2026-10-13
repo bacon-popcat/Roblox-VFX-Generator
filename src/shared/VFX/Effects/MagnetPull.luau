@@ -4,11 +4,11 @@
 -- shrink into the centre, several times a second), dark glass shards and specks
 -- pulled inward, flickering lilac lightning and black jagged streaks, thin
 -- vertical magenta/black lines, a violet ground haze and a pulsing light.
--- With BlackHole on: a star glint opens it, then a dark swirling core with bright
--- arcs and a neon ring sits in the centre, swallowing everything.
+-- With BlackHole on: a spinning star swells, then snaps shut into a pop that opens a
+-- dark swirling core in the centre (spinning ring strokes, arcs), swallowing everything.
 --
 -- ctx.CFrame: the pull centre. The effect sits on the ground below it.
--- Runs for Duration seconds (after the glint), then everything still flying
+-- Runs for Duration seconds (after the star), then everything still flying
 -- finishes and fades.
 --
 -- The dome is a camera-facing shell particle centred on the ground: the ground
@@ -154,8 +154,10 @@ Effect.Defaults = {
 	CoreSpinSpeed = 600, -- degrees/s of the spinning ring strokes around the core
 	CoreRingColor = Color3.fromRGB(235, 110, 255), -- faint pink ring at the core's base
 	ArcColor = Color3.fromRGB(185, 140, 255), -- violet arcs and wisps hugging the core
-	FlashSize = 11, -- studs, half-width of the opening star glint
-	FlashTime = 0.25, -- seconds; the pull starts 60% of the way through (0 = no glint)
+	FlashSize = 13, -- studs, half-width of the opening star glint
+	FlashTime = 0.45, -- seconds the star lasts (0 = no star)
+	FlashOpen = 0.75, -- fraction of FlashTime where the star snaps shut and the pull starts
+	FlashSpin = 720, -- degrees/s the star spins (the inner star counter-spins at 70%)
 }
 
 Effect.Linger = 1.1 -- longest shard lifetime (1.05) + margin
@@ -170,33 +172,84 @@ function Effect.Play(ctx)
 	local center = Instance.new("Attachment")
 	center.Parent = anchor
 
-	-- 0. Opening star glint (black hole only): grows, spins and snaps shut ------
+	-- 0. Opening star glint (black hole only) -----------------------------------
+	-- Swells in spinning hard (a smaller star counter-spins inside it), holds, then
+	-- snaps shut into a bright pop just as the hole tears open. The pull starts at
+	-- FlashOpen of FlashTime, while the star is collapsing into the core.
 	if p.BlackHole and p.FlashTime > 0 then
 		local flashSize = p.FlashSize * s
 		local glint = Instance.new("Attachment")
 		glint.Position = Vector3.new(0, 1 * s, 0)
 		glint.Parent = anchor
+		local snap = p.FlashOpen -- fraction of FlashTime where the star snaps shut
+		local function starCurve(scale)
+			return seq({
+				{ 0, flashSize * scale * 0.1 },
+				{ 0.2, flashSize * scale * 0.9 },
+				{ snap - 0.1, flashSize * scale * 1.15 }, -- slow swell while it spins
+				{ snap + 0.08, 0 }, -- snaps shut
+				{ 1, 0 },
+			})
+		end
 		local star = emitter(glint, {
 			Texture = ASSETS.StarRays,
 			Speed = NumberRange.new(0),
 			Lifetime = NumberRange.new(p.FlashTime),
-			-- Star102 is an X of rays; around -15 it sits as a "+". Spinning from +20
-			-- it passes through "+" near its peak.
 			Rotation = NumberRange.new(15, 25),
-			RotSpeed = NumberRange.new(-240),
+			RotSpeed = NumberRange.new(-p.FlashSpin),
 			LightEmission = 0.5, -- keeps the violet on bright ground
-			Brightness = 1.6,
+			Brightness = 2,
 			ZOffset = 3,
 			Color = colors({
-				{ 0, Color3.fromRGB(215, 170, 255) },
+				{ 0, Color3.fromRGB(225, 185, 255) },
 				{ 0.5, Color3.fromRGB(165, 95, 255) },
 				{ 1, Color3.fromRGB(120, 60, 230) },
 			}),
-			Size = seq({ { 0, flashSize * 0.2 }, { 0.2, flashSize }, { 0.5, flashSize * 0.4 }, { 0.8, 0 }, { 1, 0 } }), -- gone before the core appears
-			Transparency = seq({ { 0, 0 }, { 0.8, 0 }, { 1, 0.5 } }),
+			Size = starCurve(1),
 		})
+		local innerStar = emitter(glint, {
+			Texture = ASSETS.StarRays,
+			Speed = NumberRange.new(0),
+			Lifetime = NumberRange.new(p.FlashTime),
+			Rotation = NumberRange.new(60, 70), -- 45 deg off the outer star: 8 rays
+			RotSpeed = NumberRange.new(p.FlashSpin * 0.7),
+			LightEmission = 1,
+			Brightness = 1.5,
+			ZOffset = 3.1,
+			Color = ColorSequence.new(Color3.fromRGB(235, 215, 255)),
+			Size = starCurve(0.55),
+			Transparency = seq({ { 0, 0.2 }, { 1, 0.2 } }),
+		})
+		-- Soft violet glow behind the star that flares as it snaps shut
+		local flare = emitter(glint, {
+			Texture = ASSETS.SoftGlow,
+			Speed = NumberRange.new(0),
+			Lifetime = NumberRange.new(p.FlashTime),
+			LightEmission = 1,
+			Brightness = 2,
+			ZOffset = 2.9,
+			Color = colors({ { 0, p.Color }, { snap, Color3.fromRGB(230, 200, 255) }, { 1, p.Color } }),
+			Size = seq({
+				{ 0, 0 },
+				{ 0.2, flashSize * 0.25 },
+				{ snap, flashSize * 0.45 },
+				{ snap + 0.05, flashSize * 0.7 }, -- the pop
+				{ math.min(snap + 0.2, 0.99), 0 },
+				{ 1, 0 },
+			}),
+			Transparency = seq({ { 0, 0.4 }, { snap, 0.2 }, { 1, 1 } }),
+		})
+		local flashLight = Instance.new("PointLight")
+		flashLight.Color = Color3.fromRGB(190, 140, 255)
+		flashLight.Range = math.min(20, flashSize * 1.5)
+		flashLight.Brightness = 0
+		flashLight.Parent = glint
 		ctx.Emit(star, 1)
-		ctx.Wait(p.FlashTime * 0.6)
+		ctx.Emit(innerStar, 1)
+		ctx.Emit(flare, 1)
+		ctx.Tween(flashLight, p.FlashTime * snap, { Brightness = 4 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		ctx.Wait(p.FlashTime * snap)
+		ctx.Tween(flashLight, 0.15, { Brightness = 0 })
 	end
 
 	-- 1. Implosion pulse layers ------------------------------------------------

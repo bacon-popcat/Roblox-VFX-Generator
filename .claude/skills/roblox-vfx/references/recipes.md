@@ -54,7 +54,9 @@ See `src/shared/VFX/Effects/MagnetPull.luau`. Driven by a per-frame loop for `Du
    dark shards (MeshParticles with inward Acceleration), streaks skating across the floor.
 4. Flicker layers on a Box volume: short-lived lightning clusters, black jagged streaks,
    thin vertical lines (FacingCameraWorldUp keeps them upright).
-5. Optional core: a star glint opens it, then a dark ball (flipbook core raised half its
+5. Optional core: a star opens it (anticipation: swell while spinning fast, a smaller star
+   counter-spinning inside, a glow + light building up, then snap shut into a bright pop
+   as the pull starts), then a dark ball (flipbook core raised half its
    size off the ground so the ground cuts only its bottom), a faint ring at its base, looping
    wisp strands circling it and arcs flashing per pulse. For a bold, fully dark core put a
    dark `Neon` Ball part inside the flipbook (particles alone stay semi-transparent) and give

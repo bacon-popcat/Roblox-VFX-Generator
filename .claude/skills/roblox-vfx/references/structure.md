@@ -112,8 +112,9 @@ attachment `BladeTip`); keep `Tool.Grip` and the attachments in sync if you resi
 ### Magnet pull
 
 `MagnetPull`: purple gravity suction centred on the ground below `ctx.CFrame`. With
-`BlackHole` (default on), a star glint (`FlashSize`, `FlashTime`) opens it, the pull starts
-60% of the way through with a burst of bolts and black streaks, and a dark swirling core
+`BlackHole` (default on), a spinning star (`FlashSize`, `FlashTime`, `FlashSpin`, with a
+counter-spinning inner star and a flare) opens it and snaps shut at `FlashOpen`, when the
+pull starts with a burst of bolts and black streaks, and a dark swirling core
 (`CoreSize`) with a neon ring holds in the centre while bright arcs flash with each pulse.
 The pull runs for `Duration` (default 1.5 s): a translucent dome + ground disc (soft
 magenta band closing into a crisp neon ring) pop in at `Radius` and shrink into the centre
