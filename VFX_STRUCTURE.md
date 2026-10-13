@@ -85,6 +85,14 @@ in sync with the animation.
 | `WindSpinSlash` | on the hit frame | `ctx.CFrame` = caster root. |
 | `WindSpinSlashCombo` | both, back to back | Harness preview of the full move. |
 
+The playable version is the **Wind Sword** tool (`src/starterpack/WindSword`, every player
+spawns with it). Clicking plays `WindSpinSlashCombo` with `Weapon = Handle` and the
+default tool slash animation, then fires `Shared.WindSword.Slash`; the server
+(`src/server/WindSwordServer.server.luau`) checks equip + cooldown and relays it, and
+`src/client/WindSwordReplicator.client.luau` plays it for everyone else. Timings live in
+`src/shared/WindSword/init.luau`. The blade runs along the Handle's -Z axis (tip
+attachment `BladeTip`); keep `Tool.Grip` and the attachments in sync if you resize it.
+
 ## Effect module contract
 
 Base new effects on this template. Order: header, requires, `ASSETS`, constants,

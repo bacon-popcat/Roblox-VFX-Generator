@@ -1,0 +1,18 @@
+{
+  "className": "Tool",
+  "properties": {
+    "ToolTip": "Wind Sword: click to spin-slash",
+    "CanBeDropped": false,
+    "RequiresHandle": true,
+    "Grip": {
+      "CFrame": {
+        "position": [0, 0, 1.9],
+        "orientation": [
+          [1, 0, 0],
+          [0, 1, 0],
+          [0, 0, 1]
+        ]
+      }
+    }
+  }
+}

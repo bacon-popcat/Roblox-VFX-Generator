@@ -1,0 +1,48 @@
+{
+  "className": "Part",
+  "properties": {
+    "Size": [0.18, 0.3, 4.6],
+    "Color": [0.353, 0.255, 0.157],
+    "Material": "SmoothPlastic",
+    "CanCollide": false,
+    "CanTouch": false,
+    "CanQuery": false,
+    "Massless": true,
+    "TopSurface": "Smooth",
+    "BottomSurface": "Smooth"
+  },
+  "children": [
+    {
+      "name": "BladeBase",
+      "className": "Attachment",
+      "properties": {
+        "CFrame": {
+          "CFrame": {
+            "position": [0, 0, 1.4],
+            "orientation": [
+              [1, 0, 0],
+              [0, 1, 0],
+              [0, 0, 1]
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "BladeTip",
+      "className": "Attachment",
+      "properties": {
+        "CFrame": {
+          "CFrame": {
+            "position": [0, 0, -2.3],
+            "orientation": [
+              [1, 0, 0],
+              [0, 1, 0],
+              [0, 0, 1]
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
