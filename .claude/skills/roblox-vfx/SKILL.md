@@ -22,7 +22,9 @@ ReplicatedStorage/Assets/VFX/      art library (Studio-only), see references/tex
 StarterPlayer/StarterPlayerScripts/Client   VFXHarness test bench (src/client/init.client.luau)
 ```
 
-Full structure, naming, and asset conventions: `VFX_STRUCTURE.md` at the repo root.
+Full structure, naming, asset, sync, engine-gotcha and testing conventions:
+`references/structure.md`. Read it before writing or changing any effect; its rules and
+checklist are part of this skill.
 
 Effects run on the client. Effects may require `MeshParticles`; they must never
 require `MeshFactory` or `VFXScrub` (edit-time tools).
@@ -37,10 +39,13 @@ require `MeshFactory` or `VFXScrub` (edit-time tools).
    fits, say what texture you'd want and use the closest existing one for now.
 4. **Meshes:** if the effect needs a mesh shape (slash arc, shockwave, spikes,
    shards, rocks), follow `references/meshes.md` before writing the effect.
-5. **Write the module** using the contract. Base it on the closest file in `examples/`.
+5. **Write the module** using the contract and the template in `references/structure.md`.
+   Base it on the closest file in `examples/`.
 6. **Expose everything tunable** in `Defaults` (colors, scale, counts, timings).
    Only use attribute-safe types: number, boolean, string, Color3, Vector3.
-7. **Check the budget** (below) before finishing.
+7. **Check the budget** (below) and run the "New effect checklist" in
+   `references/structure.md` before finishing. Test it as described there (VFXHarness,
+   VFXScrub).
 8. **Report** in 2-3 sentences: what layers the effect has and which Defaults to
    tweak first. Mention any new meshes you published.
 
@@ -122,6 +127,9 @@ Rules:
 
 ## Reference files
 
+- `references/structure.md`: code layout (disk <-> Studio), effect module template, ctx
+  API, naming, asset conventions, engine gotchas, rules, testing, new-effect checklist,
+  open issues.
 - `references/recipes.md`: layer breakdowns and timings for each effect category.
 - `references/properties.md`: properties that matter, good starting values, and the
   MeshParticles config.

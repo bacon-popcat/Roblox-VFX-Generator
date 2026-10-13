@@ -1,8 +1,10 @@
 # VFX code structure
 
-The authoritative guide to where VFX code lives and how it is organized. How to *design*
-an effect (layers, values, recipes) lives in the skill docs:
-`.claude/skills/roblox-vfx/SKILL.md` and its `references/`. Read both before writing an effect.
+Part of the `roblox-vfx` skill (`.claude/skills/roblox-vfx/references/structure.md`): the
+authoritative guide to where VFX code lives, how it is organized, and how to test it. How to
+*design* an effect (layers, values, recipes) lives in `SKILL.md` and the other
+`references/`. Read both before writing an effect. Paths like `references/x.md` are relative
+to the skill folder; `src/...` paths are relative to the repo root.
 
 ## Layout
 
@@ -16,8 +18,9 @@ couple of seconds and silently reverts disk edits Rojo hasn't pushed yet.
 ```
 VFX/                                  (repo root)
 ├── default.project.json              Rojo tree (below)
-├── VFX_STRUCTURE.md                  this file
-├── .claude/skills/roblox-vfx/        skill: SKILL.md, references/*.md, examples/*.luau
+├── CLAUDE.md                         project instructions (points here)
+├── .claude/skills/roblox-vfx/        skill: SKILL.md, references/*.md (this file:
+│                                     references/structure.md), examples/*.luau
 └── src/
     ├── shared/VFX/
     │   ├── VFXPlayer.luau            plays effects by name, builds ctx

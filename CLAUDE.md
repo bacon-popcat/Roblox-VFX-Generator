@@ -4,7 +4,8 @@ Roblox visual effects as Luau ModuleScripts, synced into Roblox Studio with Rojo
 
 - Project folder: `C:\Users\oscar\Documents\Rojo Roblox\VFX`. Work only here; there is no
   OneDrive copy any more.
-- Structure, naming, asset and testing conventions: `VFX_STRUCTURE.md`.
+- Structure, naming, asset and testing conventions: `.claude/skills/roblox-vfx/references/structure.md`
+  (part of the skill).
 - Writing effects: use the `roblox-vfx` skill (`.claude/skills/roblox-vfx/`).
 
 ## Working with Studio

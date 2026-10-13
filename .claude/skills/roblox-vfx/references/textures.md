@@ -61,7 +61,7 @@ the asset.
 
 - **Copy ids, don't read cards at runtime.** Find a card in Studio, then hard-code its
   id in the effect's `ASSETS` table with a `-- <Folder>/<CardName>` comment (see
-  `VFX_STRUCTURE.md`, "Assets").
+  `references/structure.md`, "Assets").
 - **Flipbooks:** grid = sheet size / cell size. On a 1024 sheet: 512 -> `Grid2x2`,
   256 -> `Grid4x4`, 128 -> `Grid8x8`. Not every sheet is 1024: some 128-cell sheets are
   512 (`Grid4x4`). If a flipbook shows tiles or a filled square, try the next grid down.
