@@ -362,6 +362,3 @@ with ffmpeg at the same times (t = 0 at the slash's first frame).
 - `references/style-guide.md` is an unfilled template.
 - `core.autocrlf=true` rewrites files to CRLF on checkout; consider a `.gitattributes`
   with `* text=auto eol=lf` so Luau files stay LF.
-- The effect instance budget in `SKILL.md` (~10) is tight for layered hero effects:
-  `WindSpinSlash` creates ~25 (mostly ParticleEmitters/Attachments, all destroyed after
-  ~2s). Decide whether emitters count toward it.

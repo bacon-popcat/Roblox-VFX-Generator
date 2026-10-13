@@ -117,12 +117,20 @@ Rules:
 
 ## Budget
 
-- Burst effects: under ~150 texture particles total. Looping auras: under ~60
-  particles/second.
-- Mesh particles: under ~40 per burst; they are full parts and far more expensive.
-- Under ~10 other instances created per play.
-- Meshes: under ~500 triangles each.
-- No effect should create PointLights with Range above 20.
+Sized for detailed, layered effects. Spend it where it reads; a busy effect is not
+automatically a better one.
+
+- Texture particles: burst effects under ~400 per play. Channelled effects (a few
+  seconds, e.g. `MagnetPull`) under ~200/second. Looping auras (on screen indefinitely)
+  under ~80/second.
+- Mesh particles: under ~60 per play and ~40 alive at once; they are full parts
+  simulated on the client, far more expensive than texture particles.
+- Instances created per play (emitters, attachments, anchor parts, beams, trails,
+  lights; not counting particles, tweens or MeshParticles parts): under ~50.
+- Meshes: under ~1000 triangles each.
+- Lights: at most 2 PointLights per effect, Range 20 or less.
+- Effects that can play for many players at once (replicated abilities) should
+  expose their counts/rates in `Defaults` so they can be overridden lower.
 - If over budget, cut the least visible layer first.
 
 ## Reference files

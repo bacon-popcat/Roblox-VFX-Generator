@@ -58,7 +58,7 @@ Write a new generator in MeshFactory using `MeshFactory.Build(positions, uvs, tr
 - Y up; flat shapes in the XZ plane.
 - U along the length or around the shape, V across it (0 -> 1).
 - Thin/open shapes: `doubleSided = true`. Closed convex shapes: `orientOutward = true`.
-- Under ~500 triangles.
+- Under ~1000 triangles (the budget in `SKILL.md`).
 Add it to `MeshFactory.Generators` and to the table above once it works.
 
 ## Troubleshooting
