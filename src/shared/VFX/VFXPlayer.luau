@@ -50,9 +50,10 @@ function VFXPlayer.Play(name, cframe, overrides)
 		TimeScale = timeScale,
 	}
 
-	-- Wait in "effect time" (stretches in slow-mo)
+	-- Wait in "effect time" (stretches in slow-mo). Returns the effect time that
+	-- actually passed, which is usually a bit more than asked (frame granularity).
 	function ctx.Wait(seconds)
-		task.wait(seconds / timeScale)
+		return task.wait(seconds / timeScale) * timeScale
 	end
 
 	-- Tween in "effect time"

@@ -9,7 +9,9 @@ an effect (layers, values, recipes) lives in the skill docs:
 Disk is the source of truth for code. `rojo serve` syncs `src/` into Studio live; edits
 made to synced scripts inside Studio are overwritten. Edit files on disk only. If the
 Rojo plugin in Studio is not connected, nothing syncs: connect it (or push the changed
-module's `Source` yourself and checksum it) before testing.
+module's `Source` yourself and checksum it) before testing. Keep the Rojo plugin's
+two-way sync **off**: with it on, Studio's copy of a script is written back to disk every
+couple of seconds and silently reverts disk edits Rojo hasn't pushed yet.
 
 ```
 VFX/                                  (repo root)
@@ -93,6 +95,15 @@ default tool slash animation, then fires `Shared.WindSword.Slash`; the server
 `src/shared/WindSword/init.luau`. The blade runs along the Handle's -Z axis (tip
 attachment `BladeTip`); keep `Tool.Grip` and the attachments in sync if you resize it.
 
+### Magnet pull
+
+`MagnetPull`: purple gravity suction centred on the ground below `ctx.CFrame`. Runs for
+`Duration` (default 1.5 s): a translucent dome + ground disc pop in at `Radius` and shrink
+into the centre every `PulseInterval`, while dark shards (MeshParticles), specks,
+lightning, black streaks and thin lines are pulled in. It is only the suction part of the
+reference "gravity" effect; the black hole core (dark sphere, bright arcs, inner ring,
+star flash) was left out on purpose.
+
 ## Effect module contract
 
 Base new effects on this template. Order: header, requires, `ASSETS`, constants,
@@ -157,7 +168,7 @@ requires every effect at startup, and one bad module stops it.
 | `ctx.Anchor(cf?)` | -> Part | Invisible anchored part in `ctx.Folder` (default `ctx.CFrame`) for attachments, emitters, lights. |
 | `ctx.Emit(emitter, n)` | | Burst `n` particles; sets `emitter.TimeScale`. Use instead of `:Emit()`. |
 | `ctx.Tween(inst, t, props, style?, dir?)` | -> Tween | Tween in effect time. Default `Quad` / `Out`. |
-| `ctx.Wait(t)` | | Yield in effect time. |
+| `ctx.Wait(t)` | -> number | Yield in effect time. Returns the effect time that actually passed (often more than `t`: a 1/60 wait usually takes 1-2 frames). Per-frame loops should add the return value, not `t`, to their clock. |
 
 `MeshParticles.Burst(ctx, template, count, config)`: non-blocking mesh debris; config in
 `references/properties.md`.
@@ -253,7 +264,16 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 - Additive (`LightEmission = 1`) bright green with `Brightness` > 1 clips to mint/white on
   light ground. Keep `Brightness` ~1 and put a dark normal-blend layer behind it.
 - Camera-facing particles near the ground get cut by it (hard straight edge). Raise them
-  or shrink them.
+  or shrink them. Used on purpose, a camera-facing disc centred on the ground reads as a
+  dome (see `MagnetPull`).
+- `Shape = Sphere` with `ShapePartial = 0.5` emits from the upper hemisphere only; with
+  `ShapeStyle = Surface` and `ShapeInOut = Inward` particles fly to the centre (suction).
+  Lifetime ≈ radius / Speed, slightly less so they vanish before overshooting.
+- `MigratedBeams` textures tile vertically, so as particles they show flat cut-off ends.
+- A dark-coloured `Neon` part renders flat and unlit: good for translucent dark debris
+  that shouldn't turn grey on its sunlit faces.
+- A new texture can be blank for the first frames it is used (still loading). For
+  screenshots, `ContentProvider:PreloadAsync` it or re-run the scrub.
 - Beams and Trails draw their texture with the image's **top at Attachment0** and bottom at
   Attachment1 (TextureMode Stretch). Pick the attachment order to put the right end of a
   shape (e.g. the fanned-out end of grass strands) where you want it.
@@ -322,11 +342,6 @@ with ffmpeg at the same times (t = 0 at the slash's first frame).
 - [ ] Reusable new textures added to `references/textures.md`.
 
 ## Open issues (2026-10-12; delete each line when fixed)
-
-- The project lives at `C:\Users\oscar\Documents\Rojo Roblox\VFX`. An older copy in
-  OneDrive caused "Rojo isn't syncing" on 2026-10-12 (edits went to the copy VS Code wasn't
-  serving). Work only in the Documents folder. After restarting `rojo serve`, reconnect the
-  Rojo plugin in Studio.
 
 - `references/style-guide.md` is an unfilled template.
 - `core.autocrlf=true` rewrites files to CRLF on checkout; consider a `.gitattributes`

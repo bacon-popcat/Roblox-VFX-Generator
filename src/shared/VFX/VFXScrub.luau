@@ -82,6 +82,7 @@ function VFXScrub.Play(name, cframe, overrides, stopAt, timeScale, seed)
 				remaining -= dt * timeScale
 			end
 		end
+		return seconds - remaining -- effect time that actually passed, like VFXPlayer
 	end
 
 	function ctx.Tween(instance, seconds, props, style, direction)

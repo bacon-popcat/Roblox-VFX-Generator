@@ -76,7 +76,7 @@ return Effect
 | `ctx.Anchor(cf?)` | Invisible anchored part for attachments, emitters, lights. |
 | `ctx.Emit(emitter, n)` | Burst particles. Always use this, not `:Emit()`, so slow-mo works. |
 | `ctx.Tween(inst, t, props, style?, dir?)` | Tween in effect time. |
-| `ctx.Wait(t)` | Wait in effect time. Never use `task.wait` directly. |
+| `ctx.Wait(t)` | Wait in effect time; returns the effect time that actually passed (add that to per-frame loop clocks). Never use `task.wait` directly. |
 
 For many mesh pieces (debris, shards), use
 `MeshParticles.Burst(ctx, template, count, config)`; see `references/properties.md`.

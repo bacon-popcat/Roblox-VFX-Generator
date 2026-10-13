@@ -25,6 +25,14 @@ Prefer these. Add new rows as textures are uploaded (name | id | use).
 | Sideways Spec 41 | rbxassetid://10614304526 | Thin needle; long flash rays, streak particles, blade glow |
 | Sideways Spec 50 | rbxassetid://6893847210 | Tapered spike; tinted black = tiny ink streaks shed off a slash |
 | BeamSoftBlurredStreaks | rbxassetid://13280046773 | Soft streaky Trail texture for weapon motion trails |
+| glowing ring | rbxassetid://13580366694 | Filled disc with a bright soft rim; camera-facing = translucent dome/shell, flat = ground disc |
+| Sphere_Mask_02 | rbxassetid://135297534254471 | Faint sphere shell with a lit rim; layer over a dome for its edge |
+| Ring_Thick_001 | rbxassetid://70800352387937 | Soft thick ring (hole ~50%); bright band around a ground disc |
+| Wispy Sphere 4x4 | rbxassetid://115949955697406 | 4x4 flipbook, white wisps inside a sphere; keep very transparent |
+| Lightning Scribble 4x4 | rbxassetid://137202180073755 | 4x4 flipbook, scribbly lightning strands; FacingCameraWorldUp + Squash ~0.7 = tall bolt clusters; LightEmission 0.5 keeps a saturated tint on bright ground |
+| glowing ring 2 | rbxassetid://12946041355 | Thin bright ring with a soft glow; LightEmission 1 = neon ring |
+| Purple Lightning | rbxassetid://13013256540 | 4x4 flipbook (128 cells on a 512 sheet, NOT 8x8), soft lilac bolt column; reads as white smoke if Brightness > 1 |
+| Glowing Black Energy | rbxassetid://17511030724 | 4x4 flipbook, ragged black energy; tinted near-black = bold jagged dark streaks |
 
 Gradient strips used as mesh `TextureID` should fade left to right (along U),
 matching the MeshFactory UV layout.
@@ -51,8 +59,11 @@ the asset.
   id in the effect's `ASSETS` table with a `-- <Folder>/<CardName>` comment (see
   `VFX_STRUCTURE.md`, "Assets").
 - **Flipbooks:** grid = sheet size / cell size. On a 1024 sheet: 512 -> `Grid2x2`,
-  256 -> `Grid4x4`, 128 -> `Grid8x8`. Use `FlipbookMode = OneShot` for bursts (plays
-  once over each particle's lifetime).
+  256 -> `Grid4x4`, 128 -> `Grid8x8`. Not every sheet is 1024: some 128-cell sheets are
+  512 (`Grid4x4`). If a flipbook shows tiles or a filled square, try the next grid down.
+  Use `FlipbookMode = OneShot` for bursts (plays once over each particle's lifetime).
+- **MigratedBeams textures** tile vertically, so as particles they show flat cut-off
+  ends. Prefer a flipbook or static texture for free-floating streaks.
 - **Library meshes** are `SpecialMesh` (FileMesh) data, so rebuild them as a Part +
   SpecialMesh. A FileMesh is sized by `SpecialMesh.Scale`, not `Part.Size`.
 
