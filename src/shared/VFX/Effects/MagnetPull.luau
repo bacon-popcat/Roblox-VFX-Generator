@@ -24,8 +24,10 @@ local MeshParticles = require(VFX:WaitForChild("MeshParticles"))
 local ASSETS = {
 	SphereShell = "rbxassetid://135297534254471", -- StaticVFXTextures/Sphere_Mask_02
 	GlowDisc = "rbxassetid://13580366694", -- StaticVFXTextures/glowing ring (filled disc, bright soft rim)
-	ThickRing = "rbxassetid://70800352387937", -- StaticVFXTextures/Ring_Thick_001
-	ThinRing = "rbxassetid://12946041355", -- StaticVFXTextures/glowing ring 2
+	BandRing = "rbxassetid://15058135927", -- StaticVFXTextures/thick ring 2 (soft medium band)
+	NeonRing = "rbxassetid://15268062056", -- StaticVFXTextures/thick ring 3 (crisp inner edge, soft glow)
+	CoreSwirl = "rbxassetid://17612139917", -- FlipbookTextures/Whole swirl (Grid4x4): wispy strands circling a core
+	Smoke = "rbxassetid://111394301752764", -- StaticVFXTextures/smoke 41
 	WispySphere = "rbxassetid://115949955697406", -- FlipbookTextures/Wispy Sphere 4x4 (Grid4x4)
 	SoftGlow = "rbxassetid://284205403", -- StaticVFXTextures/Blurred Spec 11
 	Bolt = "rbxassetid://137202180073755", -- FlipbookTextures/Lightning Scribble 4x4 (Grid4x4)
@@ -120,7 +122,7 @@ local Effect = {}
 Effect.Defaults = {
 	Color = Color3.fromRGB(100, 75, 255), -- blue-violet dome
 	FillColor = Color3.fromRGB(70, 35, 235), -- violet fill inside the ground disc
-	DiscColor = Color3.fromRGB(185, 85, 255), -- band around the disc
+	DiscColor = Color3.fromRGB(195, 90, 245), -- band around the disc
 	RingColor = Color3.fromRGB(240, 130, 255), -- thin neon ring the band closes into
 	HazeColor = Color3.fromRGB(80, 25, 255), -- violet ground glow under the pull
 	BoltColor = Color3.fromRGB(220, 95, 255), -- pink-lilac lightning strands
@@ -137,6 +139,8 @@ Effect.Defaults = {
 	LineRate = 20, -- thin vertical lines per second (half magenta, half black)
 	SpeckRate = 20, -- specks pulled inward per second
 	SpeckTime = 0.45, -- seconds for a speck to fly from the edge to the centre
+	WispRate = 14, -- pale smoke wisps drawn into the dome per second
+	StreakRate = 12, -- faint violet streaks skating inward across the ground per second
 	ShardCount = 14, -- shards pulled in over Duration
 	CaughtShardCount = 5, -- shards already caught in the pull at the start
 	ShardSize = 5, -- studs
@@ -146,6 +150,7 @@ Effect.Defaults = {
 	CoreSize = 1.5, -- studs, core radius
 	CoreColor = Color3.fromRGB(130, 95, 255), -- tint on the core's swirling rim
 	CoreShadowColor = Color3.fromRGB(40, 15, 90), -- dark halo behind the core
+	CoreRingColor = Color3.fromRGB(235, 110, 255), -- faint pink ring at the core's base
 	ArcColor = Color3.fromRGB(205, 175, 255), -- bright violet arcs hugging the core
 	FlashSize = 8, -- studs, half-width of the opening star glint
 	FlashTime = 0.25, -- seconds; the pull starts 60% of the way through (0 = no glint)
@@ -256,24 +261,38 @@ function Effect.Play(ctx)
 		LightEmission = 0,
 		ZOffset = 0.2,
 		Color = ColorSequence.new(p.FillColor),
-		Size = shrink(radius * 0.88),
+		Size = shrink(radius * 0.97), -- edge hides under the band (one ring, not two)
 		Transparency = seq({ { 0, 0.85 }, { 0.12, 0 }, { 0.55, 0.2 }, { 0.85, 1 }, { 1, 1 } }),
 	})
+	-- The ring at the disc's edge: a soft magenta band while the pulse is big, handing
+	-- over to a crisp neon ring as it closes in (the reference's ring sharpens and
+	-- brightens as it shrinks). Both sit exactly on the dome's base.
 	local discBand = flatPulse({
-		Texture = ASSETS.ThickRing,
-		LightEmission = 0.2,
+		Texture = ASSETS.BandRing,
+		LightEmission = 0.35,
 		ZOffset = 0.7, -- over the dome's flat base
-		Color = colors({ { 0, p.DiscColor:Lerp(p.FillColor, 0.5) }, { 0.5, p.DiscColor }, { 1, p.DiscColor } }),
-		Size = shrink(radius * 0.92),
-		Transparency = seq({ { 0, 0.85 }, { 0.12, 0.05 }, { 0.5, 0.05 }, { 0.85, 0.7 }, { 1, 1 } }),
+		Color = ColorSequence.new(p.DiscColor),
+		-- the band's centre line sits at ~0.78 of the quad: 1.04 puts it on the dome's base
+		Size = shrink(radius * 1.04),
+		Transparency = seq({ { 0, 0.85 }, { 0.12, 0 }, { 0.5, 0.05 }, { 0.8, 0.6 }, { 1, 1 } }),
 	})
-	local thinRing = flatPulse({ -- takes over from the band as the pulse closes in
-		Texture = ASSETS.ThinRing,
+	-- A second, slightly smaller copy widens the band to ~25% of the radius
+	local discBandInner = flatPulse({
+		Texture = ASSETS.BandRing,
+		LightEmission = 0.35,
+		ZOffset = 0.69,
+		Color = ColorSequence.new(p.DiscColor),
+		Size = shrink(radius * 0.94),
+		Transparency = seq({ { 0, 0.85 }, { 0.12, 0 }, { 0.5, 0.05 }, { 0.8, 0.6 }, { 1, 1 } }),
+	})
+	local thinRing = flatPulse({
+		Texture = ASSETS.NeonRing,
 		LightEmission = 1,
+		Brightness = 1.3,
 		ZOffset = 0.75,
 		Color = ColorSequence.new(p.RingColor),
-		Size = shrink(radius * 0.92),
-		Transparency = seq({ { 0, 1 }, { 0.35, 1 }, { 0.6, 0.3 }, { 0.85, 0 }, { 1, 1 } }),
+		Size = shrink(radius * 1.08), -- ring at ~0.75 of the quad
+		Transparency = seq({ { 0, 1 }, { 0.3, 0.9 }, { 0.6, 0.2 }, { 0.85, 0 }, { 1, 1 } }),
 	})
 
 	-- 2. Ground haze, held for the whole pull ------------------------------------
@@ -378,6 +397,44 @@ function Effect.Play(ctx)
 	end
 	local purpleSpecks = speckEmitter(p.LineColor:Lerp(Color3.new(0, 0, 0), 0.15), 1)
 	local darkSpecks = speckEmitter(Color3.fromRGB(10, 8, 16), 0.8)
+	-- Pale wisps of smoke drawn in from the dome's edge, shrinking as they go
+	local wispSmoke = emitter(speckShell, {
+		Shape = Enum.ParticleEmitterShape.Sphere,
+		ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+		ShapeInOut = Enum.ParticleEmitterShapeInOut.Inward,
+		ShapePartial = 0.5,
+		Speed = NumberRange.new(speckSpeed * 0.8),
+		Lifetime = NumberRange.new(speckTime * 0.8, speckTime * 1.1),
+		Texture = ASSETS.Smoke,
+		Rotation = NumberRange.new(0, 360),
+		RotSpeed = NumberRange.new(-120, 120),
+		LightEmission = 0.5,
+		ZOffset = 0.65,
+		Color = ColorSequence.new(p.ArcColor:Lerp(p.Color, 0.5)),
+		Size = seq({ { 0, 2.5 * s }, { 1, 0.4 * s } }),
+		Transparency = seq({ { 0, 1 }, { 0.25, 0.75 }, { 0.75, 0.8 }, { 1, 1 } }),
+	})
+
+	-- Ground streaks: thin lines skating inward across the floor
+	local floorRing = ctx.Anchor(CFrame.new(ground + Vector3.new(0, 0.15 * s, 0)))
+	-- A Sphere shape on a flattened part is an ellipse on the floor; Inward then sends
+	-- particles radially toward the centre (Disc/Cylinder shapes don't, see structure.md)
+	floorRing.Size = Vector3.new(radius * 2.4, 0.2, radius * 2.4)
+	local floorStreaks = emitter(floorRing, {
+		Shape = Enum.ParticleEmitterShape.Sphere,
+		ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+		ShapeInOut = Enum.ParticleEmitterShapeInOut.Inward,
+		Speed = NumberRange.new(speckSpeed),
+		Lifetime = NumberRange.new(speckTime * 0.6, speckTime * 0.85),
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		Texture = ASSETS.Needle,
+		LightEmission = 1,
+		ZOffset = 0.3,
+		Color = ColorSequence.new(Color3.fromRGB(170, 110, 255)),
+		Size = seq({ { 0, 0 }, { 0.2, 2 * s }, { 1, 0.8 * s } }),
+		Squash = NumberSequence.new(1.5),
+		Transparency = seq({ { 0, 0.5 }, { 0.7, 0.6 }, { 1, 1 } }),
+	})
 
 	-- 5. Shards: dark slabs and cubes pulled into the centre ----------------------
 	local templates = makeShardTemplates(p.ShardColor)
@@ -447,18 +504,41 @@ function Effect.Play(ctx)
 			Color = ColorSequence.new(p.CoreColor),
 			Size = held(core * 1.05),
 		})
+		-- A tight neon ring hugging the ball's base (not a wide halo)
 		local coreRing = flatPulse({
-			Texture = ASSETS.ThinRing,
+			Texture = ASSETS.NeonRing,
 			LightEmission = 1,
-			Brightness = 3,
+			Brightness = 1.2,
 			ZOffset = 1.5, -- over the disc band
-			Color = ColorSequence.new(p.RingColor:Lerp(WHITE, 0.1)),
+			Color = ColorSequence.new(p.CoreRingColor),
+			-- just inside where each closing pulse ring ends, so the two don't double up
 			Size = held(core * 2),
+			Transparency = seq({ { 0, 1 }, { 0.04, 0.45 }, { 0.9, 0.45 }, { 1, 1 } }),
 		})
 		coreRing.Lifetime = coreLife
+		-- White-violet wisps circling the ball; two copies spinning opposite ways
+		local swirl = emitter(ball, {
+			Texture = ASSETS.CoreSwirl,
+			FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
+			FlipbookMode = Enum.ParticleFlipbookMode.Loop,
+			FlipbookFramerate = NumberRange.new(20),
+			Speed = NumberRange.new(0),
+			Lifetime = coreLife,
+			Rotation = NumberRange.new(0, 360),
+			LightEmission = 1,
+			Brightness = 1.5,
+			ZOffset = 1.45,
+			Color = ColorSequence.new(p.ArcColor),
+			Size = held(core * 1.6),
+			Transparency = seq({ { 0, 1 }, { 0.04, 0.35 }, { 0.9, 0.35 }, { 1, 1 } }),
+		})
 		ctx.Emit(shadow, 1)
 		ctx.Emit(ripple, 1)
 		ctx.Emit(coreRing, 1)
+		swirl.RotSpeed = NumberRange.new(220)
+		ctx.Emit(swirl, 1)
+		swirl.RotSpeed = NumberRange.new(-160)
+		ctx.Emit(swirl, 1)
 		coreArcs = emitter(ball, {
 			Texture = ASSETS.CoreArcs,
 			FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
@@ -484,6 +564,8 @@ function Effect.Play(ctx)
 		{ inkLines, p.LineRate / 2 },
 		{ purpleSpecks, p.SpeckRate * 0.6 },
 		{ darkSpecks, p.SpeckRate * 0.4 },
+		{ wispSmoke, p.WispRate },
+		{ floorStreaks, p.StreakRate },
 	}
 	if p.BlackHole then -- the hole tears open with a ring of bolts and black streaks
 		ctx.Emit(bolts, 8)
@@ -507,6 +589,7 @@ function Effect.Play(ctx)
 			ctx.Emit(wisps, 1)
 			ctx.Emit(disc, 2)
 			ctx.Emit(discBand, 1)
+			ctx.Emit(discBandInner, 1)
 			ctx.Emit(thinRing, 1)
 			if coreArcs then
 				ctx.Emit(coreArcs, 2) -- two random tilts so the arcs cross

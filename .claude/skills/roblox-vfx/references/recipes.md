@@ -32,6 +32,29 @@ Duration ~0.3 for the vortex, ~1.5 with residue. See `src/shared/VFX/Effects/Win
 4. Thin bright crescents rising out of the vortex (0.06-0.27).
 5. Residue: leaves (MeshParticles), sparkles and glow spots on a Disc emitter, debris.
 
+## Suction / gravity pull / black hole (channelled, 1-3 s)
+See `src/shared/VFX/Effects/MagnetPull.luau`. Driven by a per-frame loop for `Duration`
+(add the value `ctx.Wait` returns to the loop clock, never a fixed 1/60).
+1. Implosion pulses every ~0.17 s, each living ~0.13 s: a translucent dome (camera-facing
+   disc centred on the ground, so the ground hides its lower half) + a flat ground disc.
+   They pop in ~1.25x as a faint first frame, snap to full size, then shrink to ~0.3.
+2. The ring at the disc edge: a soft medium-width band (`thick ring 2`) while the pulse is
+   big, cross-faded into a crisp neon ring (`thick ring 3`) as it closes. Both exactly at
+   the dome's base radius; two copies of the band (1.04 R and 0.94 R) give the reference's
+   ~25%-wide band. Size the fill disc so its edge hides under the band (~0.97 R), or the
+   disc reads as two rings. A ring texture with a wide soft glow (`glowing ring 2`) at high
+   Brightness reads as a halo, not a ring: choose ring textures by edge profile.
+   If there is a core ring, make it a faint base slightly inside where each closing ring
+   ends, not a second bright ring next to it.
+3. Inward motion: specks and pale smoke wisps from an upper-hemisphere `Sphere` emitter
+   (`ShapeInOut = Inward`, Lifetime ~ radius / Speed so they vanish before the centre),
+   dark shards (MeshParticles with inward Acceleration), streaks skating across the floor.
+4. Flicker layers on a Box volume: short-lived lightning clusters, black jagged streaks,
+   thin vertical lines (FacingCameraWorldUp keeps them upright).
+5. Optional core: a star glint opens it, then a dark ball (flipbook core raised half its
+   size off the ground so the ground cuts only its bottom), a tight neon ring at its base
+   (~1.4x core, not a halo), looping wisp strands circling it and arcs flashing per pulse.
+
 ## Projectile (fireball, energy bolt)
 Persistent while flying, plus an impact on hit.
 1. Core: small bright sphere or glow particle, `LockedToPart = true`.

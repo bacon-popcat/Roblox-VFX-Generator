@@ -27,12 +27,15 @@ Prefer these. Add new rows as textures are uploaded (name | id | use).
 | BeamSoftBlurredStreaks | rbxassetid://13280046773 | Soft streaky Trail texture for weapon motion trails |
 | glowing ring | rbxassetid://13580366694 | Filled disc with a bright soft rim; camera-facing = translucent dome/shell, flat = ground disc |
 | Sphere_Mask_02 | rbxassetid://135297534254471 | Faint sphere shell with a lit rim; layer over a dome for its edge |
-| Ring_Thick_001 | rbxassetid://70800352387937 | Soft thick ring (hole ~50%); bright band around a ground disc |
+| Ring_Thick_001 | rbxassetid://70800352387937 | Very thick soft ring (hole ~50%); reads as a pancake, prefer thick ring 2 for a ring band |
 | Wispy Sphere 4x4 | rbxassetid://115949955697406 | 4x4 flipbook, white wisps inside a sphere; keep very transparent |
 | Lightning Scribble 4x4 | rbxassetid://137202180073755 | 4x4 flipbook, scribbly lightning strands; FacingCameraWorldUp + Squash ~0.7 = tall bolt clusters; LightEmission 0.5 keeps a saturated tint on bright ground |
-| glowing ring 2 | rbxassetid://12946041355 | Thin bright ring with a soft glow; LightEmission 1 = neon ring |
+| glowing ring 2 | rbxassetid://12946041355 | Thin ring with a wide soft glow; at high Brightness it reads as a halo, not a ring (prefer thick ring 3 for neon rings) |
 | Purple Lightning | rbxassetid://13013256540 | 4x4 flipbook (128 cells on a 512 sheet, NOT 8x8), soft lilac bolt column; reads as white smoke if Brightness > 1 |
 | Glowing Black Energy | rbxassetid://17511030724 | 4x4 flipbook, ragged black energy; tinted near-black = bold jagged dark streaks |
+| thick ring 2 | rbxassetid://15058135927 | Soft medium-width ring band; magenta pulse ring on the ground |
+| thick ring 3 | rbxassetid://15268062056 | Crisp inner edge with a soft outer glow; neon ring (LightEmission 1, Brightness ~1.3) |
+| Whole swirl | rbxassetid://17612139917 | 4x4 flipbook, wispy strands circling a point; looped around a core |
 | Blackhole Ripple | rbxassetid://13826100764 | 4x4 flipbook (Loop), black core with a swirling rim; camera-facing, raised half its size off the ground = a dark ball |
 | Blackhole spec | rbxassetid://73527526679754 | 4x4 flipbook, bright arcs hugging a core |
 | Blurry Black Hole | rbxassetid://107972524433656 | Soft dark disc; halo/shadow behind a core |

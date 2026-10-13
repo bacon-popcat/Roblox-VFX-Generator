@@ -115,9 +115,11 @@ attachment `BladeTip`); keep `Tool.Grip` and the attachments in sync if you resi
 `BlackHole` (default on), a star glint (`FlashSize`, `FlashTime`) opens it, the pull starts
 60% of the way through with a burst of bolts and black streaks, and a dark swirling core
 (`CoreSize`) with a neon ring holds in the centre while bright arcs flash with each pulse.
-The pull runs for `Duration` (default 1.5 s): a translucent dome + ground disc pop in at
-`Radius` and shrink into the centre every `PulseInterval`, while dark shards
-(MeshParticles), specks, lightning, black streaks and thin lines are pulled in.
+The pull runs for `Duration` (default 1.5 s): a translucent dome + ground disc (soft
+magenta band closing into a crisp neon ring) pop in at `Radius` and shrink into the centre
+every `PulseInterval`, while dark shards (MeshParticles), specks, smoke wisps
+(`WispRate`), floor streaks (`StreakRate`), lightning, black streaks and thin lines are
+pulled in. The core has wisp strands circling it and a faint pink ring at its base.
 `BlackHole = false` gives the suction only.
 
 ## Effect module contract
@@ -285,6 +287,14 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 - `Shape = Sphere` with `ShapePartial = 0.5` emits from the upper hemisphere only; with
   `ShapeStyle = Surface` and `ShapeInOut = Inward` particles fly to the centre (suction).
   Lifetime ≈ radius / Speed, slightly less so they vanish before overshooting.
+- Streaks flowing inward **across the floor**: put a `Sphere`-shaped emitter on a flattened
+  part (e.g. `2R x 0.2 x 2R`) with `ShapeStyle = Surface`, `ShapeInOut = Inward` and
+  `VelocityParallel`; particles spawn on the ellipse rim and move radially to the centre.
+  A `Disc` with `Inward` does not do this (nothing visible on the floor), and a
+  `Cylinder` shape's axis is the part's **X**, so its "inward" streaks all run parallel.
+- Ring textures put their ring well inside the quad (e.g. `thick ring 2` centre line at
+  ~0.78 of the half-width, `thick ring 3` at ~0.75). Size = wanted ring radius / that
+  fraction, or the ring lands inside the shape it should frame.
 - `MigratedBeams` textures tile vertically, so as particles they show flat cut-off ends.
 - A dark-coloured `Neon` part renders flat and unlit: good for translucent dark debris
   that shouldn't turn grey on its sunlit faces.
@@ -341,6 +351,27 @@ local t, count = Scrub.Play("WindSpinSlash", dummy.HumanoidRootPart.CFrame, nil,
 at 0.1x and freezes particles, tweens and MeshParticles within one frame of `stopAt`. Use a fixed
 camera position/FOV for every capture and an R15 dummy for scale. Extract reference frames
 with ffmpeg at the same times (t = 0 at the slash's first frame).
+
+### Matching a reference video (workflow)
+
+1. Extract frames with ffmpeg: 2-4 fps overview sheets first, then cropped 20-60 fps
+   sheets of one cycle, then full-res crops of key frames. A 0.25x slow-motion recording
+   is far easier to read than 1x; measure real timing from the 1x one.
+2. Build the effect, then capture the same moments with VFXScrub and a fixed camera at
+   the reference's elevation, and paste them side by side (reference left, ours right,
+   labelled with real-time offsets).
+3. Grade each round with a grader subagent that compares **only against the reference**
+   (state anything intentionally out of scope). Resume the same grader for later rounds so
+   it remembers earlier scores. Apply its fixes, re-capture, repeat until it says the
+   remaining gaps are noise (usually 3-4 rounds).
+4. Finish with a read-only file-integrity subagent: contract, rules grep, Linger maths,
+   budget counts, docs accuracy.
+5. Before every capture, check the Studio module's Source hash matches the disk file (Rojo
+   can be disconnected or two-way sync can revert edits). A new texture can render blank on
+   first use: preload it or re-run the scrub.
+6. Write down what you learned: new textures in `references/textures.md`, verified engine
+   behaviour in "Engine gotchas", a recipe for a new effect category in
+   `references/recipes.md`.
 
 ## New effect checklist
 
