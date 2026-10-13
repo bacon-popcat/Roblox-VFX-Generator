@@ -45,15 +45,22 @@ See `src/shared/VFX/Effects/MagnetPull.luau`. Driven by a per-frame loop for `Du
    disc reads as two rings. A ring texture with a wide soft glow (`glowing ring 2`) at high
    Brightness reads as a halo, not a ring: choose ring textures by edge profile.
    If there is a core ring, make it a faint base slightly inside where each closing ring
-   ends, not a second bright ring next to it.
+   ends, not a second bright ring next to it. For more distinct rings: a darker fill
+   (contrast) whose edge sits under the band (outside it shows a navy rim), the outer band
+   copy at LightEmission ~0.85 and the overlapping inner copy at ~0.3 (two additive copies
+   blow out to white), and a faint crisp ring at the peak that brightens as it closes.
 3. Inward motion: specks and pale smoke wisps from an upper-hemisphere `Sphere` emitter
    (`ShapeInOut = Inward`, Lifetime ~ radius / Speed so they vanish before the centre),
    dark shards (MeshParticles with inward Acceleration), streaks skating across the floor.
 4. Flicker layers on a Box volume: short-lived lightning clusters, black jagged streaks,
    thin vertical lines (FacingCameraWorldUp keeps them upright).
 5. Optional core: a star glint opens it, then a dark ball (flipbook core raised half its
-   size off the ground so the ground cuts only its bottom), a tight neon ring at its base
-   (~1.4x core, not a halo), looping wisp strands circling it and arcs flashing per pulse.
+   size off the ground so the ground cuts only its bottom), a faint ring at its base, looping
+   wisp strands circling it and arcs flashing per pulse. For a bold, fully dark core put a
+   dark `Neon` Ball part inside the flipbook (particles alone stay semi-transparent) and give
+   the layers that must draw over it `ZOffset` > the ball's radius. To make a ring around the
+   core visibly spin, use flat crescent strokes (`Crescent32`) with RotSpeed: a symmetric
+   ring texture can't show rotation.
 
 ## Projectile (fireball, energy bolt)
 Persistent while flying, plus an impact on hit.

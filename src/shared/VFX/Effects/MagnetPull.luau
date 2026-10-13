@@ -28,7 +28,7 @@ local ASSETS = {
 	NeonRing = "rbxassetid://15268062056", -- StaticVFXTextures/thick ring 3 (crisp inner edge, soft glow)
 	CoreSwirl = "rbxassetid://17612139917", -- FlipbookTextures/Whole swirl (Grid4x4): wispy strands circling a core
 	Smoke = "rbxassetid://111394301752764", -- StaticVFXTextures/smoke 41
-	WispySphere = "rbxassetid://115949955697406", -- FlipbookTextures/Wispy Sphere 4x4 (Grid4x4)
+	Crescent32 = "rbxassetid://17388445727", -- StaticVFXTextures/Crescent32 (layered crescent strokes)
 	SoftGlow = "rbxassetid://284205403", -- StaticVFXTextures/Blurred Spec 11
 	Bolt = "rbxassetid://137202180073755", -- FlipbookTextures/Lightning Scribble 4x4 (Grid4x4)
 	BlackEnergy = "rbxassetid://17511030724", -- FlipbookTextures/Glowing Black Energy (Grid4x4)
@@ -121,8 +121,8 @@ local Effect = {}
 
 Effect.Defaults = {
 	Color = Color3.fromRGB(100, 75, 255), -- blue-violet dome
-	FillColor = Color3.fromRGB(70, 35, 235), -- violet fill inside the ground disc
-	DiscColor = Color3.fromRGB(195, 90, 245), -- band around the disc
+	FillColor = Color3.fromRGB(50, 20, 190), -- dark violet fill inside the ground disc (contrast for the band)
+	DiscColor = Color3.fromRGB(205, 80, 245), -- bright magenta band around the disc
 	RingColor = Color3.fromRGB(240, 130, 255), -- thin neon ring the band closes into
 	HazeColor = Color3.fromRGB(80, 25, 255), -- violet ground glow under the pull
 	BoltColor = Color3.fromRGB(220, 95, 255), -- pink-lilac lightning strands
@@ -131,28 +131,30 @@ Effect.Defaults = {
 	ShardColor = Color3.fromRGB(16, 18, 30),
 	Scale = 1,
 	Duration = 1.5, -- seconds the pull runs
-	Radius = 10, -- studs; pull radius and starting size of each pulse
-	PulseInterval = 0.17, -- seconds between implosion pulses
-	PulseTime = 0.13, -- seconds for one pulse to shrink into the centre
-	BoltRate = 18, -- lightning flickers per second
-	InkRate = 14, -- black jagged streaks per second
-	LineRate = 20, -- thin vertical lines per second (half magenta, half black)
-	SpeckRate = 20, -- specks pulled inward per second
-	SpeckTime = 0.45, -- seconds for a speck to fly from the edge to the centre
-	WispRate = 14, -- pale smoke wisps drawn into the dome per second
-	StreakRate = 12, -- faint violet streaks skating inward across the ground per second
-	ShardCount = 14, -- shards pulled in over Duration
+	Radius = 14, -- studs; pull radius and starting size of each pulse
+	PulseInterval = 0.14, -- seconds between implosion pulses
+	PulseTime = 0.11, -- seconds for one pulse to shrink into the centre
+	BoltRate = 24, -- lightning flickers per second
+	InkRate = 18, -- black jagged streaks per second
+	LineRate = 22, -- thin vertical lines per second (half magenta, half black)
+	SpeckRate = 30, -- specks pulled inward per second
+	SpeckTime = 0.3, -- seconds for a speck to fly from the edge to the centre
+	WispRate = 18, -- pale smoke wisps drawn into the dome per second
+	StreakRate = 16, -- faint violet streaks skating inward across the ground per second
+	ShardCount = 20, -- shards pulled in over Duration
 	CaughtShardCount = 5, -- shards already caught in the pull at the start
 	ShardSize = 5, -- studs
-	ShardPull = 20, -- studs/s^2 inward acceleration of the shards
-	LightBrightness = 2,
+	ShardPull = 40, -- studs/s^2 inward acceleration of the shards
+	LightBrightness = 3,
 	BlackHole = true, -- dark core in the centre (false = suction only)
-	CoreSize = 1.5, -- studs, core radius
-	CoreColor = Color3.fromRGB(130, 95, 255), -- tint on the core's swirling rim
-	CoreShadowColor = Color3.fromRGB(40, 15, 90), -- dark halo behind the core
+	CoreSize = 2.2, -- studs, core radius
+	CoreColor = Color3.fromRGB(75, 50, 200), -- tint on the core's swirling rim (dark)
+	CoreShadowColor = Color3.fromRGB(15, 5, 40), -- dark halo behind the core
+	CoreBallColor = Color3.fromRGB(14, 8, 40), -- the solid dark ball at the centre
+	CoreSpinSpeed = 600, -- degrees/s of the spinning ring strokes around the core
 	CoreRingColor = Color3.fromRGB(235, 110, 255), -- faint pink ring at the core's base
-	ArcColor = Color3.fromRGB(205, 175, 255), -- bright violet arcs hugging the core
-	FlashSize = 8, -- studs, half-width of the opening star glint
+	ArcColor = Color3.fromRGB(185, 140, 255), -- violet arcs and wisps hugging the core
+	FlashSize = 11, -- studs, half-width of the opening star glint
 	FlashTime = 0.25, -- seconds; the pull starts 60% of the way through (0 = no glint)
 }
 
@@ -190,7 +192,7 @@ function Effect.Play(ctx)
 				{ 0.5, Color3.fromRGB(165, 95, 255) },
 				{ 1, Color3.fromRGB(120, 60, 230) },
 			}),
-			Size = seq({ { 0, flashSize * 0.2 }, { 0.2, flashSize }, { 0.6, flashSize * 0.6 }, { 1, 0 } }),
+			Size = seq({ { 0, flashSize * 0.2 }, { 0.2, flashSize }, { 0.5, flashSize * 0.4 }, { 0.8, 0 }, { 1, 0 } }), -- gone before the core appears
 			Transparency = seq({ { 0, 0 }, { 0.8, 0 }, { 1, 0.5 } }),
 		})
 		ctx.Emit(star, 1)
@@ -234,19 +236,6 @@ function Effect.Play(ctx)
 		Size = shrink(radius * 0.87),
 		Transparency = seq({ { 0, 0.85 }, { 0.12, 0.15 }, { 0.6, 0 }, { 0.9, 0 }, { 1, 1 } }),
 	})
-	local wisps = emitter(center, {
-		Texture = ASSETS.WispySphere,
-		FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
-		FlipbookMode = Enum.ParticleFlipbookMode.OneShot,
-		Lifetime = pulseLife,
-		Speed = NumberRange.new(0),
-		Rotation = NumberRange.new(-20, 20),
-		LightEmission = 1,
-		ZOffset = 0.6,
-		Color = ColorSequence.new(p.BoltColor),
-		Size = shrink(radius * 0.8),
-		Transparency = seq({ { 0, 1 }, { 0.12, 0.9 }, { 0.7, 0.93 }, { 1, 1 } }),
-	})
 	-- Ground disc: violet fill that fades out as it shrinks, leaving the band
 	-- around its edge as a bright closing ring
 	local function flatPulse(props)
@@ -261,7 +250,7 @@ function Effect.Play(ctx)
 		LightEmission = 0,
 		ZOffset = 0.2,
 		Color = ColorSequence.new(p.FillColor),
-		Size = shrink(radius * 0.97), -- edge hides under the band (one ring, not two)
+		Size = shrink(radius * 0.88), -- edge sits under the band: not outside it (navy rim), not inside (double ring)
 		Transparency = seq({ { 0, 0.85 }, { 0.12, 0 }, { 0.55, 0.2 }, { 0.85, 1 }, { 1, 1 } }),
 	})
 	-- The ring at the disc's edge: a soft magenta band while the pulse is big, handing
@@ -269,7 +258,7 @@ function Effect.Play(ctx)
 	-- brightens as it shrinks). Both sit exactly on the dome's base.
 	local discBand = flatPulse({
 		Texture = ASSETS.BandRing,
-		LightEmission = 0.35,
+		LightEmission = 0.85, -- high enough that the band's dark outer edge doesn't read navy
 		ZOffset = 0.7, -- over the dome's flat base
 		Color = ColorSequence.new(p.DiscColor),
 		-- the band's centre line sits at ~0.78 of the quad: 1.04 puts it on the dome's base
@@ -279,7 +268,7 @@ function Effect.Play(ctx)
 	-- A second, slightly smaller copy widens the band to ~25% of the radius
 	local discBandInner = flatPulse({
 		Texture = ASSETS.BandRing,
-		LightEmission = 0.35,
+		LightEmission = 0.3, -- overlaps the outer copy: more additive here blows out to white
 		ZOffset = 0.69,
 		Color = ColorSequence.new(p.DiscColor),
 		Size = shrink(radius * 0.94),
@@ -288,11 +277,12 @@ function Effect.Play(ctx)
 	local thinRing = flatPulse({
 		Texture = ASSETS.NeonRing,
 		LightEmission = 1,
-		Brightness = 1.3,
+		Brightness = 1.6,
 		ZOffset = 0.75,
 		Color = ColorSequence.new(p.RingColor),
 		Size = shrink(radius * 1.08), -- ring at ~0.75 of the quad
-		Transparency = seq({ { 0, 1 }, { 0.3, 0.9 }, { 0.6, 0.2 }, { 0.85, 0 }, { 1, 1 } }),
+		-- a faint crisp edge on the band at the peak, fully bright as it closes
+		Transparency = seq({ { 0, 1 }, { 0.12, 0.75 }, { 0.35, 0.6 }, { 0.6, 0.2 }, { 0.85, 0 }, { 1, 1 } }),
 	})
 
 	-- 2. Ground haze, held for the whole pull ------------------------------------
@@ -453,7 +443,7 @@ function Effect.Play(ctx)
 		shardIndex += 1
 		local angle = math.random() * math.pi * 2
 		local r = radius * (0.9 + math.random() * 0.5)
-		local height = 1 + math.random() * (if caught then 6 else 9)
+		local height = 2.5 + math.random() * (if caught then 6 else 9) -- off the floor so they never read as ground shadows
 		local origin = ground + Vector3.new(math.cos(angle) * r, height * s, math.sin(angle) * r)
 		local inward = (pullPoint - origin).Unit
 		MeshParticles.Burst(ctx, templates[if shardIndex % 3 == 0 then 2 else 1], 1, {
@@ -471,7 +461,7 @@ function Effect.Play(ctx)
 	end
 
 	-- 6. Black hole core: held for the whole pull, arcs flash with each pulse ----
-	local coreArcs
+	local coreArcs, coreBallShrink
 	if p.BlackHole then
 		local core = p.CoreSize * s
 		-- raised so the ground cuts only its bottom: reads as a ball sitting in the ring
@@ -490,7 +480,7 @@ function Effect.Play(ctx)
 			LightEmission = 0,
 			ZOffset = 1.1,
 			Color = ColorSequence.new(p.CoreShadowColor),
-			Size = held(core * 1.25),
+			Size = held(core * 1.6),
 		})
 		local ripple = emitter(ball, {
 			Texture = ASSETS.CoreRipple,
@@ -500,10 +490,26 @@ function Effect.Play(ctx)
 			Speed = NumberRange.new(0),
 			Lifetime = coreLife,
 			LightEmission = 0,
-			ZOffset = 1.2,
+			ZOffset = core * 0.8, -- in front of the dark ball's near side
 			Color = ColorSequence.new(p.CoreColor),
-			Size = held(core * 1.05),
+			Size = held(core * 1.1),
 		})
+		-- A solid dark ball inside the flipbook core: bold and fully opaque. Dark Neon
+		-- renders flat and unlit; the ground hides its lower half.
+		local coreBall = Instance.new("Part")
+		coreBall.Name = "Core"
+		coreBall.Shape = Enum.PartType.Ball
+		coreBall.Material = Enum.Material.Neon
+		coreBall.Color = p.CoreBallColor
+		coreBall.Anchored = true
+		coreBall.CanCollide = false
+		coreBall.CanQuery = false
+		coreBall.CanTouch = false
+		coreBall.CastShadow = false
+		coreBall.Size = Vector3.one * 0.1
+		coreBall.CFrame = anchor.CFrame * CFrame.new(0, core * 0.5, 0)
+		coreBall.Parent = ctx.Folder
+		ctx.Tween(coreBall, 0.07, { Size = Vector3.one * core * 1.35 })
 		-- A tight neon ring hugging the ball's base (not a wide halo)
 		local coreRing = flatPulse({
 			Texture = ASSETS.NeonRing,
@@ -526,19 +532,34 @@ function Effect.Play(ctx)
 			Lifetime = coreLife,
 			Rotation = NumberRange.new(0, 360),
 			LightEmission = 1,
-			Brightness = 1.5,
-			ZOffset = 1.45,
+			Brightness = 1.3,
+			ZOffset = core + 0.5,
 			Color = ColorSequence.new(p.ArcColor),
 			Size = held(core * 1.6),
-			Transparency = seq({ { 0, 1 }, { 0.04, 0.35 }, { 0.9, 0.35 }, { 1, 1 } }),
+			Transparency = seq({ { 0, 1 }, { 0.04, 0.25 }, { 0.9, 0.25 }, { 1, 1 } }),
 		})
 		ctx.Emit(shadow, 1)
 		ctx.Emit(ripple, 1)
 		ctx.Emit(coreRing, 1)
-		swirl.RotSpeed = NumberRange.new(220)
+		swirl.RotSpeed = NumberRange.new(p.CoreSpinSpeed)
 		ctx.Emit(swirl, 1)
-		swirl.RotSpeed = NumberRange.new(-160)
+		swirl.RotSpeed = NumberRange.new(-p.CoreSpinSpeed * 0.75)
 		ctx.Emit(swirl, 1)
+		-- Crescent strokes lying flat around the core's base, spinning fast: the ring
+		-- around the hole visibly turns (a plain ring texture can't show rotation)
+		local spinRing = flatPulse({
+			Texture = ASSETS.Crescent32,
+			LightEmission = 1,
+			Brightness = 1.5,
+			ZOffset = 1.55,
+			Color = ColorSequence.new(p.CoreRingColor),
+			Rotation = NumberRange.new(0, 360),
+			Size = held(core * 1.9),
+			Transparency = seq({ { 0, 1 }, { 0.04, 0.15 }, { 0.9, 0.15 }, { 1, 1 } }),
+		})
+		spinRing.Lifetime = coreLife
+		spinRing.RotSpeed = NumberRange.new(p.CoreSpinSpeed * 1.2)
+		ctx.Emit(spinRing, 2)
 		coreArcs = emitter(ball, {
 			Texture = ASSETS.CoreArcs,
 			FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
@@ -547,13 +568,16 @@ function Effect.Play(ctx)
 			Lifetime = NumberRange.new(p.PulseInterval * 1.2),
 			Rotation = NumberRange.new(-70, 70),
 			LightEmission = 1,
-			Brightness = 2,
-			ZOffset = 1.4,
+			Brightness = 1.3,
+			ZOffset = core + 0.4,
 			Color = ColorSequence.new(p.ArcColor),
 			Size = seq({ { 0, core * 1.25, core * 0.15 }, { 1, core * 1.1, core * 0.1 } }),
 			Transparency = seq({ { 0, 0 }, { 0.7, 0.15 }, { 1, 1 } }),
 		})
 		light.Range = math.min(20, light.Range * 1.2)
+		coreBallShrink = function()
+			ctx.Tween(coreBall, 0.2, { Size = Vector3.one * 0.1, Transparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		end
 	end
 
 	-- 7. Timeline ---------------------------------------------------------------
@@ -586,7 +610,6 @@ function Effect.Play(ctx)
 			nextPulse += p.PulseInterval
 			ctx.Emit(dome, 2) -- two overlapping copies: the texture's fill is faint
 			ctx.Emit(domeRim, 1)
-			ctx.Emit(wisps, 1)
 			ctx.Emit(disc, 2)
 			ctx.Emit(discBand, 1)
 			ctx.Emit(discBandInner, 1)
@@ -615,6 +638,9 @@ function Effect.Play(ctx)
 		elapsed += dt
 	end
 	ctx.Tween(light, 0.3, { Brightness = 0 })
+	if coreBallShrink then
+		coreBallShrink()
+	end
 end
 
 return Effect

@@ -119,7 +119,9 @@ The pull runs for `Duration` (default 1.5 s): a translucent dome + ground disc (
 magenta band closing into a crisp neon ring) pop in at `Radius` and shrink into the centre
 every `PulseInterval`, while dark shards (MeshParticles), specks, smoke wisps
 (`WispRate`), floor streaks (`StreakRate`), lightning, black streaks and thin lines are
-pulled in. The core has wisp strands circling it and a faint pink ring at its base.
+pulled in. The core is a solid dark Neon ball inside a swirling flipbook core, with wisp
+strands and flat crescent strokes spinning around it (`CoreSpinSpeed`) and a faint pink
+ring at its base.
 `BlackHole = false` gives the suction only.
 
 ## Effect module contract
