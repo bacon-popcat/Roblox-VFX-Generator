@@ -4,6 +4,8 @@
 
 local TweenService = game:GetService("TweenService")
 
+local ForgeBridge = require(script.Parent:WaitForChild("ForgeBridge"))
+
 local VFXPlayer = {}
 VFXPlayer.TimeScale = 1
 
@@ -14,6 +16,7 @@ container.Name = "ActiveVFX"
 container.Parent = workspace
 
 local cache = {}
+local activeForge = {} -- [Forge env] = true, for every Forge layer still playing
 
 local function getEffect(name)
 	if cache[name] then
@@ -89,6 +92,21 @@ function VFXPlayer.Play(name, cframe, overrides)
 		return part
 	end
 
+	-- Play a VFX Forge template (Shared.VFX.ForgeAssets) as a layer, retimed to
+	-- this play's TimeScale. Non-blocking; see ForgeBridge for the options.
+	-- Returns Forge's env: env.Finished:await() waits until the layer is done.
+	local envs = {}
+	function ctx.Forge(template, at, options)
+		local _, env = ForgeBridge.Emit(template, at or cframe, folder, timeScale, options)
+		envs[env] = true
+		activeForge[env] = true
+		env.Finished:finally(function()
+			envs[env] = nil
+			activeForge[env] = nil
+		end)
+		return env
+	end
+
 	task.spawn(function()
 		local ok, err = pcall(def.Play, ctx)
 		if not ok then
@@ -96,11 +114,19 @@ function VFXPlayer.Play(name, cframe, overrides)
 		end
 		-- Let particles finish before cleaning up
 		ctx.Wait(def.Linger or 1)
+		-- Forge keeps some layer parts outside the folder (beam clones, cached
+		-- parts in Terrain); stop any layer that outlived Linger so they go too.
+		for env in envs do
+			env.Clear()
+		end
 		folder:Destroy()
 	end)
 end
 
 function VFXPlayer.Clear()
+	for env in activeForge do
+		env.Clear()
+	end
 	container:ClearAllChildren()
 end
 

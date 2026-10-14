@@ -27,7 +27,10 @@ VFX/                                  (repo root)
     │   ├── MeshParticles.luau        MeshPart "particles" (client sim)
     │   ├── MeshFactory.luau          edit-time mesh generator/publisher
     │   ├── VFXScrub.luau             edit-time freeze-frame player for screenshots
+    │   ├── ForgeBridge.luau          plays VFX Forge templates for ctx.Forge
+    │   ├── ForgeAssets/<Name>.rbxmx  VFX Forge templates (Models), see "VFX Forge layers"
     │   └── Effects/<Name>.luau       one ModuleScript per effect
+    ├── shared/Packages/              Wally packages (ForgeVFX), written by `wally install` and committed
     ├── shared/WindSword/             Wind Sword timings (init.luau) + Slash RemoteEvent (Slash.model.json)
     ├── client/
     │   ├── init.client.luau          VFXHarness test bench (Studio + live place)
@@ -44,9 +47,12 @@ VFX/                                  (repo root)
 | `src/shared/VFX/MeshParticles.luau` | `ReplicatedStorage.Shared.VFX.MeshParticles` | ModuleScript |
 | `src/shared/VFX/MeshFactory.luau` | `ReplicatedStorage.Shared.VFX.MeshFactory` | ModuleScript |
 | `src/shared/VFX/VFXScrub.luau` | `ReplicatedStorage.Shared.VFX.VFXScrub` | ModuleScript |
+| `src/shared/VFX/ForgeBridge.luau` | `ReplicatedStorage.Shared.VFX.ForgeBridge` | ModuleScript |
+| `src/shared/VFX/ForgeAssets/<Name>.rbxmx` | `ReplicatedStorage.Shared.VFX.ForgeAssets.<Name>` | Model (Forge template) |
+| `src/shared/Packages/ForgeVFX.lua` | `ReplicatedStorage.Shared.Packages.ForgeVFX` | ModuleScript (Wally link to the ForgeVFX package) |
 | `src/shared/VFX/Effects/<Name>.luau` | `ReplicatedStorage.Shared.VFX.Effects.<Name>` | ModuleScript |
 | `src/client/init.client.luau` | `StarterPlayer.StarterPlayerScripts.Client` | LocalScript |
-| `src/server/init.server.luau` | `ServerScriptService.Server` | Script |
+| `src/server/init.server.luau` | `ServerScriptService.Server` | Script (calls `ForgeVFX.init()` for Forge's collision groups) |
 | `src/shared/WindSword/` | `ReplicatedStorage.Shared.WindSword` (+ `.Slash` RemoteEvent) | ModuleScript |
 | `src/client/WindSwordReplicator.client.luau` | `StarterPlayer.StarterPlayerScripts.Client.WindSwordReplicator` | LocalScript |
 | `src/server/WindSwordServer.server.luau` | `ServerScriptService.Server.WindSwordServer` | Script |
@@ -146,6 +152,63 @@ Timeline Defaults: `CoolTime`, `TopDelay`, `SinkTime`, `GasStart`/`GasTime`,
 textures. The module preloads its custom textures from a top-level `task.spawn` +
 `pcall(ContentProvider.PreloadAsync)`. That doesn't yield the require, so it is allowed.
 
+## VFX Forge layers
+
+[ForgeVFX](https://github.com/zilibobi/forge-vfx) is the emit module of the VFX Forge
+plugin, installed with Wally (`wally.toml`; `wally install` writes `src/shared/Packages`).
+It plays effects authored as data: instances whose Forge attributes (`EmitDelay`,
+`EmitCount`, `EmitDuration`, `EffectDuration`, `Width0_End`, mesh `Start`/`End` parts,
+`BezierParticle`/`LightningBolt`/`Shockwave` tags...) describe the timeline.
+
+**When to use it.** Only when the effect needs something Forge does and our code doesn't:
+an effect authored in the Forge plugin (or a Forge reference being reproduced), Forge
+mesh VFX (Start/End tweens with decals on the mesh), bezier projectiles, lightning bolts,
+ground shockwave rings/lines/debris. Procedural effects stay plain Luau: the existing
+effects don't use Forge, and a layer that is simple in Luau shouldn't move to Forge.
+
+**Templates.** A Forge template is a Model saved as `src/shared/VFX/ForgeAssets/<Name>.rbxmx`
+(Rojo syncs it to `Shared.VFX.ForgeAssets.<Name>`). Its pivot is the effect origin (on
+the ground, LookVector toward the viewer, like `ctx.CFrame`), its children are the Forge
+items, and nothing in it is Studio-only. Invisible host parts: `Transparency = 1`,
+`Anchored`, and `CanCollide`/`CanQuery`/`CanTouch`/`CastShadow` false. Edit a template on
+a copy in Studio with the Forge plugin, then save it back over the `.rbxmx` (right-click >
+Save to File); Rojo overwrites edits made to the synced copy. Name templates after their
+role (`LavaEruption`, `LavaEruptionCrack`). Don't `cacheAttributes` a template.
+
+**Playing.** Look the template up without yielding and sequence layers with `ctx.Wait`
+(this replaces Forge's folder `Stagger` and custom sequence scripts):
+
+```luau
+local forgeAssets = script.Parent.Parent:FindFirstChild("ForgeAssets")
+local crackTemplate = forgeAssets and forgeAssets:FindFirstChild("LavaEruptionCrack")
+
+function Effect.Play(ctx)
+	local p = ctx.Params
+	if crackTemplate then
+		ctx.Forge(crackTemplate, ctx.CFrame, { Scale = p.Scale })
+	else
+		warn("LavaEruption: ForgeAssets.LavaEruptionCrack is missing")
+	end
+	ctx.Wait(p.EruptDelay)
+	-- ...
+end
+```
+
+`ctx.Forge` (via `ForgeBridge`) clones the template, scales it (`Model:ScaleTo` plus the
+mesh scales, light ranges and Forge size attributes it misses), recolors it with Forge's
+`recolor` if `Color` is given, retimes it to `ctx.TimeScale` with Forge's `retime` (plus
+looping flipbook framerates), parents it to `ctx.Folder` and emits its children. Forge
+timings live in the template's attributes, so expose only the knobs the effect needs in
+`Defaults` (delays between layers, `Scale`, optional `Color`). To tune a Forge value per
+play, clone the template yourself, set the attribute or property on the clone (never on
+the template) and pass the clone to `ctx.Forge`.
+
+**License (VFX-DL 1.1).** ForgeVFX may run only in game runtime (including Studio
+playtests), not in plugins, edit-time tools or test tooling. `ForgeBridge` loads it lazily
+on a running client only; the server loads it for `init()`. `VFXScrub` in Edit mode skips
+Forge layers with a warning, so preview Forge effects in Play mode with the VFXHarness.
+Never require ForgeVFX from `MeshFactory`, `VFXScrub` or MCP/command-bar snippets.
+
 ## Effect module contract
 
 Base new effects on this template. Order: header, requires, `ASSETS`, constants,
@@ -211,6 +274,7 @@ requires every effect at startup, and one bad module stops it.
 | `ctx.Emit(emitter, n)` | | Burst `n` particles; sets `emitter.TimeScale`. Use instead of `:Emit()`. |
 | `ctx.Tween(inst, t, props, style?, dir?)` | -> Tween | Tween in effect time. Default `Quad` / `Out`. |
 | `ctx.Wait(t)` | -> number | Yield in effect time. Returns the effect time that actually passed (often more than `t`: a 1/60 wait usually takes 1-2 frames). Per-frame loops should add the return value, not `t`, to their clock. |
+| `ctx.Forge(template, cf?, options?)` | -> env | Play a VFX Forge template as a layer at `cf` (default `ctx.CFrame`), retimed to `ctx.TimeScale`. Non-blocking; `env.Finished:await()` waits for it. `options`: `{ Scale = n, Color = Color3, ColorMode = "multiply" or "replace" }`. See "VFX Forge layers". |
 
 `MeshParticles.Burst(ctx, template, count, config)`: non-blocking mesh debris; config in
 `references/properties.md`.
@@ -365,12 +429,15 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 
 ## Rules
 
-1. Parent only under `ctx.Folder` (directly or via `ctx.Anchor()`).
+1. Parent only under `ctx.Folder` (directly or via `ctx.Anchor()`). Forge layers are the one
+   exception: ForgeVFX parks some of its parts in `workspace.Terrain` and removes them itself.
 2. All timing through ctx: no `task.wait`, `wait`, `task.delay`, raw `TweenService`, or `emitter:Emit`.
+   Forge layers go through `ctx.Forge`, never `ForgeVFX.emit` directly (it would ignore slow-mo).
 3. `Rate = 0` on burst emitters.
 4. Visible parts: `Anchored`; `CanCollide`, `CanQuery`, `CanTouch`, `CastShadow` false.
 5. `Linger` covers the longest particle or mesh-particle lifetime after `Play` returns.
-6. Effects may require `MeshParticles`; never `MeshFactory` or `VFXScrub` (edit-time tools).
+6. Effects may require `MeshParticles`; never `MeshFactory`, `VFXScrub` (edit-time tools),
+   `ForgeBridge` or the ForgeVFX package (use `ctx.Forge`).
 7. No hard runtime dependency on Studio-only folders: library assets as `ASSETS` ids,
    mesh templates with a plain-Part fallback, no `WaitForChild` into them.
 8. Defaults: PascalCase keys, attribute-safe types, everything tunable exposed.
@@ -441,7 +508,9 @@ with ffmpeg at the same times (t = 0 at the slash's first frame).
 - [ ] `Linger` covers the longest lifetime.
 - [ ] Mesh templates looked up without yielding, with a fallback; no `MeshFactory` require.
 - [ ] Rules grep is clean:
-      `grep -nE "task\.(wait|delay)|[^.]wait\(|TweenService|:Emit\(|MeshFactory" src/shared/VFX/Effects/<Name>.luau`
+      `grep -nE "task\.(wait|delay)|[^.]wait\(|TweenService|:Emit\(|MeshFactory|ForgeVFX|ForgeBridge|\.emit\(" src/shared/VFX/Effects/<Name>.luau`
+- [ ] Forge layers only if the effect needs them (see "VFX Forge layers"); template looked up
+      without yielding, with a warning if missing; `Linger` covers the Forge layers' end.
 - [ ] Within budget.
 - [ ] Tested in the harness at 1x and 0.1x; tuned Defaults pasted back.
 - [ ] Reusable new textures added to `references/textures.md`.

@@ -7,6 +7,10 @@ Roblox visual effects as Luau ModuleScripts, synced into Roblox Studio with Rojo
 - Structure, naming, asset and testing conventions: `.claude/skills/roblox-vfx/references/structure.md`
   (part of the skill).
 - Writing effects: use the `roblox-vfx` skill (`.claude/skills/roblox-vfx/`).
+- Packages: Wally (`wally.toml`). `wally install` writes `src/shared/Packages` (committed),
+  which Rojo syncs to `ReplicatedStorage.Shared.Packages`. ForgeVFX (the VFX Forge emit
+  module) plays Forge-authored layers through `ctx.Forge`; its license allows it only in
+  game runtime, never in edit-time tools or command-bar/MCP snippets.
 
 ## Working with Studio
 

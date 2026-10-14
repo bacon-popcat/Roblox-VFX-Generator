@@ -10,6 +10,11 @@
 -- Live tuning: during Play, select Workspace > VFXHarnessConfig > <Effect>
 -- and edit its Attributes in the Properties panel. The next play uses them.
 -- Attribute edits are lost when you stop, so press P and paste first.
+--
+-- Automation (Studio MCP, command bar): set VFXHarnessConfig's "Play" attribute to an
+-- effect name to play it from this script, e.g. for Play-mode captures of effects with
+-- Forge layers, which must play from game code, not from plugin snippets. Optional
+-- "Speed" (number) sets the playback speed for it. "Play" is cleared after each play.
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -304,6 +309,24 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			return
 		end
 	end
+end)
+
+config:SetAttribute("Play", "")
+config:GetAttributeChangedSignal("Play"):Connect(function()
+	local name = config:GetAttribute("Play")
+	if typeof(name) ~= "string" or name == "" then
+		return
+	end
+	config:SetAttribute("Play", "")
+	if not Effects:FindFirstChild(name) then
+		warn(("VFXHarness: no effect named '%s'"):format(name))
+		return
+	end
+	current = name
+	local speed = config:GetAttribute("Speed")
+	VFXPlayer.TimeScale = if typeof(speed) == "number" and speed > 0 then speed else SPEEDS[speedIndex]
+	VFXPlayer.Play(name, target.CFrame, configFor(name):GetAttributes())
+	refreshStatus()
 end)
 
 task.spawn(function()

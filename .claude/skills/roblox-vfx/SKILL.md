@@ -16,7 +16,10 @@ ReplicatedStorage/Shared/VFX/      code, Rojo-synced from src/shared/VFX
 ├── VFXPlayer       plays effects by name (client-side), provides ctx
 ├── MeshParticles   simulates many MeshParts like particles
 ├── MeshFactory     authoring tool: generates + publishes meshes (Edit mode only)
+├── ForgeBridge     plays VFX Forge templates for ctx.Forge (runtime only)
+├── ForgeAssets/    VFX Forge templates (Models), Rojo-synced .rbxmx files
 └── Effects/        one ModuleScript per effect
+ReplicatedStorage/Shared/Packages/ Wally packages (ForgeVFX)
 ReplicatedStorage/Assets/Meshes/   published mesh templates (Studio-only, made by MeshFactory)
 ReplicatedStorage/Assets/VFX/      art library (Studio-only), see references/textures.md
 StarterPlayer/StarterPlayerScripts/Client   VFXHarness test bench (src/client/init.client.luau)
@@ -27,7 +30,8 @@ Full structure, naming, asset, sync, engine-gotcha and testing conventions:
 checklist are part of this skill.
 
 Effects run on the client. Effects may require `MeshParticles`; they must never
-require `MeshFactory` or `VFXScrub` (edit-time tools).
+require `MeshFactory` or `VFXScrub` (edit-time tools), nor `ForgeBridge` or ForgeVFX
+(play Forge templates with `ctx.Forge`).
 
 ## Workflow
 
@@ -39,6 +43,9 @@ require `MeshFactory` or `VFXScrub` (edit-time tools).
    fits, say what texture you'd want and use the closest existing one for now.
 4. **Meshes:** if the effect needs a mesh shape (slash arc, shockwave, spikes,
    shards, rocks), follow `references/meshes.md` before writing the effect.
+   **Forge:** if the effect is authored in VFX Forge, or needs Forge mesh VFX, bezier
+   projectiles, lightning or ground shockwaves, play those layers from a Forge template
+   with `ctx.Forge` ("VFX Forge layers" in `references/structure.md`). Otherwise stay in Luau.
 5. **Write the module** using the contract and the template in `references/structure.md`.
    Base it on the closest file in `examples/`.
 6. **Expose everything tunable** in `Defaults` (colors, scale, counts, timings).
@@ -82,6 +89,7 @@ return Effect
 | `ctx.Emit(emitter, n)` | Burst particles. Always use this, not `:Emit()`, so slow-mo works. |
 | `ctx.Tween(inst, t, props, style?, dir?)` | Tween in effect time. |
 | `ctx.Wait(t)` | Wait in effect time; returns the effect time that actually passed (add that to per-frame loop clocks). Never use `task.wait` directly. |
+| `ctx.Forge(template, cf?, options?)` | Play a VFX Forge template from `Shared.VFX.ForgeAssets` as a layer (retimed for slow-mo; `options.Scale` / `options.Color`). Non-blocking, returns Forge's env. Only when the effect needs Forge: see "VFX Forge layers" in `references/structure.md`. |
 
 For many mesh pieces (debris, shards), use
 `MeshParticles.Burst(ctx, template, count, config)`; see `references/properties.md`.

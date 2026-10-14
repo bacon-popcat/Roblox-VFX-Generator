@@ -13,15 +13,27 @@
 -- effects (WindSpinSlashCombo). The effect's math.random is seeded; emitter and
 -- MeshParticles randomness is not, so particle scatter varies between runs.
 -- The ctx built here mirrors VFXPlayer's; keep the two in sync.
+--
+-- Forge layers (ctx.Forge) are runtime-only by the ForgeVFX license, so in Edit
+-- mode they are skipped with a warning and the rest of the effect still plays.
+-- In Play mode they play, but the freeze can't stop them: they keep moving at
+-- `timeScale`, so scrub Forge effects at a very low timeScale (e.g. 0.02).
 
 local TweenService = game:GetService("TweenService")
+
+local ForgeBridge = require(script.Parent:WaitForChild("ForgeBridge"))
 
 local VFXScrub = {}
 
 local effectsFolder = script.Parent:WaitForChild("Effects")
 local FOLDER_NAME = "VFXScrub"
+local forgeEnvs = {} -- Forge layers of the current scrub (Play mode only)
 
 function VFXScrub.Clear()
+	for _, env in forgeEnvs do
+		env.Clear()
+	end
+	table.clear(forgeEnvs)
 	local folder = workspace:FindFirstChild(FOLDER_NAME)
 	if folder then
 		folder:Destroy()
@@ -114,6 +126,20 @@ function VFXScrub.Play(name, cframe, overrides, stopAt, timeScale, seed)
 		part.CFrame = at or cframe
 		part.Parent = folder
 		return part
+	end
+
+	local skippedForge = false
+	function ctx.Forge(template, at, options)
+		if not ForgeBridge.Available() then
+			if not skippedForge then
+				skippedForge = true
+				warn(("VFXScrub: '%s' has Forge layers; they only play in Play mode (skipped)"):format(name))
+			end
+			return { Finished = { await = function() end }, Clear = function() end }
+		end
+		local _, env = ForgeBridge.Emit(template, at or cframe, folder, timeScale, options)
+		table.insert(forgeEnvs, env)
+		return env
 	end
 
 	task.spawn(function()
