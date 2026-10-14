@@ -20,8 +20,8 @@ local VFXPlayer = require(VFXFolder:WaitForChild("VFXPlayer"))
 local Effects = VFXFolder:WaitForChild("Effects")
 
 local player = Players.LocalPlayer
-local SPEEDS = { 0.1, 0.25, 0.5, 1.25, 1.5, 2, 1}
-local speedIndex = #SPEEDS
+local SPEEDS = { 0.1, 0.25, 0.5, 1, 1.25, 1.5, 2}
+local speedIndex = 4
 local current = nil
 local looping = false
 
