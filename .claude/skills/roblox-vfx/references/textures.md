@@ -40,8 +40,14 @@ Prefer these. Add new rows as textures are uploaded (name | id | use).
 | Blackhole spec | rbxassetid://73527526679754 | 4x4 flipbook, bright arcs hugging a core |
 | Blurry Black Hole | rbxassetid://107972524433656 | Soft dark disc; halo/shadow behind a core |
 | Spec31 | rbxassetid://16879822194 | Small solid speck; debris chips, suction specks |
-
 | EnergyBeamV | rbxassetid://106782541570725 | Custom (Blender-made): bright core with wispy strands, tiles along length; Beam texture |
+| Starburst | rbxassetid://136210055019402 | Custom: ~22 irregular spikes on a jagged filled core, white; explosion flash (tint the big copy, white smaller copy on top), flat on the floor = floor rays |
+| FireSpotsRed | rbxassetid://92499735743228 | Custom: big soft red-brown blotches (~38% cover), equirect 2:1 for SmoothSphere UVs; colour baked (MeshPart textures ignore Part.Color) |
+| FireLava | rbxassetid://131956550786641 | Custom: large glowing orange lava patches (~32% cover, bright cores), equirect 2:1 for SmoothSphere |
+| FireAsh 1-7 | rbxassetid://128007792525042, 122706754957213, 109708028738049, 97494743621675, 80840226643347, 132990866216076, 108174695325105 | Custom: dark maroon sphere shell with growing holes (charred rim, grey-ash edge) eating it from the bottom (v=1) up; swap TextureID through the frames to crumble a ball to ash (hold the shell upright, fade the body inside fast) |
+| LavaCracks | rbxassetid://89120608419510 | Custom: ~13 large angular cells with outward tendrils, elongated 1.75:1, baked yellow core / orange glow; flat on the ground, LightEmission 1 |
+| RadialDust | rbxassetid://72281968873307 | Custom: soft radial smudges around an empty centre, white; tinted dark = dust blown out across the floor |
+| BallBand | rbxassetid://106509801411038 | Custom: dark maroon with a thick glowing band (v~0.37, above the equator so it reads from above) and a thin one (v~0.47), equirect 2:1; upright on squashed balls side by side, the bands line up into one stripe |
 
 Gradient strips used as mesh `TextureID` should fade left to right (along U),
 matching the MeshFactory UV layout.

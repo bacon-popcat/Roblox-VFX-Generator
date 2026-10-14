@@ -123,6 +123,28 @@ strands and flat crescent strokes spinning around it (`CoreSpinSpeed`) and a fai
 ring at its base.
 `BlackHole = false` gives the suction only.
 
+### Fireball explosion
+
+`FireballExplosion`: stylized cartoon explosion on the ground below `ctx.CFrame`. Play
+returns at ~2.9 s; the cracks fade by ~3.6 s and the last wisps by ~4.3 s.
+1. A starburst flash bursts into a cluster of six balls that fly out of a small core in
+   ~0.03 s. The balls cool from white-hot, through
+   cream and orange with big blotchy spots, into dark maroon balls with glowing rims and
+   lava patches.
+2. The four lower balls squash into a lumpy base pile (separate balls, not one mesh). Each
+   wears an upright `BallBand` shell, so their bands line up into one glowing stripe.
+3. Everything crumbles to ash, the base pile first, then the two top balls. Each ball's
+   shell steps through the `FireAsh` textures while its body fades, and it sheds ash
+   flakes and charcoal shell chips (`ShellShard1/2`, MeshParticles).
+4. The supporting layers: three fire comets (one Beam each, bent into their flight
+   parabola), sparks, a faint shock dome, floor glow/rays/radial dust, lava cracks
+   (`CrackStart`, `CrackTime`), embers, haze and smoke wisps.
+
+Timeline Defaults: `CoolTime`, `TopDelay`, `SinkTime`, `BaseCrumbleStart`/`BaseCrumbleTime`,
+`CrumbleStart`/`CrumbleTime`. Spot, lava, band and ash colours are baked into their
+textures. The module preloads its custom textures from a top-level `task.spawn` +
+`pcall(ContentProvider.PreloadAsync)`. That doesn't yield the require, so it is allowed.
+
 ## Effect module contract
 
 Base new effects on this template. Order: header, requires, `ASSETS`, constants,
@@ -309,6 +331,35 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
   then `ctx.Wait(1/60)` before moving again (see the shed streaks in `WindSpinSlash`).
 - Library meshes are `SpecialMesh` FileMeshes: size with `SpecialMesh.Scale` (in native
   mesh units; get native size once via `AssetService:CreateMeshPartAsync(id).MeshSize`).
+- `MeshPart.TextureID` ignores `Part.Color` (the texture's RGB shows as-is), and its alpha
+  only cuts out holes once the part's `Transparency` is > 0 (0.02 is enough); at 0 the
+  transparent pixels show the texture's RGB. So bake shell colours into the texture, keep
+  a separate Neon body inside for an animated colour, and swap `TextureID` for stages
+  (ash/dissolve frames).
+- Neon renders colours lighter and yellower: `(255, 145, 35)` reads lemon. Push orange to
+  roughly `(255, 110, 25)`. Dark Neon colours read much brighter than their RGB.
+- `ForceField` material ignores `TextureID` and gives only a hairline rim (it also hides
+  what's inside at `Transparency` 0). For a fresnel rim on a ball, use a camera-facing
+  `thick ring 2` particle sized ~1.3x the radius with `ZOffset` = radius, so it draws at
+  the front surface.
+- Changing an emitter's `Color` / `Size` / `Transparency` applies to particles already
+  alive, so one long-lived particle can be animated per frame. `LockedToPart` particles
+  follow their attachment when it moves.
+- `Trail.Lifetime` is real time, so trails are wrong in slow-mo and fade during a VFXScrub
+  freeze. For projectile trails, use a Beam from the launch point to the head, bent into
+  the flight parabola: `CurveSize0 = |v0| * t / 3`, `CurveSize1 = -|v(t)| * t / 3`, with
+  both attachments' X axis along their velocity (verified).
+- `Glass` on a dark part renders nearly invisible (it refracts the background). Use
+  SmoothPlastic or Neon for dark solid shapes.
+- Particles emitted inside an opaque mesh are hidden by it: spawn them above or in front.
+- `ParticleEmitter.Squash`: positive values make the particle taller and narrower, and
+  negative values make it wider. With `VelocityParallel`, use positive values for streaks
+  along the flight.
+- Layout frames: `CFrame.lookAt(p, p + towardViewer)` has its RightVector pointing to the
+  viewer's left. Build the frame facing away from the viewer
+  (`CFrame.lookAt(p, p - towardViewer)`) so that +X = the viewer's right.
+- A circular band (Tube mesh) can't follow a lumpy surface. Paint the band into the
+  mesh's own texture instead, or paint it on each piece (`BallBand` on the squashed balls).
 
 ## Rules
 

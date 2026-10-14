@@ -14,7 +14,7 @@
 --   * Y is up. Flat shapes lie in the XZ plane.
 --   * U runs along the shape's length/around it, V runs across it (0 -> 1),
 --     so a horizontal gradient texture fades along a slash.
---   * Keep meshes small: under ~500 triangles for VFX.
+--   * Keep meshes small: under ~1000 triangles for VFX (the budget in SKILL.md).
 
 local AssetService = game:GetService("AssetService")
 local HttpService = game:GetService("HttpService")
