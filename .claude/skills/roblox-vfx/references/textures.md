@@ -41,8 +41,25 @@ Prefer these. Add new rows as textures are uploaded (name | id | use).
 | Blurry Black Hole | rbxassetid://107972524433656 | Soft dark disc; halo/shadow behind a core |
 | Spec31 | rbxassetid://16879822194 | Small solid speck; debris chips, suction specks |
 
+| EnergyBeamV | rbxassetid://106782541570725 | Custom (Blender-made): bright core with wispy strands, tiles along length; Beam texture |
+
 Gradient strips used as mesh `TextureID` should fade left to right (along U),
 matching the MeshFactory UV layout.
+
+## Making new textures
+
+When nothing in the library fits, generate one (white RGB, shape in alpha; tint with
+`Color`):
+1. Draw it with numpy inside Blender (`mcp__Blender__execute_blender_code`; Blender's
+   Python has numpy, system Python does not) and save a PNG to the scratchpad.
+2. Serve that folder over HTTP (`python -m http.server 8765 --bind 127.0.0.1`, in the
+   background); `upload_image` only takes http URLs. Upload `http://127.0.0.1:8765/<file>`.
+3. Verify by reading pixels back: `AssetService:CreateEditableImageAsync(Content.fromAssetId(id))`.
+4. Add a row to the table above.
+
+Beam and Trail textures: X spans the beam's width, Y runs along its length and tiles,
+so draw them tall (e.g. 128 x 512) with the streak running vertically. A wide texture
+shows up as stripes across the beam.
 
 <!-- Add your own uploaded textures below, e.g.
 | soft_glow | rbxassetid://000000 | Round soft glow for cores and auras |

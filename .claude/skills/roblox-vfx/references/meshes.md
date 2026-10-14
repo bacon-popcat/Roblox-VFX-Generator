@@ -63,8 +63,10 @@ Add it to `MeshFactory.Generators` and to the table above once it works.
 
 ## Troubleshooting
 
-- **Publish fails with a permissions error:** execute_luau may not be allowed to
-  create assets. Tell the user; publishing may need to run from a Studio plugin.
+- **Publish fails with "CreateAssetAsync and CreateAssetVersionAsync are not available
+  yet":** confirmed for execute_luau (2026-10-13). Building and previewing still work.
+  To get a real mesh asset, export geometry as FBX to `assets/meshes/` and ask the user
+  to import it with Studio's 3D Importer, then record the MeshId.
 - **Wrong owner:** if the game is group-owned, pass
   `{ Id = groupId, Type = Enum.AssetCreatorType.Group }` as the creator so the mesh
   loads in that game.
@@ -73,5 +75,9 @@ Add it to `MeshFactory.Generators` and to the table above once it works.
 
 ## Not for this tool
 
-Detailed organic or prop models (a sword, a creature, a tree). For those, use
-the Studio MCP's generate_mesh, or ask the user for a model.
+Detailed organic or prop models (a sword, a creature, a tree), or shapes that are much
+easier to model than to write as a generator. Model those in Blender
+(`mcp__Blender__execute_blender_code`, in a separate scene so the user's scene is
+untouched). Then either export triangles + UVs (convert Blender Z-up to Roblox Y-up as
+`(x, z, -y)`) and feed them to `MeshFactory.Build` for previews, or export FBX for the
+3D Importer. The Studio MCP's generate_mesh is the quick AI alternative.
