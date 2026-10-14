@@ -1,0 +1,9 @@
+{
+  "name": "forge-vfx",
+  "tree": {
+    "$path": "src",
+    "pkg": {
+      "$path": "src/pkg"
+    }
+  }
+}

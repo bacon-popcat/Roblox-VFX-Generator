@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"target": "ESNext",
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"declaration": true,
+		"noLib": true,
+		"typeRoots": ["node_modules/@rbxts"],
+		"rootDir": ".",
+		"outDir": "out",
+		"incremental": true,
+		"tsBuildInfoFile": "out/tsconfig.tsbuildinfo"
+	},
+	"include": ["index.d.ts"]
+}

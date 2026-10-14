@@ -1,0 +1,8 @@
+[package]
+name = "oscar/vfx"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
+ForgeVFX = "zilibobi/forge-vfx@2.4.0"
