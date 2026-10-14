@@ -27,6 +27,7 @@ VFX/                                  (repo root)
     │   ├── MeshParticles.luau        MeshPart "particles" (client sim)
     │   ├── MeshFactory.luau          edit-time mesh generator/publisher
     │   ├── VFXScrub.luau             edit-time freeze-frame player for screenshots
+    │   ├── VFXCamera.luau            locks the camera on an effect at fixed angles (side/top/3/4)
     │   ├── ForgeBridge.luau          plays VFX Forge templates for ctx.Forge
     │   ├── ForgeAssets/<Name>.rbxmx  VFX Forge templates (Models), see "VFX Forge layers"
     │   └── Effects/<Name>.luau       one ModuleScript per effect
@@ -47,6 +48,7 @@ VFX/                                  (repo root)
 | `src/shared/VFX/MeshParticles.luau` | `ReplicatedStorage.Shared.VFX.MeshParticles` | ModuleScript |
 | `src/shared/VFX/MeshFactory.luau` | `ReplicatedStorage.Shared.VFX.MeshFactory` | ModuleScript |
 | `src/shared/VFX/VFXScrub.luau` | `ReplicatedStorage.Shared.VFX.VFXScrub` | ModuleScript |
+| `src/shared/VFX/VFXCamera.luau` | `ReplicatedStorage.Shared.VFX.VFXCamera` | ModuleScript |
 | `src/shared/VFX/ForgeBridge.luau` | `ReplicatedStorage.Shared.VFX.ForgeBridge` | ModuleScript |
 | `src/shared/VFX/ForgeAssets/<Name>.rbxmx` | `ReplicatedStorage.Shared.VFX.ForgeAssets.<Name>` | Model (Forge template) |
 | `src/shared/Packages/ForgeVFX.lua` | `ReplicatedStorage.Shared.Packages.ForgeVFX` | ModuleScript (Wally link to the ForgeVFX package) |

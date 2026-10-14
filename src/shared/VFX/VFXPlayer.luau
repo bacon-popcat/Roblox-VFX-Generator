@@ -2,12 +2,19 @@
 -- Plays effects by name. Each effect gets a "ctx" with helpers so that
 -- timing respects TimeScale (slow-mo in the harness) and cleanup is automatic.
 
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local ForgeBridge = require(script.Parent:WaitForChild("ForgeBridge"))
+local VFXCamera = require(script.Parent:WaitForChild("VFXCamera"))
 
 local VFXPlayer = {}
 VFXPlayer.TimeScale = 1
+-- Camera lock (client only): when set, every Play points the camera at the
+-- effect from this angle (a VFXCamera preset name or {Yaw, Pitch}). Set it with
+-- VFXPlayer.SetCamera; nil = free camera.
+VFXPlayer.CameraAngle = nil
+VFXPlayer.CameraOptions = nil
 
 local effectsFolder = script.Parent:WaitForChild("Effects")
 
@@ -38,9 +45,25 @@ local function resolveParams(def, overrides)
 	return params
 end
 
+-- Lock the camera to `angle` for every following Play (nil unlocks). If `cframe`
+-- is given, the camera moves there now instead of waiting for the next Play.
+function VFXPlayer.SetCamera(angle, options, cframe)
+	VFXPlayer.CameraAngle = angle
+	VFXPlayer.CameraOptions = options
+	if angle == nil then
+		VFXCamera.Unlock()
+	elseif cframe and RunService:IsClient() then
+		VFXCamera.Lock(cframe, angle, options)
+	end
+end
+
 function VFXPlayer.Play(name, cframe, overrides)
 	local def = getEffect(name)
 	local timeScale = VFXPlayer.TimeScale
+
+	if VFXPlayer.CameraAngle and RunService:IsClient() then
+		VFXCamera.Lock(cframe, VFXPlayer.CameraAngle, VFXPlayer.CameraOptions)
+	end
 
 	local folder = Instance.new("Folder")
 	folder.Name = name

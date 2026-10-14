@@ -5,6 +5,7 @@
 --   Click an effect button to play it on the target dummy.
 --   [R] replay   [L] loop   [ / ] slower / faster   [T] move target here
 --   [P] print current params as a Luau table (paste into Defaults)
+--   [C] camera: free -> 3/4 -> side -> front -> top -> back, locked on the target
 -- Every key also has an on-screen button for touch; "Hide" collapses the panel.
 --
 -- Live tuning: during Play, select Workspace > VFXHarnessConfig > <Effect>
@@ -15,6 +16,8 @@
 -- effect name to play it from this script, e.g. for Play-mode captures of effects with
 -- Forge layers, which must play from game code, not from plugin snippets. Optional
 -- "Speed" (number) sets the playback speed for it. "Play" is cleared after each play.
+-- "Camera" (string: a VFXCamera angle, or "" for free) locks the camera on the target;
+-- "CameraDistance" and "CameraFOV" (numbers) frame it.
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -22,6 +25,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local VFXFolder = ReplicatedStorage.Shared:WaitForChild("VFX")
 local VFXPlayer = require(VFXFolder:WaitForChild("VFXPlayer"))
+local VFXCamera = require(VFXFolder:WaitForChild("VFXCamera"))
 local Effects = VFXFolder:WaitForChild("Effects")
 
 local player = Players.LocalPlayer
@@ -29,6 +33,7 @@ local SPEEDS = { 0.1, 0.25, 0.5, 1, 1.25, 1.5, 2}
 local speedIndex = 4
 local current = nil
 local looping = false
+local cameraIndex = 0 -- 0 = free, else index into VFXCamera.Order
 
 ---------------------------------------------------------------- config
 local config = Instance.new("Configuration")
@@ -82,6 +87,27 @@ if player.Character then
 	task.defer(placeTarget)
 end
 
+---------------------------------------------------------------- camera
+local function cameraOptions()
+	local distance = config:GetAttribute("CameraDistance")
+	local fov = config:GetAttribute("CameraFOV")
+	return {
+		Distance = if typeof(distance) == "number" and distance > 0 then distance else nil,
+		FieldOfView = if typeof(fov) == "number" and fov > 0 then fov else nil,
+	}
+end
+
+-- Re-applies the current angle (also after the target moves or framing changes)
+local function applyCamera()
+	local angle = VFXCamera.Order[cameraIndex]
+	VFXPlayer.SetCamera(angle, cameraOptions(), target.CFrame)
+end
+
+local function cycleCamera()
+	cameraIndex = (cameraIndex + 1) % (#VFXCamera.Order + 1)
+	applyCamera()
+end
+
 ---------------------------------------------------------------- playback
 local function play(name)
 	current = name
@@ -131,7 +157,11 @@ local actions = {
 	{ label = "Loop", key = Enum.KeyCode.L, run = function()
 		looping = not looping
 	end },
-	{ label = "Target", key = Enum.KeyCode.T, run = placeTarget },
+	{ label = "Target", key = Enum.KeyCode.T, run = function()
+		placeTarget()
+		applyCamera()
+	end },
+	{ label = "Camera", key = Enum.KeyCode.C, run = cycleCamera },
 	{ label = "Slower", key = Enum.KeyCode.LeftBracket, run = function()
 		speedIndex = math.max(1, speedIndex - 1)
 	end },
@@ -236,10 +266,11 @@ local loopButton
 local function refreshStatus()
 	local lines = {
 		("Speed %.2fx | Loop %s"):format(SPEEDS[speedIndex], looping and "ON" or "off"),
+		"Cam " .. (VFXCamera.Order[cameraIndex] or "free"),
 		current and ("> " .. current) or "> (none)",
 	}
 	if UserInputService.KeyboardEnabled then
-		table.insert(lines, "R replay  L loop  [ ] speed\nT move target  P print params")
+		table.insert(lines, "R replay  L loop  [ ] speed\nT move target  P print params\nC camera angle")
 	end
 	status.Text = table.concat(lines, "\n")
 	loopButton.BackgroundColor3 = if looping then Color3.fromRGB(70, 110, 70) else Color3.fromRGB(45, 45, 55)
@@ -310,6 +341,28 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		end
 	end
 end)
+
+config:SetAttribute("Camera", "")
+config:SetAttribute("CameraDistance", 20)
+config:SetAttribute("CameraFOV", 70)
+config:GetAttributeChangedSignal("Camera"):Connect(function()
+	local angle = config:GetAttribute("Camera")
+	if angle == "" or angle == nil then
+		cameraIndex = 0
+	else
+		local index = table.find(VFXCamera.Order, angle)
+		if not index then
+			warn(("VFXHarness: no camera angle '%s' (use %s)"):format(
+				tostring(angle), table.concat(VFXCamera.Order, ", ")))
+			return
+		end
+		cameraIndex = index
+	end
+	applyCamera()
+	refreshStatus()
+end)
+config:GetAttributeChangedSignal("CameraDistance"):Connect(applyCamera)
+config:GetAttributeChangedSignal("CameraFOV"):Connect(applyCamera)
 
 config:SetAttribute("Play", "")
 config:GetAttributeChangedSignal("Play"):Connect(function()
