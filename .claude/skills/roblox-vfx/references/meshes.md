@@ -64,9 +64,8 @@ Add it to `MeshFactory.Generators` and to the table above once it works.
 ## Troubleshooting
 
 - **Publish fails with "CreateAssetAsync and CreateAssetVersionAsync are not available
-  yet":** confirmed for execute_luau (2026-10-13). Building and previewing still work.
-  To get a real mesh asset, export geometry as FBX to `assets/meshes/` and ask the user
-  to import it with Studio's 3D Importer, then record the MeshId.
+  yet":** the Studio beta feature for asset creation is off. Ask the user to enable it
+  (and restart Studio). Fallback: export FBX to `assets/meshes/` for the 3D Importer.
 - **Wrong owner:** if the game is group-owned, pass
   `{ Id = groupId, Type = Enum.AssetCreatorType.Group }` as the creator so the mesh
   loads in that game.
@@ -78,6 +77,14 @@ Add it to `MeshFactory.Generators` and to the table above once it works.
 Detailed organic or prop models (a sword, a creature, a tree), or shapes that are much
 easier to model than to write as a generator. Model those in Blender
 (`mcp__Blender__execute_blender_code`, in a separate scene so the user's scene is
-untouched). Then either export triangles + UVs (convert Blender Z-up to Roblox Y-up as
-`(x, z, -y)`) and feed them to `MeshFactory.Build` for previews, or export FBX for the
-3D Importer. The Studio MCP's generate_mesh is the quick AI alternative.
+untouched). Export triangles + UVs as JSON (convert Blender Z-up to Roblox Y-up as
+`(x, z, -y)`), then get the data into Studio without retyping it: write the JSON to
+`src/shared/TempMeshData.json` (Rojo syncs it as a ModuleScript), check a checksum
+(triangle count and index sum) against the file, `require` it, `MeshFactory.Build` +
+`MeshFactory.Publish` (generator name "Blender"), then delete the temp file. Never paste
+large mesh data into execute_luau by hand; it gets corrupted. Also save an FBX to
+`assets/meshes/` as the source. The Studio MCP's generate_mesh is the quick AI alternative.
+
+| Mesh | Id | Use |
+|---|---|---|
+| SpiralRibbon | rbxassetid://129291594721141 | Blender: 2-turn tapering spiral ribbon, ~5.6 x 6.7 x 4.9; vortex/tornado layer (`assets/meshes/SpiralRibbon.fbx`) |
