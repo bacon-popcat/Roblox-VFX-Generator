@@ -44,10 +44,10 @@ Prefer these. Add new rows as textures are uploaded (name | id | use).
 | Starburst | rbxassetid://136210055019402 | Custom: ~22 irregular spikes on a jagged filled core, white; explosion flash (tint the big copy, white smaller copy on top), flat on the floor = floor rays |
 | FireSpotsRed | rbxassetid://92499735743228 | Custom: big soft red-brown blotches (~38% cover), equirect 2:1 for SmoothSphere UVs; colour baked (MeshPart textures ignore Part.Color) |
 | FireLava | rbxassetid://131956550786641 | Custom: large glowing orange lava patches (~32% cover, bright cores), equirect 2:1 for SmoothSphere |
-| FireAsh 1-7 | rbxassetid://128007792525042, 122706754957213, 109708028738049, 97494743621675, 80840226643347, 132990866216076, 108174695325105 | Custom: dark maroon sphere shell with growing holes (charred rim, grey-ash edge) eating it from the bottom (v=1) up; swap TextureID through the frames to crumble a ball to ash (hold the shell upright, fade the body inside fast) |
+| FireMelt 1-7 | rbxassetid://97192842313897, 107466624382592, 71343323375230, 123175405602181, 131955014206452, 89698118968969, 70595154030083 | Custom: dark maroon sphere shell with growing holes (dark charred edges) eating it from the bottom (v=1) up; swap TextureID through the frames to dissolve a ball (hold the shell upright, fade the body inside fast) |
 | LavaCracks | rbxassetid://89120608419510 | Custom: ~13 large angular cells with outward tendrils, elongated 1.75:1, baked yellow core / orange glow; flat on the ground, LightEmission 1 |
 | RadialDust | rbxassetid://72281968873307 | Custom: soft radial smudges around an empty centre, white; tinted dark = dust blown out across the floor |
-| BallBand | rbxassetid://106509801411038 | Custom: dark maroon with a thick glowing band (v~0.37, above the equator so it reads from above) and a thin one (v~0.47), equirect 2:1; upright on squashed balls side by side, the bands line up into one stripe |
+| BandArc | rbxassetid://132232127473921 | Custom: glowing lower half of an ellipse (the front of a flat ring seen from ~25 deg up), square, white; camera-facing in front of a gas dome = a glowing band around it |
 
 Gradient strips used as mesh `TextureID` should fade left to right (along U),
 matching the MeshFactory UV layout.

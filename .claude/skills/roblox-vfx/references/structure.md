@@ -131,17 +131,18 @@ returns at ~2.9 s; the cracks fade by ~3.6 s and the last wisps by ~4.3 s.
    ~0.03 s. The balls cool from white-hot, through
    cream and orange with big blotchy spots, into dark maroon balls with glowing rims and
    lava patches.
-2. The four lower balls squash into a lumpy base pile (separate balls, not one mesh). Each
-   wears an upright `BallBand` shell, so their bands line up into one glowing stripe.
-3. Everything crumbles to ash, the base pile first, then the two top balls. Each ball's
-   shell steps through the `FireAsh` textures while its body fades, and it sheds ash
-   flakes and charcoal shell chips (`ShellShard1/2`, MeshParticles).
+2. The four lower balls sink into a dark gas dome (particles only, no mesh). It is
+   built from stacked, flattened, camera-facing discs centred above the ground, a lit rim
+   and two glowing `BandArc` bands in front, and it puffs out in ~0.06 s at `GasStart`.
+3. The two top balls dissolve quickly (`CrumbleStart`/`CrumbleTime`, 0.6-0.8 s): their
+   shell steps through the `FireMelt` textures while the body fades. The gas dome thins
+   out by ~1.2 s.
 4. The supporting layers: three fire comets (one Beam each, bent into their flight
    parabola), sparks, a faint shock dome, floor glow/rays/radial dust, lava cracks
    (`CrackStart`, `CrackTime`), embers, haze and smoke wisps.
 
-Timeline Defaults: `CoolTime`, `TopDelay`, `SinkTime`, `BaseCrumbleStart`/`BaseCrumbleTime`,
-`CrumbleStart`/`CrumbleTime`. Spot, lava, band and ash colours are baked into their
+Timeline Defaults: `CoolTime`, `TopDelay`, `SinkTime`, `GasStart`/`GasTime`,
+`CrumbleStart`/`CrumbleTime`. Spot, lava and melt colours are baked into their
 textures. The module preloads its custom textures from a top-level `task.spawn` +
 `pcall(ContentProvider.PreloadAsync)`. That doesn't yield the require, so it is allowed.
 
@@ -359,7 +360,8 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
   viewer's left. Build the frame facing away from the viewer
   (`CFrame.lookAt(p, p - towardViewer)`) so that +X = the viewer's right.
 - A circular band (Tube mesh) can't follow a lumpy surface. Paint the band into the
-  mesh's own texture instead, or paint it on each piece (`BallBand` on the squashed balls).
+  mesh's own texture instead, or draw the band as a camera-facing arc particle in front
+  (`BandArc` on the gas dome).
 
 ## Rules
 

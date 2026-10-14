@@ -91,12 +91,12 @@ Duration 0.8-1.5.
 ### Stylized cartoon explosion (fireball balls)
 See `src/shared/VFX/Effects/FireballExplosion.luau`. Real time ~3.6 s (Play returns at ~2.9 s).
 1. Starburst flash 0-0.05 s (orange spikes, white core on top, ZOffset clear of the ground).
-2. Balls (SmoothSphere) burst out of a small core at 0.03 s: 20% size / 30% spread to
-   85% / 90% by 0.06 s, full by 0.12-0.2 s. Colour timeline: white
+2. Balls (SmoothSphere) burst out of a small core at 0.03 s and reach full size by 0.05 s,
+   then keep swelling ~25%. Update them every rendered frame (`ctx.Wait(1/240)`), or the
+   20 ms burst lags in slow-mo. Colour timeline: white
    until ~0.12 s, cream with faint spots at 0.2 s, orange with big blotches at 0.3 s. The
    lower balls go dark maroon with bright rims by ~0.42 s; the top two hold the spotted
-   orange ~0.22 s longer, then show large glowing lava patches (~0.62-0.75 s) and fade to
-   near-unlit maroon. Never pure black. Drop the rim glow quickly once a ball is dark,
+   orange ~0.1 s longer, then show large glowing lava patches before they dissolve. Never pure black. Drop the rim glow quickly once a ball is dark,
    or it reads as glass.
 3. 0.03-0.25 s: a soft grey ring for the shock dome (no fill: centred on the ground it
    reads as an arc), a diffuse orange bloom, a tight floor glow, flat spiky floor rays,
@@ -104,10 +104,11 @@ See `src/shared/VFX/Effects/FireballExplosion.luau`. Real time ~3.6 s (Play retu
    or it floods the floor.
 4. Comets from ~0.035 s at ~28 studs/s with a slight droop: a thin smoke ribbon, a flame
    over the last 0.05-0.15 s of path, and a small hot head glow.
-5. 0.42-0.62 s: the lower balls squash into a lumpy pile of separate balls on the ground,
-   each with an upright band shell (the bands line up into one stripe). The pile crumbles
-   to ash 0.9-1.2 s: ash texture frames, a fast-fading body, ash flakes and chips.
-6. 1.1-1.6 s: the top balls crumble to ash the same way.
+5. 0.42 s: a dark gas dome puffs out under the top balls in ~0.06 s (stacked, flattened
+   camera-facing discs centred above the ground, a lit rim and two glowing band arcs in
+   front). It swallows the lower balls, the bands fade by ~0.95 s and the dome thins out
+   0.9-1.2 s.
+6. 0.6-0.8 s: the top balls dissolve bottom-up (melt texture frames, fast-fading body).
 7. Lava cracks 0.78-3.6 s (orange to ~3 s, deepening to orange-red), with embers 0.3-1.8 s
    and thin grey wisps from 1.4 s until Play returns.
 

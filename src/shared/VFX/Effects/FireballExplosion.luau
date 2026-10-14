@@ -1,11 +1,12 @@
 -- ModuleScript: ReplicatedStorage/Shared/VFX/Effects/FireballExplosion
 -- Stylized cartoon explosion: a spiky flash bursts into a cluster of glowing balls
 -- that cool from white-hot through spotted orange into dark maroon balls with glowing
--- rims; the lower balls squash into a lumpy dark pile with a glowing band, and
--- everything crumbles to ash, leaving glowing lava cracks on the ground. Layers:
--- starburst flash, fireball balls (body, spot/lava/band shells, rim glow, halo), shock
--- dome, floor glow/rays/dust, sparks, fire comets with smoke trails, lava cracks, ash
--- flakes and chips, embers, ground haze and smoke wisps, light.
+-- rims; the lower balls melt into a dark gas cloud that puffs out under the top two,
+-- ringed by glowing bands, and the top balls dissolve away, leaving glowing lava
+-- cracks on the ground. Layers: starburst flash, fireball balls (body, spot/lava
+-- shells, rim glow, halo), shock dome, floor glow/rays/dust, sparks, fire comets with
+-- smoke trails, dark gas dome with glowing bands, lava cracks, embers, ground haze and
+-- smoke wisps, light.
 --
 -- ctx.CFrame: the explosion point. The effect sits on the ground below it;
 -- LookVector (toward the viewer) only orients the layout.
@@ -13,18 +14,14 @@
 -- Each ball is a Neon body (its colour cools over time) inside textured shells
 -- (MeshPart texture alpha cuts out once Transparency > 0; MeshPart textures ignore
 -- Part.Color, so their colours are baked): blotchy spots while hot, then glowing lava
--- patches (top balls) or a glowing band (lower balls, squashed into the base pile, so
--- the bands line up into one stripe). To crumble, a ball's shell steps through the Ash
--- textures (held upright, holes eat it from the bottom up) while its body fades and it
--- sheds ash flakes. The top balls cool ~TopDelay later and crumble last. The rim is a
--- camera-facing soft ring particle per ball, edited live every frame.
--- Meshes: SmoothSphere (MeshFactory "Sphere"), ShellShard1/2 (Blender,
--- assets/meshes/ShellShard.fbx).
+-- patches on the top balls. The top balls cool ~TopDelay later; to vanish, their lava
+-- shell steps through the FireMelt textures (held upright, holes eat it bottom-up) while
+-- the body fades. The rim is a camera-facing soft ring particle per ball, edited live.
+-- The gas dome is particles only: a dark soft disc centred on the ground (the ground
+-- hides its lower half, so it reads as a dome), a lit shell rim, and flat neon rings.
+-- Mesh: SmoothSphere (MeshFactory "Sphere").
 
 local ContentProvider = game:GetService("ContentProvider")
-
-local VFX = script.Parent.Parent
-local MeshParticles = require(VFX:WaitForChild("MeshParticles"))
 
 -- Library ids from ReplicatedStorage.Assets.VFX. Comment = <Folder>/<CardName>.
 -- "Custom" = made for this effect (numpy in Blender, uploaded with the Studio MCP).
@@ -32,16 +29,18 @@ local ASSETS = {
 	Starburst = "rbxassetid://136210055019402", -- Custom: ~22 irregular spikes on a jagged core, white
 	SpotsRed = "rbxassetid://92499735743228", -- Custom: big soft red-brown blotches (~38% cover), equirect 2:1 (SmoothSphere UVs)
 	Lava = "rbxassetid://131956550786641", -- Custom: large glowing orange lava patches (~32% cover), equirect 2:1
-	Ash = { -- Custom: dark maroon shell with growing holes (charred, grey-ash edges) eating it from the bottom (v = 1) up
-		"rbxassetid://128007792525042",
-		"rbxassetid://122706754957213",
-		"rbxassetid://109708028738049",
-		"rbxassetid://97494743621675",
-		"rbxassetid://80840226643347",
-		"rbxassetid://132990866216076",
-		"rbxassetid://108174695325105",
+	Melt = { -- Custom: dark maroon shell with growing holes (dark charred edges) eating it from the bottom (v = 1) up
+		"rbxassetid://97192842313897",
+		"rbxassetid://107466624382592",
+		"rbxassetid://71343323375230",
+		"rbxassetid://123175405602181",
+		"rbxassetid://131955014206452",
+		"rbxassetid://89698118968969",
+		"rbxassetid://70595154030083",
 	},
-	BallBand = "rbxassetid://106509801411038", -- Custom: dark maroon with a thick glowing band above the equator (v ~0.37) + a thin one (v ~0.47), equirect 2:1
+	GasDisc = "rbxassetid://13580366694", -- StaticVFXTextures/glowing ring (filled disc, bright soft rim): tinted dark = the gas dome
+	GasShell = "rbxassetid://135297534254471", -- StaticVFXTextures/Sphere_Mask_02 (faint sphere shell, lit rim)
+	BandArc = "rbxassetid://132232127473921", -- Custom: glowing lower half of an ellipse (front of a ring seen from ~25 deg up), square, white
 	LavaCracks = "rbxassetid://89120608419510", -- Custom: few large angular cells + tendrils, elongated 1.75:1, baked yellow core / orange glow
 	RadialDust = "rbxassetid://72281968873307", -- Custom: soft radial smudges around an empty centre, white
 	RimRing = "rbxassetid://15058135927", -- StaticVFXTextures/thick ring 2 (soft band; outer edge ~ half-width / 1.3)
@@ -52,8 +51,8 @@ local ASSETS = {
 }
 
 -- Layout frame: X = the viewer's right, Y up, +Z toward the viewer (studs at Scale 1).
--- Balls, relative to the cluster centre: { x, y, z, diameter, top }. Top balls stay
--- round and crumble last; the others squash into the base pile.
+-- Balls, relative to the cluster centre: { x, y, z, diameter, top }. Top balls stay;
+-- the others melt into the gas dome.
 local BALLS = {
 	{ 2.0, 0.2, -0.2, 4.3, false },
 	{ -1.9, 0.1, -0.3, 4.0, false },
@@ -82,10 +81,10 @@ task.spawn(function()
 		decal.Texture = id
 		table.insert(list, decal)
 	end
-	for _, key in { "Starburst", "SpotsRed", "Lava", "LavaCracks", "RadialDust", "BallBand" } do
+	for _, key in { "Starburst", "SpotsRed", "Lava", "LavaCracks", "RadialDust", "BandArc" } do
 		add(ASSETS[key])
 	end
-	for _, id in ASSETS.Ash do
+	for _, id in ASSETS.Melt do
 		add(id)
 	end
 	pcall(ContentProvider.PreloadAsync, ContentProvider, list)
@@ -200,16 +199,6 @@ local function newMesh(ctx, name, material, color, transparency, textureId)
 	return part, template ~= nil
 end
 
--- Template for the shell chips (never parented; MeshParticles clones it)
-local function chipTemplate(name, color)
-	local template = meshFolder and meshFolder:FindFirstChild(name)
-	local part = if template then template:Clone() else Instance.new("Part")
-	if not template then
-		part.Size = Vector3.new(1, 0.25, 1)
-	end
-	return setupPart(part, Enum.Material.Neon, color, 0.35) -- dark Neon renders flat and unlit
-end
-
 -- Emit the whole particles accumulated in `acc`; returns the remainder
 local function drain(ctx, e, acc)
 	if acc >= 1 then
@@ -233,7 +222,8 @@ Effect.Defaults = {
 	DeepColor = Color3.fromRGB(225, 65, 15), -- red-orange balls between orange and dark, flame tails
 	DarkColor = Color3.fromRGB(60, 10, 7), -- dark maroon cooled balls (Neon shows it brighter; never black)
 	RimColor = Color3.fromRGB(255, 70, 18), -- glowing rims once cooled
-	AshColor = Color3.fromRGB(125, 118, 112), -- ash flakes (fading to charcoal)
+	GasColor = Color3.fromRGB(26, 6, 5), -- the dark gas dome
+	BandColor = Color3.fromRGB(255, 60, 15), -- glowing bands around the gas dome
 	SmokeColor = Color3.fromRGB(110, 110, 118), -- comet smoke, ground haze, wisps
 	DustColor = Color3.fromRGB(35, 35, 40), -- dark radial dust blown across the floor
 	DomeColor = Color3.fromRGB(120, 124, 138), -- faint smoky shock dome
@@ -245,26 +235,24 @@ Effect.Defaults = {
 	FlashSize = 7.5, -- studs, half-width of the starburst
 	FlashTime = 0.05, -- seconds the starburst lasts
 	CoolTime = 0.42, -- seconds until the lower balls have turned dark maroon
-	TopDelay = 0.22, -- seconds the top balls hold their spotted orange look before cooling
-	SinkTime = 0.62, -- seconds when the lower balls have squashed into the base pile
-	BaseCrumbleStart = 0.9, -- seconds when the base pile starts crumbling to ash
-	BaseCrumbleTime = 0.3, -- seconds the base pile takes to crumble
-	CrumbleStart = 1.1, -- seconds when the top balls start crumbling to ash
-	CrumbleTime = 0.5, -- seconds the top balls take to crumble
+	TopDelay = 0.1, -- seconds the top balls hold their spotted orange look before cooling
+	SinkTime = 0.62, -- seconds when the lower balls have melted into the gas dome
+	GasStart = 0.42, -- seconds when the gas dome starts puffing out
+	GasTime = 0.78, -- seconds the gas dome lasts (it thins out over its last ~35%)
+	CrumbleStart = 0.6, -- seconds when the top balls start dissolving
+	CrumbleTime = 0.2, -- seconds the top balls take to dissolve
 	CometCount = 3, -- 0-3 fire comets
 	CometSpeed = 28, -- studs/s
 	CometGravity = 15, -- studs/s^2 (a slight droop)
 	CometTime = 1.6, -- seconds a comet flies before it is removed
 	SparkCount = 45,
 	DomeSize = 9, -- studs, final half-width of the shock dome
-	BaseSize = 9.3, -- studs, width of the area over the base pile that embers and ash rise from
+	BaseSize = 10, -- studs, width of the gas dome
 	CrackSize = 4.3, -- studs, half-width of the lava-crack texture (the network fills ~80% of it)
 	CrackStart = 0.78, -- seconds when the cracks appear
 	CrackTime = 2.8, -- seconds the cracks glow
 	EmberRate = 40, -- embers per second while the balls cool and crumble
 	WispRate = 7, -- smoke wisps per second rising off the cracks
-	ChipCount = 16, -- shell chips shed while the base and balls crumble
-	AshRate = 70, -- ash flakes per second while something crumbles
 	LightBrightness = 1,
 	LightRange = 10,
 }
@@ -300,8 +288,6 @@ function Effect.Play(ctx)
 	local sinkT = p.SinkTime
 	local crumbleStart = p.CrumbleStart
 	local crumbleEnd = crumbleStart + p.CrumbleTime
-	local baseCrumbleStart = p.BaseCrumbleStart
-	local baseCrumbleEnd = baseCrumbleStart + p.BaseCrumbleTime
 
 	-- 1. Starburst flash: orange spikes over a wide white-hot core ------------------
 	local flashLife = NumberRange.new(p.FlashTime)
@@ -362,17 +348,12 @@ function Effect.Play(ctx)
 			Diameter = b[4] * ballScale,
 			Top = b[5],
 			Delay = if b[5] then p.TopDelay else 0,
-			-- top balls tumble their spot pattern freely; base balls only turn about Y, since
-			-- they squash along Y (a tilted squashed shell would poke out of the body)
-			Spin = if b[5]
-				then CFrame.Angles(math.random() * 6.28, math.random() * 6.28, math.random() * 6.28)
-				else CFrame.Angles(0, math.random() * 6.28, 0),
+			Spin = CFrame.Angles(math.random() * 6.28, math.random() * 6.28, math.random() * 6.28),
 			SpinRate = (math.random() - 0.5) * 0.8, -- radians/s, slow tumble of the pattern
 			Body = newMesh(ctx, "SmoothSphere", Enum.Material.Neon, p.HotColor, 1),
 			Spots = newMesh(ctx, "SmoothSphere", Enum.Material.Neon, WHITE, 1, ASSETS.SpotsRed),
-			-- outer shell: lava patches on the top balls, the glowing band on the base balls;
-			-- it becomes the ash shell when the ball crumbles
-			Shell = newMesh(ctx, "SmoothSphere", Enum.Material.Neon, WHITE, 1, if b[5] then ASSETS.Lava else ASSETS.BallBand),
+			-- top balls: lava patches, then the dissolving shell (lower balls melt into the gas)
+			Shell = if b[5] then newMesh(ctx, "SmoothSphere", Enum.Material.Neon, WHITE, 1, ASSETS.Lava) else nil,
 			Att = att,
 			Rim = rim,
 			Stage = 0,
@@ -382,8 +363,8 @@ function Effect.Play(ctx)
 
 	-- the cluster bursts out of a small core in ~0.03 s (balls grow and fly apart to their
 	-- places), then keeps swelling slowly
-	local sizeKeys = { { appear, 0.2 }, { appear + 0.03, 0.85 }, { 0.12, 0.96 }, { 0.2, 1 }, { 0.42, 1.06 }, { crumbleEnd, 1.12 } }
-	local spreadKeys = { { appear, 0.3 }, { appear + 0.03, 0.9 }, { 0.12, 1 } }
+	local sizeKeys = { { appear, 0.15 }, { appear + 0.02, 0.9 }, { 0.08, 1.05 }, { 0.2, 1.12 }, { 0.42, 1.18 }, { crumbleEnd, 1.25 } }
+	local spreadKeys = { { appear, 0.2 }, { appear + 0.02, 0.95 }, { 0.08, 1.08 }, { 0.42, 1.15 } }
 	-- per-ball tracks, in "ball time" (effect time minus the ball's Delay)
 	local bodyKeys = {
 		{ 0, p.HotColor },
@@ -401,11 +382,10 @@ function Effect.Play(ctx)
 	-- shell transparency (1 = hidden)
 	local spotsAlpha = { { 0.11, 1 }, { 0.15, 0.93 }, { 0.21, 0.8 }, { 0.3, 0.1 }, { 0.4, 0.1 }, { 0.5, 1 } }
 	local lavaAlpha = { { 0.38, 1 }, { 0.43, 0.05 }, { 0.52, 0.1 }, { 0.62, 0.85 }, { 0.7, 1 } }
-	local bandAlpha = { { 0.42, 1 }, { 0.5, 0.02 } } -- base balls' band shell, effect time
 	local sinkKeys = { { 0.42, 0 }, { sinkT, 1 } }
-	-- shell texture while crumbling: Ash[1..n] over the crumble, k = 0..1
+	-- shell texture while dissolving: Melt[1..n] over the dissolve, k = 0..1
 	local function ashTexture(k)
-		return ASSETS.Ash[math.clamp(1 + math.floor(k * #ASSETS.Ash), 1, #ASSETS.Ash)]
+		return ASSETS.Melt[math.clamp(1 + math.floor(k * #ASSETS.Melt), 1, #ASSETS.Melt)]
 	end
 
 	-- diffuse orange bloom around the hot cluster
@@ -549,7 +529,7 @@ function Effect.Play(ctx)
 	end
 	local smokeColor = p.SmokeColor:Lerp(Color3.new(), 0.45) -- Brightness 2 lifts it back
 
-	-- 5. Cracks, ash, embers, wisps, chips -----------------------------------------------
+	-- 5. Cracks, embers, wisps ------------------------------------------------------------
 	local crackAtt = Instance.new("Attachment")
 	crackAtt.Parent = anchor
 	crackAtt.WorldPosition = (frame * CFrame.new(0, 0.12 * s, 1.5 * s)).Position -- slightly toward the viewer
@@ -574,7 +554,7 @@ function Effect.Play(ctx)
 		Transparency = seq({ { 0, 1 }, { 0.04, 0 }, { 0.3, 0.05 }, { 0.6, 0.25 }, { 0.79, 0.4 }, { 1, 1 } }),
 	})
 
-	-- embers rise from just above the base pile (inside the opaque balls they'd be hidden)
+	-- embers rise from just above the gas dome
 	local box = ctx.Anchor(frame * CFrame.new(0, p.BaseSize * s * 0.32, 0.3 * s))
 	box.Size = Vector3.new(p.BaseSize * s * 0.8, 0.4 * s, p.BaseSize * s * 0.6)
 	local embers = emitter(box, {
@@ -612,48 +592,65 @@ function Effect.Play(ctx)
 		Squash = NumberSequence.new(1.3), -- tall and thin
 		Transparency = seq({ { 0, 1 }, { 0.2, 0.25 }, { 1, 1 } }),
 	})
-	-- ash flakes drifting up off whatever is crumbling (the base pile, then the top balls)
-	local ashLow = ctx.Anchor(frame * CFrame.new(0, 1.2 * s, 0.3 * s))
-	ashLow.Size = Vector3.new(p.BaseSize * s * 0.8, 1.6 * s, p.BaseSize * s * 0.5)
-	local ashHigh = ctx.Anchor(center * CFrame.new(0, 2.2 * ballScale, -0.7 * ballScale))
-	ashHigh.Size = Vector3.new(6 * ballScale, 2.6 * ballScale, 2.5 * ballScale)
-	local ashProps = {
-		Texture = ASSETS.Speck,
-		Color = colors({ { 0, p.AshColor }, { 1, p.AshColor:Lerp(Color3.new(), 0.6) } }),
-		LightEmission = 0,
-		Shape = Enum.ParticleEmitterShape.Box,
-		EmissionDirection = Enum.NormalId.Top,
-		SpreadAngle = Vector2.new(40, 40),
-		Speed = NumberRange.new(1 * s, 3 * s),
-		Drag = 1,
-		Acceleration = Vector3.new(0.6 * s, 1.5 * s, 0), -- float up and drift aside
-		Lifetime = NumberRange.new(0.8, 1.4),
-		Rotation = NumberRange.new(0, 360),
-		RotSpeed = NumberRange.new(-180, 180),
-		Size = seq({ { 0, 0.3 * s }, { 0.6, 0.22 * s }, { 1, 0 } }),
-		Transparency = seq({ { 0, 0.05 }, { 0.7, 0.25 }, { 1, 1 } }),
-	}
-	local ashLowE = emitter(ashLow, ashProps)
-	local ashHighE = emitter(ashHigh, ashProps)
-	local chipColor = Color3.fromRGB(26, 22, 22) -- charcoal (Neon reads brighter than its colour)
-	local chipTemplates = { chipTemplate("ShellShard1", chipColor), chipTemplate("ShellShard2", chipColor) }
-	local function shedChips(origin, count, size)
-		for k, template in chipTemplates do
-			MeshParticles.Burst(ctx, template, math.ceil(count / #chipTemplates), {
-				Origin = origin,
-				Direction = Vector3.yAxis,
-				Spread = 70,
-				Speed = NumberRange.new(2 * s, 6 * s),
-				Lifetime = NumberRange.new(0.5, 0.8),
-				Drag = 1.5,
-				Acceleration = Vector3.new(0, -10 * s, 0),
-				SpinSpeed = NumberRange.new(90, 270),
-				Scale = size * (0.8 + 0.3 * k),
-				SpawnRadius = 1.5 * s,
-				Size = seq({ { 0, 1 }, { 0.7, 0.8 }, { 1, 0 } }),
-				Transparency = seq({ { 0, 0.35 }, { 0.7, 0.5 }, { 1, 1 } }),
-			})
+	-- 5b. Gas dome: the lower balls melt into a dark cloud that puffs out under the top
+	-- balls. Camera-facing filled discs centred on the ground (the ground hides their lower
+	-- half, so they read as a dome), a lit rim, and glowing band arcs across its front
+	-- (the front half of a ring around the dome; a full flat ring can't hide its back half
+	-- behind a particle).
+	local gasR = p.BaseSize * s * 0.5 -- final dome radius
+	local gasLife = NumberRange.new(p.GasTime)
+	local gasGrow = { { 0, 0.3 }, { 0.08, 0.9 }, { 0.3, 1 }, { 1, 1.06 } } -- puffs out in ~0.06 s, then drifts
+	local function gasSize(scale)
+		local keys = {}
+		for _, k in gasGrow do
+			table.insert(keys, { k[1], gasR * scale * k[2] })
 		end
+		return seq(keys)
+	end
+	local gasAtt = Instance.new("Attachment")
+	gasAtt.Parent = anchor
+	-- centred a little above the ground: the ground hides less than half, so it bulges up
+	-- around the bottoms of the top balls
+	gasAtt.WorldPosition = (frame * CFrame.new(0, 0.3 * gasR, -0.3 * s)).Position
+	local gas = emitter(gasAtt, {
+		Texture = ASSETS.GasDisc,
+		Color = ColorSequence.new(p.GasColor),
+		LightEmission = 0,
+		Speed = NumberRange.new(0),
+		Lifetime = gasLife,
+		Size = gasSize(1.05), -- the disc's solid part is ~70% of its half-width
+		Squash = NumberSequence.new(-0.35), -- flattened: wider than tall
+		Transparency = seq({ { 0, 1 }, { 0.06, 0 }, { 0.62, 0 }, { 1, 1 } }),
+	})
+	local gasRim = emitter(gasAtt, {
+		Texture = ASSETS.GasShell,
+		Color = ColorSequence.new(p.BandColor),
+		LightEmission = 1,
+		Speed = NumberRange.new(0),
+		Lifetime = gasLife,
+		Size = gasSize(1.02),
+		Squash = NumberSequence.new(-0.35),
+		Transparency = seq({ { 0, 1 }, { 0.08, 0.55 }, { 0.6, 0.7 }, { 1, 1 } }),
+		ZOffset = 0.5,
+	})
+	-- band arcs, drawn in front of the gas: { height / radius, arc size / radius, alpha }
+	local bandAtts = {}
+	for _, band in { { 0.5, 1.0, 0 }, { 0.15, 1.08, 0.35 } } do
+		local att = Instance.new("Attachment")
+		att.Parent = anchor
+		att.WorldPosition = (frame * CFrame.new(0, gasR * band[1], 0)).Position
+		table.insert(bandAtts, emitter(att, {
+			Texture = ASSETS.BandArc,
+			Color = ColorSequence.new(p.BandColor),
+			LightEmission = 1,
+			Brightness = 1.6,
+			Speed = NumberRange.new(0),
+			Lifetime = gasLife,
+			Size = gasSize(band[2]),
+			-- gone by ~0.95 s, before the dome thins out
+			Transparency = seq({ { 0, 1 }, { 0.08, band[3] }, { 0.5, math.min(1, band[3] + 0.1) }, { 0.68, 1 }, { 1, 1 } }),
+			ZOffset = gasR, -- in front of the dome's surface
+		}))
 	end
 
 	-- 6. Timeline ------------------------------------------------------------------------
@@ -666,8 +663,8 @@ function Effect.Play(ctx)
 		return false
 	end
 	local crackStart = p.CrackStart
-	local emberAcc, wispAcc, ashLowAcc, ashHighAcc = 0, 0, 0, 0
-	local endT = math.max(crumbleEnd, baseCrumbleEnd, cometLaunch + p.CometTime, crackStart + crackLife * 0.75)
+	local emberAcc, wispAcc = 0, 0
+	local endT = math.max(crumbleEnd, p.GasStart + p.GasTime, cometLaunch + p.CometTime, crackStart + crackLife * 0.75)
 	local t = 0
 	while t < endT do
 		if once("burst", appear, t) then
@@ -692,11 +689,12 @@ function Effect.Play(ctx)
 		if once("cracks", crackStart, t) then
 			ctx.Emit(cracks, 1)
 		end
-		if once("baseChips", baseCrumbleStart + 0.05, t) then
-			shedChips((frame * CFrame.new(0, 1.2 * s, 0)).Position, p.ChipCount * 0.5, 1.1 * s)
-		end
-		if once("ballChips", crumbleStart + 0.1, t) then
-			shedChips(center.Position + Vector3.new(0, 1.6 * ballScale, 0), p.ChipCount * 0.5, 1.4 * ballScale)
+		if once("gas", p.GasStart, t) then
+			ctx.Emit(gas, 3) -- stacked discs make the cloud opaque
+			ctx.Emit(gasRim, 1)
+			for _, band in bandAtts do
+				ctx.Emit(band, 1)
+			end
 		end
 
 		-- balls
@@ -709,38 +707,38 @@ function Effect.Play(ctx)
 			local bt = if t <= 0.34 then t else math.max(0.34, t - ball.Delay)
 			local d = ball.Diameter * size
 			local offset = ball.Offset * spread
-			local squash = Vector3.one
 			local cStart, cTime = crumbleStart, p.CrumbleTime
+			local melted = false
 			if ball.Top then
-				offset -= Vector3.new(0, 0.85 * ballScale * sink, 0) -- settle onto the pile
+				offset -= Vector3.new(0, 0.6 * ballScale * sink, 0) -- settle onto the gas dome
 			else
-				-- lower balls squash into a lumpy pile resting on the ground
-				squash = Vector3.new(1 + 0.1 * sink, 1 - 0.3 * sink, 1 + 0.1 * sink)
-				local restY = -center.Position.Y + ground.Y + d * 0.5 * squash.Y * 0.85
-				-- and huddle together a little
-				offset = Vector3.new(offset.X * (1 - 0.15 * sink), offset.Y + (restY - offset.Y) * sink, offset.Z * (1 - 0.15 * sink))
-				cStart, cTime = baseCrumbleStart, p.BaseCrumbleTime
+				-- lower balls shrink and sink into the gas, then vanish inside it
+				d *= 1 - 0.6 * sink
+				offset -= Vector3.new(0, 1.2 * ballScale * sink, 0)
+				melted = t >= p.GasStart + 0.05 -- swallowed once the gas puff is opaque
 			end
-			local k = (t - cStart) / cTime -- crumble progress
+			local k = if ball.Top then (t - cStart) / cTime else -1 -- dissolve progress
 			local crumbling = k >= 0
-			local gone = k >= 1
+			local gone = k >= 1 or melted
 			local cf = center * CFrame.new(offset)
 			local spinCf = cf * ball.Spin * CFrame.Angles(0, ball.SpinRate * t, 0)
 			local uprightCf = cf * CFrame.Angles(0, ball.SpinRate * t, 0)
-			local sizeV = squash * d
+			local sizeV = Vector3.one * d
 			ball.Body.Size = sizeV * 0.985
 			ball.Body.CFrame = cf
 			ball.Body.Color = track(bodyKeys, bt)
-			-- crumbling: the solid core goes quickly so the shell's ash holes show through
+			-- dissolving: the solid core goes quickly so the shell's holes show through
 			ball.Body.Transparency = if t < appear or gone then 1 elseif crumbling then math.min(1, 0.3 + 2.5 * k) else 0
 			ball.Spots.Size = sizeV
 			ball.Spots.CFrame = spinCf
-			ball.Spots.Transparency = if crumbling or not ball.IsMesh then 1 else track(spotsAlpha, bt)
-			ball.Shell.Size = sizeV * 1.004
-			if not ball.IsMesh then
+			ball.Spots.Transparency = if crumbling or gone or not ball.IsMesh then 1 else track(spotsAlpha, bt)
+			if not ball.Shell then
+				-- lower balls have no outer shell
+			elseif not ball.IsMesh then
 				ball.Shell.Transparency = 1
 			elseif crumbling then
-				-- the shell turns to ash: held upright so its holes eat the ball bottom-up
+				ball.Shell.Size = sizeV * 1.004
+				-- the shell dissolves: held upright so its holes eat the ball bottom-up
 				ball.Shell.CFrame = uprightCf
 				local tex = ashTexture(k)
 				if ball.Stage ~= tex then
@@ -748,20 +746,18 @@ function Effect.Play(ctx)
 					ball.Shell.TextureID = tex
 				end
 				ball.Shell.Transparency = if gone then 1 else 0.02 + 0.4 * k
-			elseif ball.Top then
+			else
+				ball.Shell.Size = sizeV * 1.004
 				ball.Shell.CFrame = spinCf
 				ball.Shell.Transparency = track(lavaAlpha, bt)
-			else
-				ball.Shell.CFrame = cf -- upright, so the bands of neighbouring balls line up
-				ball.Shell.Transparency = track(bandAlpha, t)
 			end
 			ball.Att.WorldPosition = cf.Position
 			ball.Rim.Color = ColorSequence.new(track(rimColorKeys, bt))
 			ball.Rim.Size = NumberSequence.new(d * 0.5 * track(rimSizeKeys, bt))
-			-- squashing balls lose their rim first (a round ring would not fit them)
+			-- melting balls lose their rim first (it is drawn in front, over the gas)
 			local rimAlpha = track(rimAlphaKeys, bt)
 			local sinkFade = if ball.Top then 0 else math.clamp(sink * 1.6, 0, 1)
-			ball.Rim.Transparency = NumberSequence.new(if crumbling then 1 else rimAlpha + (1 - rimAlpha) * sinkFade)
+			ball.Rim.Transparency = NumberSequence.new(if crumbling or gone then 1 else rimAlpha + (1 - rimAlpha) * sinkFade)
 		end
 
 		-- comets
@@ -811,7 +807,8 @@ function Effect.Play(ctx)
 		light.Brightness = p.LightBrightness * track({ { 0, 1.5 }, { 0.1, 1 }, { 0.3, 0.3 }, { coolT, 0.25 }, { 1.1, 0 } }, t)
 		light.Color = if t < coolT then p.Color else p.RimColor
 
-		local dt = ctx.Wait(1 / 60)
+		-- one rendered frame (also in slow-mo, so the ~20 ms burst updates every frame there)
+		local dt = ctx.Wait(1 / 240)
 		t += dt
 
 		-- embers while the balls cool and crumble (thinning out by ~1.8 s), wisps off the cracks
@@ -821,17 +818,8 @@ function Effect.Play(ctx)
 		if t >= 1.4 then
 			wispAcc += p.WispRate * dt
 		end
-		-- ash flakes while the base pile, then the top balls, crumble
-		if t >= baseCrumbleStart and t < baseCrumbleEnd then
-			ashLowAcc += p.AshRate * dt
-		end
-		if t >= crumbleStart and t < crumbleEnd then
-			ashHighAcc += p.AshRate * dt
-		end
 		emberAcc = drain(ctx, embers, emberAcc)
 		wispAcc = drain(ctx, wisps, wispAcc)
-		ashLowAcc = drain(ctx, ashLowE, ashLowAcc)
-		ashHighAcc = drain(ctx, ashHighE, ashHighAcc)
 	end
 end
 
