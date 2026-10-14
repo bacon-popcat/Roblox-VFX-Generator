@@ -272,6 +272,45 @@ function MeshFactory.Generators.Rock(p)
 	return build(positions, uvs, tris, { orientOutward = true })
 end
 
+-- Smooth UV sphere for textured balls (fireballs, orbs). Radius, Rings, Segments.
+-- U = longitude (0 -> 1 around Y, seam duplicated), V = latitude (0 = top pole),
+-- so an equirectangular texture (2:1) wraps it without stretching at the seam.
+function MeshFactory.Generators.Sphere(p)
+	p = p or {}
+	local radius = p.Radius or 0.5
+	local rings = p.Rings or 14
+	local segments = p.Segments or 28
+
+	local positions, uvs, tris = {}, {}, {}
+	local function index(r, s)
+		return r * (segments + 1) + s + 1
+	end
+	for r = 0, rings do
+		local phi = math.pi * r / rings
+		for s = 0, segments do
+			local theta = TAU * s / segments
+			local dir = Vector3.new(math.sin(phi) * math.cos(theta), math.cos(phi), math.sin(phi) * math.sin(theta))
+			table.insert(positions, dir * radius)
+			-- pole vertices get the middle of their segment so the cap texture isn't skewed
+			local u = if r == 0 or r == rings then (s + 0.5) / segments else s / segments
+			table.insert(uvs, Vector2.new(u, r / rings))
+		end
+	end
+	for r = 0, rings - 1 do
+		for s = 0, segments - 1 do
+			local a, b = index(r, s), index(r, s + 1)
+			local c, d = index(r + 1, s), index(r + 1, s + 1)
+			if r > 0 then
+				table.insert(tris, { a, b, c })
+			end
+			if r < rings - 1 then
+				table.insert(tris, { b, d, c })
+			end
+		end
+	end
+	return build(positions, uvs, tris, { orientOutward = true })
+end
+
 --------------------------------------------------------------------------------
 -- Preview and publish
 --------------------------------------------------------------------------------

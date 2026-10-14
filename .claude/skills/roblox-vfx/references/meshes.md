@@ -47,6 +47,7 @@ All shapes have Y up. U runs along the length or around the shape, V across it.
 | Spike | Cone pointing up | Radius, Height, Sides |
 | Shard | Jittered crystal double-pyramid | Length, Width, Sides, Seed |
 | Rock | Lumpy noise sphere | Radius, Rings, Segments, Roughness, Squash (Vector3), Seed |
+| Sphere | Smooth UV sphere, equirect UVs (U around Y, V = 0 at the top pole) | Radius, Rings, Segments |
 
 For variety (debris), publish 2-3 seeds of the same generator rather than one.
 
@@ -88,3 +89,7 @@ large mesh data into execute_luau by hand; it gets corrupted. Also save an FBX t
 | Mesh | Id | Use |
 |---|---|---|
 | SpiralRibbon | rbxassetid://129291594721141 | Blender: 2-turn tapering spiral ribbon, ~5.6 x 6.7 x 4.9; vortex/tornado layer (`assets/meshes/SpiralRibbon.fbx`) |
+| SmoothSphere | rbxassetid://132254310752039 | MeshFactory Sphere (Radius 0.5, 14 x 28, 728 tris): 1-stud textured ball (fireball balls, spot/lava/dissolve shells) |
+| TubeBand | rbxassetid://91818310113323 | MeshFactory Tube (Radius 1, Height 0.2): short open band; currently unused |
+| BlobDome | rbxassetid://108920859813727 | Blender metaballs: lumpy squashed dome, 2 x 0.76 x 1.9, 840 tris, spherical UVs; dark base under an explosion (`assets/meshes/BaseBlob.fbx`) |
+| ShellShard1 / ShellShard2 | rbxassetid://88449942291976 / 87477348430076 | Blender: jagged curved fragments of a 0.07-thick sphere shell (~1.2 / 1.0 studs, 268 / 196 tris); crumbling-shell chips for MeshParticles (`assets/meshes/ShellShard.fbx`) |
