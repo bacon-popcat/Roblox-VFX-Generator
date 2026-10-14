@@ -17,7 +17,7 @@ ReplicatedStorage/Shared/VFX/      code, Rojo-synced from src/shared/VFX
 ├── MeshParticles   simulates many MeshParts like particles
 ├── MeshFactory     authoring tool: generates + publishes meshes (Edit mode only)
 └── Effects/        one ModuleScript per effect
-ReplicatedStorage/VFX/Meshes/      published mesh templates (Studio-only, made by MeshFactory)
+ReplicatedStorage/Assets/Meshes/   published mesh templates (Studio-only, made by MeshFactory)
 ReplicatedStorage/Assets/VFX/      art library (Studio-only), see references/textures.md
 StarterPlayer/StarterPlayerScripts/Client   VFXHarness test bench (src/client/init.client.luau)
 ```
@@ -91,7 +91,7 @@ Rules:
 - Never use `task.wait`, `wait`, or raw `TweenService`.
 - Set `Rate = 0` on burst emitters.
 - Set `CanCollide`, `CanQuery`, `CanTouch`, `CastShadow` to false on any visible part.
-- Get meshes by cloning templates from `ReplicatedStorage/VFX/Meshes`. If a template might be
+- Get meshes by cloning templates from `ReplicatedStorage/Assets/Meshes`. If a template might be
   missing, fall back to a plain Part (see `examples/GroundSlam.luau`).
 - `Linger` must cover the longest particle or mesh-particle lifetime.
 

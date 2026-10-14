@@ -15,7 +15,7 @@ Roblox visual effects as Luau ModuleScripts, synced into Roblox Studio with Rojo
 - After `rojo serve` restarts, the Rojo plugin in Studio has to reconnect before changes
   arrive. Before testing, check that the script in Studio matches the file on disk.
 - The art library (`ReplicatedStorage.Assets.VFX`) and mesh templates
-  (`ReplicatedStorage.VFX.Meshes`) live only in Studio. Reference library assets by id.
+  (`ReplicatedStorage.Assets.Meshes`) live only in Studio. Reference library assets by id.
 - Preview effects frame by frame in Edit mode with `ReplicatedStorage.Shared.VFX.VFXScrub`
   and the Studio MCP screenshot tool; try them at full speed in the VFXHarness (Play mode).
 

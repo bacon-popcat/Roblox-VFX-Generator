@@ -3,7 +3,7 @@
 -- are real MeshParts simulated here on the client.
 --
 -- MeshParticles.Burst(ctx, template, count, config)
---   template: a MeshPart/Part to clone (store templates in ReplicatedStorage/VFX/Meshes)
+--   template: a MeshPart/Part to clone (store templates in ReplicatedStorage/Assets/Meshes)
 --   config fields (all optional):
 --     Origin        Vector3          default ctx.CFrame.Position
 --     Direction     Vector3          center of the emission cone, default up

@@ -51,7 +51,7 @@ VFX/                                  (repo root)
 | `src/client/WindSwordReplicator.client.luau` | `StarterPlayer.StarterPlayerScripts.Client.WindSwordReplicator` | LocalScript |
 | `src/server/WindSwordServer.server.luau` | `ServerScriptService.Server.WindSwordServer` | Script |
 | `src/starterpack/WindSword/` | `StarterPack.WindSword` | Tool (Handle part, `WindSwordClient` LocalScript) |
-| (not on disk) | `ReplicatedStorage.VFX.Meshes` | Folder of MeshFactory templates |
+| (not on disk) | `ReplicatedStorage.Assets.Meshes` | Folder of MeshFactory templates |
 | (not on disk) | `ReplicatedStorage.Assets.VFX` | Art library (asset cards) |
 | (runtime) | `Workspace.ActiveVFX.<Name>` | `ctx.Folder`, one per play |
 | (edit time) | `Workspace.VFXScrub` | `ctx.Folder` of a VFXScrub freeze-frame; `Clear()` removes it |
@@ -64,10 +64,8 @@ Rojo rules that matter here:
   ModuleScript, a `.client.luau` file a child LocalScript).
 - Folders mapped with `$path` are Rojo-owned: Rojo can delete instances that aren't on
   disk. Never store Studio-made content (mesh templates, assets) under `Shared`,
-  `Client`, or `Server`. Studio-only content goes in `ReplicatedStorage.VFX.Meshes` or
-  `ReplicatedStorage.Assets`.
-- Don't confuse `ReplicatedStorage.Shared.VFX` (code, Rojo) with `ReplicatedStorage.VFX`
-  (Studio-only mesh templates).
+  `Client`, or `Server`. Studio-only content goes in `ReplicatedStorage.Assets`
+  (`Assets.VFX` = art library, `Assets.Meshes` = mesh templates).
 
 ## Runtime flow
 
@@ -248,11 +246,11 @@ ids. A FileMesh is sized by `SpecialMesh.Scale`, not `Part.Size`: tween `mesh.Sc
 note that `MeshParticles.Burst` size curves do nothing on these parts (it sets `Part.Size`;
 Transparency still works). For shrinking debris, use MeshFactory MeshPart templates.
 
-**MeshFactory templates** live in `ReplicatedStorage.VFX.Meshes` (Studio-only). Look them up
+**MeshFactory templates** live in `ReplicatedStorage.Assets.Meshes` (Studio-only). Look them up
 without yielding and keep a plain-Part fallback (pattern in `examples/GroundSlam.luau`):
 
 ```luau
-local meshRoot = game:GetService("ReplicatedStorage"):FindFirstChild("VFX") -- not Shared.VFX
+local meshRoot = game:GetService("ReplicatedStorage"):FindFirstChild("Assets")
 local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 ```
 

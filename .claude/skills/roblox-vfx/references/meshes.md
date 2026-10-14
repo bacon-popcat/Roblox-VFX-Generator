@@ -10,7 +10,7 @@ local MF = require(game.ReplicatedStorage.Shared.VFX.MeshFactory)
 
 ## Workflow
 
-1. **Reuse first.** Look in `ReplicatedStorage/VFX/Meshes` (a Studio-only folder that
+1. **Reuse first.** Look in `ReplicatedStorage/Assets/Meshes` (a Studio-only folder that
    MeshFactory creates; it is not on disk and is separate from the code folder
    `ReplicatedStorage/Shared/VFX`). Each template has
    `Generator`, `Params`, and `AssetId` attributes. If a close match exists, use it
@@ -28,7 +28,7 @@ local MF = require(game.ReplicatedStorage.Shared.VFX.MeshFactory)
    no inside-out faces (looks dark or invisible from outside), sensible size.
    Destroy the preview after. Adjust params and repeat if needed.
 4. **Publish** with `MF.Make(name, generator, params)`. It reuses an exact match
-   if one exists, otherwise uploads and saves a template to `ReplicatedStorage/VFX/Meshes/<name>`.
+   if one exists, otherwise uploads and saves a template to `ReplicatedStorage/Assets/Meshes/<name>`.
    Names are PascalCase and describe the shape, not the effect:
    `CrescentThin170`, not `RangerSlash`.
 5. **Use it** in the effect: clone `Meshes.<Name>` for a single animated mesh, or

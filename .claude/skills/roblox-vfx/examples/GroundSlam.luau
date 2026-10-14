@@ -2,15 +2,15 @@
 -- Mesh-based example: expanding shockwave ring + flying rock chunks,
 -- plus normal particles for dust and a light pop.
 --
--- Uses templates from ReplicatedStorage/VFX/Meshes if they exist:
+-- Uses templates from ReplicatedStorage/Assets/Meshes if they exist:
 --   ShockRing  - a flat ring MeshPart, modeled lying flat (Y up), ~2 studs wide
 --   Rock       - a rock chunk MeshPart, ~1 stud
 -- Without them it falls back to plain parts so you can test right away.
 
 local VFX = script.Parent.Parent
 local MeshParticles = require(VFX:WaitForChild("MeshParticles"))
--- MeshFactory publishes templates to ReplicatedStorage.VFX.Meshes (Studio-only, not Shared.VFX)
-local meshRoot = game:GetService("ReplicatedStorage"):FindFirstChild("VFX")
+-- MeshFactory publishes templates to ReplicatedStorage.Assets.Meshes (Studio-only)
+local meshRoot = game:GetService("ReplicatedStorage"):FindFirstChild("Assets")
 local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 
 local fallbacks = {}

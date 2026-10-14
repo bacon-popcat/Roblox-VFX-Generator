@@ -308,7 +308,7 @@ local function defaultCreator()
 end
 
 -- Uploads the mesh as a real Mesh asset and saves a template MeshPart in
--- ReplicatedStorage/VFX/Meshes/<name>. Returns assetId, template.
+-- ReplicatedStorage/Assets/Meshes/<name>. Returns assetId, template.
 function MeshFactory.Publish(mesh, name, generatorName, params, creator)
 	creator = creator or defaultCreator()
 
@@ -339,12 +339,12 @@ function MeshFactory.Publish(mesh, name, generatorName, params, creator)
 	template:SetAttribute("Generator", generatorName or "custom")
 	template:SetAttribute("Params", serialize(params))
 
-	local vfx = ReplicatedStorage:FindFirstChild("VFX") or Instance.new("Folder")
-	vfx.Name = "VFX"
-	vfx.Parent = ReplicatedStorage
-	local meshes = vfx:FindFirstChild("Meshes") or Instance.new("Folder")
+	local assets = ReplicatedStorage:FindFirstChild("Assets") or Instance.new("Folder")
+	assets.Name = "Assets"
+	assets.Parent = ReplicatedStorage
+	local meshes = assets:FindFirstChild("Meshes") or Instance.new("Folder")
 	meshes.Name = "Meshes"
-	meshes.Parent = vfx
+	meshes.Parent = assets
 
 	local existing = meshes:FindFirstChild(name)
 	if existing then
@@ -356,7 +356,7 @@ end
 
 -- Find an already-published template made with the same generator + params.
 function MeshFactory.FindExisting(generatorName, params)
-	local meshes = ReplicatedStorage:FindFirstChild("VFX") and ReplicatedStorage.VFX:FindFirstChild("Meshes")
+	local meshes = ReplicatedStorage:FindFirstChild("Assets") and ReplicatedStorage.Assets:FindFirstChild("Meshes")
 	if not meshes then
 		return nil
 	end
