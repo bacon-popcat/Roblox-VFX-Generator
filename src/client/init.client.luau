@@ -1,18 +1,15 @@
 -- LocalScript: StarterPlayer/StarterPlayerScripts/Client (the VFXHarness)
--- Studio-only test bench for effects in ReplicatedStorage/Shared/VFX/Effects.
+-- Test bench for effects in ReplicatedStorage/Shared/VFX/Effects. Runs in
+-- Studio and in the live place, so it can be tried on a phone.
 --
 --   Click an effect button to play it on the target dummy.
 --   [R] replay   [L] loop   [ / ] slower / faster   [T] move target here
 --   [P] print current params as a Luau table (paste into Defaults)
+-- Every key also has an on-screen button for touch; "Hide" collapses the panel.
 --
 -- Live tuning: during Play, select Workspace > VFXHarnessConfig > <Effect>
 -- and edit its Attributes in the Properties panel. The next play uses them.
 -- Attribute edits are lost when you stop, so press P and paste first.
-
-local RunService = game:GetService("RunService")
-if not RunService:IsStudio() then
-	return
-end
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -118,16 +115,47 @@ local function printParams()
 	print(table.concat(lines, "\n"))
 end
 
+---------------------------------------------------------------- actions
+-- Shared by the keyboard shortcuts and the on-screen buttons (touch).
+local actions = {
+	{ label = "Replay", key = Enum.KeyCode.R, run = function()
+		if current then
+			play(current)
+		end
+	end },
+	{ label = "Loop", key = Enum.KeyCode.L, run = function()
+		looping = not looping
+	end },
+	{ label = "Target", key = Enum.KeyCode.T, run = placeTarget },
+	{ label = "Slower", key = Enum.KeyCode.LeftBracket, run = function()
+		speedIndex = math.max(1, speedIndex - 1)
+	end },
+	{ label = "Faster", key = Enum.KeyCode.RightBracket, run = function()
+		speedIndex = math.min(#SPEEDS, speedIndex + 1)
+	end },
+	{ label = "Print", key = Enum.KeyCode.P, run = printParams },
+}
+
 ---------------------------------------------------------------- UI
+local isTouch = UserInputService.TouchEnabled
+local BUTTON_HEIGHT = if isTouch then 36 else 26
+local PANEL_WIDTH = if isTouch then 240 else 220
+-- On touch, leave the bottom of the screen free for the thumbstick
+local MAX_HEIGHT_FRACTION = if isTouch then 0.6 else 1
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "VFXHarness"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local panel = Instance.new("Frame")
+local panel = Instance.new("ScrollingFrame")
 panel.Position = UDim2.fromOffset(10, 10)
-panel.Size = UDim2.fromOffset(220, 0)
-panel.AutomaticSize = Enum.AutomaticSize.Y
+panel.Size = UDim2.fromOffset(PANEL_WIDTH, 0)
+panel.CanvasSize = UDim2.new()
+panel.AutomaticCanvasSize = Enum.AutomaticSize.Y
+panel.ScrollingDirection = Enum.ScrollingDirection.Y
+panel.ScrollBarThickness = 4
+panel.BorderSizePixel = 0
 panel.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
 panel.BackgroundTransparency = 0.15
 panel.Parent = gui
@@ -144,6 +172,18 @@ layout.Padding = UDim.new(0, 4)
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Parent = panel
 
+local function makeButton(text, parent)
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.new(1, 0, 0, BUTTON_HEIGHT)
+	button.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+	button.TextColor3 = Color3.new(1, 1, 1)
+	button.Font = Enum.Font.GothamMedium
+	button.TextSize = 14
+	button.Text = text
+	button.Parent = parent
+	return button
+end
+
 local status = Instance.new("TextLabel")
 status.LayoutOrder = 0
 status.Size = UDim2.new(1, 0, 0, 0)
@@ -156,9 +196,61 @@ status.Font = Enum.Font.Code
 status.TextSize = 13
 status.Parent = panel
 
+local hideButton = makeButton("Hide", panel)
+hideButton.LayoutOrder = 1
+hideButton.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+
+local controls = Instance.new("Frame")
+controls.LayoutOrder = 2
+controls.Size = UDim2.new(1, 0, 0, 0)
+controls.AutomaticSize = Enum.AutomaticSize.Y
+controls.BackgroundTransparency = 1
+controls.Parent = panel
+
+local grid = Instance.new("UIGridLayout")
+grid.CellSize = UDim2.new(1 / 3, -4, 0, BUTTON_HEIGHT)
+grid.CellPadding = UDim2.fromOffset(4, 4)
+grid.FillDirectionMaxCells = 3
+grid.SortOrder = Enum.SortOrder.LayoutOrder
+grid.Parent = controls
+
+local effectList = Instance.new("Frame")
+effectList.LayoutOrder = 3
+effectList.Size = UDim2.new(1, 0, 0, 0)
+effectList.AutomaticSize = Enum.AutomaticSize.Y
+effectList.BackgroundTransparency = 1
+effectList.Parent = panel
+
+local effectLayout = Instance.new("UIListLayout")
+effectLayout.Padding = UDim.new(0, 4)
+effectLayout.SortOrder = Enum.SortOrder.LayoutOrder
+effectLayout.Parent = effectList
+
+local loopButton
+
 local function refreshStatus()
-	status.Text = ("Speed %.2fx | Loop %s\n%s\nR replay  L loop  [ ] speed\nT move target  P print params")
-		:format(SPEEDS[speedIndex], looping and "ON" or "off", current and ("> " .. current) or "> (none)")
+	local lines = {
+		("Speed %.2fx | Loop %s"):format(SPEEDS[speedIndex], looping and "ON" or "off"),
+		current and ("> " .. current) or "> (none)",
+	}
+	if UserInputService.KeyboardEnabled then
+		table.insert(lines, "R replay  L loop  [ ] speed\nT move target  P print params")
+	end
+	status.Text = table.concat(lines, "\n")
+	loopButton.BackgroundColor3 = if looping then Color3.fromRGB(70, 110, 70) else Color3.fromRGB(45, 45, 55)
+end
+
+for i, action in actions do
+	local button = makeButton(action.label, controls)
+	button.LayoutOrder = i
+	button.TextSize = 13
+	button.Activated:Connect(function()
+		action.run()
+		refreshStatus()
+	end)
+	if action.label == "Loop" then
+		loopButton = button
+	end
 end
 
 local names = {}
@@ -170,15 +262,8 @@ end
 table.sort(names)
 
 for i, name in names do
-	local button = Instance.new("TextButton")
+	local button = makeButton(name, effectList)
 	button.LayoutOrder = i
-	button.Size = UDim2.new(1, 0, 0, 26)
-	button.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-	button.TextColor3 = Color3.new(1, 1, 1)
-	button.Font = Enum.Font.GothamMedium
-	button.TextSize = 14
-	button.Text = name
-	button.Parent = panel
 	button.Activated:Connect(function()
 		play(name)
 		refreshStatus()
@@ -186,28 +271,39 @@ for i, name in names do
 	configFor(name) -- create attributes up front so they're editable immediately
 end
 
+-- Grow with the content, but scroll instead of running off small screens
+local function fitPanel()
+	local viewport = workspace.CurrentCamera.ViewportSize
+	local maxHeight = viewport.Y * MAX_HEIGHT_FRACTION - 20
+	local contentHeight = layout.AbsoluteContentSize.Y + 16
+	panel.Size = UDim2.fromOffset(PANEL_WIDTH, math.min(contentHeight, maxHeight))
+end
+layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(fitPanel)
+workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fitPanel)
+
+-- Collapse to just the status line so the effect isn't covered on a phone
+hideButton.Activated:Connect(function()
+	local show = not controls.Visible
+	controls.Visible = show
+	effectList.Visible = show
+	hideButton.Text = if show then "Hide" else "Show"
+end)
+
 refreshStatus()
+fitPanel()
 
 ---------------------------------------------------------------- input
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then
 		return
 	end
-	local key = input.KeyCode
-	if key == Enum.KeyCode.R and current then
-		play(current)
-	elseif key == Enum.KeyCode.L then
-		looping = not looping
-	elseif key == Enum.KeyCode.LeftBracket then
-		speedIndex = math.max(1, speedIndex - 1)
-	elseif key == Enum.KeyCode.RightBracket then
-		speedIndex = math.min(#SPEEDS, speedIndex + 1)
-	elseif key == Enum.KeyCode.T then
-		placeTarget()
-	elseif key == Enum.KeyCode.P then
-		printParams()
+	for _, action in actions do
+		if input.KeyCode == action.key then
+			action.run()
+			refreshStatus()
+			return
+		end
 	end
-	refreshStatus()
 end)
 
 task.spawn(function()

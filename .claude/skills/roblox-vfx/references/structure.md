@@ -30,7 +30,7 @@ VFX/                                  (repo root)
     │   └── Effects/<Name>.luau       one ModuleScript per effect
     ├── shared/WindSword/             Wind Sword timings (init.luau) + Slash RemoteEvent (Slash.model.json)
     ├── client/
-    │   ├── init.client.luau          VFXHarness test bench (Studio only)
+    │   ├── init.client.luau          VFXHarness test bench (Studio + live place)
     │   └── WindSwordReplicator.client.luau   plays other players' Wind Sword slashes
     ├── server/
     │   ├── init.server.luau          placeholder
@@ -382,6 +382,10 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
    ModuleScript in `Effects` and a target part 12 studs in front of you.
 2. Keys: `R` replay, `L` loop (every 1.5s, scaled), `[` / `]` speed 0.1 / 0.25 / 0.5 / 1x,
    `T` move target in front of you, `P` print current params as a `Effect.Defaults` table.
+   Each key also has an on-screen button (Replay, Loop, Target, Slower, Faster, Print), so
+   the harness works on touch: use Studio's device emulator, or join the published place on
+   a phone (the harness runs outside Studio too; `P` output goes to the Developer Console).
+   `Hide` collapses the panel so it doesn't cover the effect.
 3. Tune live: select `Workspace.VFXHarnessConfig.<Effect>` and edit its attributes. Press `P`
    and paste into the file on disk before stopping; edits are lost on stop.
 4. Effects are required once per session. After editing a file (or adding a new effect),
