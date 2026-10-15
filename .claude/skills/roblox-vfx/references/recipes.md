@@ -112,6 +112,26 @@ See `src/shared/VFX/Effects/FireballExplosion.luau`. Real time ~3.6 s (Play retu
 7. Lava cracks 0.78-3.6 s (orange to ~3 s, deepening to orange-red), with embers 0.3-1.8 s
    and thin grey wisps from 1.4 s until Play returns.
 
+### Lava fissure eruption (curtain of fire from a crack)
+See `src/shared/VFX/Effects/LavaEruption.luau` (rebuilt from a reference video). ~3.65 s
+of flame, then crack glow to ~4.35 s. Size the big shapes off the fissure length F.
+1. Precursor 0-0.6 s: streak bursts in 3 clusters (orange + near-black), grey rock chips
+   (gone by ~0.4 s), upright flame bursts ~0.25 F tall in the middle 0.6 F, hollow ring
+   curls, dark soft smoke plumes ~0.9 F wide shooting up fast under heavy drag (~0.7-0.8 F
+   by 0.2-0.25 s, gone by ~0.4 s), embers. The crack heats up red-orange from 0.3 s.
+2. Onset ~0.7 s: an orange spike row, then within ~0.035 s a dense curtain of smooth thin
+   tongues 1.0 F wide, ~0.65 F tall at the edges and ~0.95 F in the centre, so the top
+   tapers (about as tall as it is wide), with a soft flame body behind them from ~0.85 s.
+   Wind arcs from ~0.72 s: thin, peach-red, flat ellipses 1.3-1.6 F across the base (plus
+   one raised, tilted layer), gone by ~1.25 s.
+3. Burn: the curtain is 0.75 F wide, around a tapered central flame ~0.45 F wide at its
+   base with a yellow core low down, a dim red streak above it, a hot orange line along
+   the crack, dark side tongues, curls, flecks and a few large orange embers. Saturated
+   orange: yellow only low in the middle, deep red over each tongue's last 40%.
+4. Die-down ~2.85-3.65 s: the curtain narrows to a bundle ~0.2 F wide while it stays
+   tall. Stop emitting ~0.15 s early and shrink lifetimes so nothing lingers. The crack
+   glow stays red-orange and dim.
+
 ## Ground slam / earth ability
 Duration 0.6-1.2. See `examples/GroundSlam.luau`.
 1. Shockwave ring along the ground. Mesh: Ring.

@@ -135,7 +135,14 @@ function VFXScrub.Play(name, cframe, overrides, stopAt, timeScale, seed)
 				skippedForge = true
 				warn(("VFXScrub: '%s' has Forge layers; they only play in Play mode (skipped)"):format(name))
 			end
-			return { Finished = { await = function() end }, Clear = function() end }
+			local finished = {}
+			function finished.await() end
+			function finished.finally(_, callback)
+				callback()
+				return finished
+			end
+			finished.andThen = finished.finally
+			return { Finished = finished, Clear = function() end }
 		end
 		local _, env = ForgeBridge.Emit(template, at or cframe, folder, timeScale, options)
 		table.insert(forgeEnvs, env)

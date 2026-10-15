@@ -48,6 +48,20 @@ Prefer these. Add new rows as textures are uploaded (name | id | use).
 | LavaCracks | rbxassetid://89120608419510 | Custom: ~13 large angular cells with outward tendrils, elongated 1.75:1, baked yellow core / orange glow; flat on the ground, LightEmission 1 |
 | RadialDust | rbxassetid://72281968873307 | Custom: soft radial smudges around an empty centre, white; tinted dark = dust blown out across the floor |
 | BandArc | rbxassetid://132232127473921 | Custom: glowing lower half of an ellipse (the front of a flat ring seen from ~25 deg up), square, white; camera-facing in front of a gas dome = a glowing band around it |
+| dark glowing rift | rbxassetid://130357872021925 | Long thin jagged horizontal crack; on a Top-face SurfaceGui (LightInfluence 0) = a ground fissure, tinted dark or lava red. Its background alpha isn't quite 0: keep the face narrow |
+| Upwards flame pillar | rbxassetid://70418763522849 | 4x4 flipbook, small upright flames with a grainy tip; first frames are tiny, so use Loop + FlipbookStartRandom for bursts. Precursor flame bursts; near-black = dark flame silhouettes |
+| Fire Tower | rbxassetid://18456244650 | 4x4 flipbook, smooth thin upright flame wisps; FacingCameraWorldUp, Loop + StartRandom = a curtain of flame tongues (smoother than Upwards flame pillar) |
+| Blurry glowing flame | rbxassetid://107423905441539 | 4x4 flipbook, soft flame blobs; behind tongues as a flame body. Squash ~1 (2:1 upright) or it reads as round balls |
+| BeamFlameWisps | rbxassetid://125449362531870 | Beam: vertical flame tongues across the width; a wide faint camera-facing veil behind particle flames |
+| BeamFlamePeaks | rbxassetid://118613370531472 | Beam: flame peaks rising from a base; second veil layer |
+| BeamOrangeFireColumn | rbxassetid://11767688250 | Beam, coloured: orange column with a yellow core; Width0 ~0 at the top = a tapered flame |
+| BeamSoftGlowCore | rbxassetid://12781750620 | Beam: soft vertical glow (behind a column, or a dim streak above it) |
+| Random Rocks | rbxassetid://14305019062 | 4x4 flipbook, one grey rock per cell; Framerate 0 + StartRandom = varied flung chips |
+| Realistic Smoke Burst | rbxassetid://11866632577 | 4x4 flipbook smoke puff with spiky edges; reads as star silhouettes when dark. For soft smoke shooting up use smoke 41 (Speed ~100-130, Drag 12) |
+| Line Spec 3 | rbxassetid://104267390423468 | Tall flame-shaped streak; FacingCameraWorldUp spike rows and dark streak bursts |
+| Basic Flame Wisp | rbxassetid://16504098653 | 4x4 flipbook, small curly flame; orange = side curls, near-black = dark flecks |
+| dark fire spec | rbxassetid://77001323190674 | 4x4 flipbook (128 cells on a 512 sheet): hollow wiggly rings; orange = ring curls flung from fire |
+| Blurry Horizontal Flare | rbxassetid://103854278038347 | Thin horizontal flare line; camera-facing at the ground = a hot line along a fissure or a flat flash |
 
 Gradient strips used as mesh `TextureID` should fade left to right (along U),
 matching the MeshFactory UV layout.

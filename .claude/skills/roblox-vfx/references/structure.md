@@ -154,6 +154,30 @@ Timeline Defaults: `CoolTime`, `TopDelay`, `SinkTime`, `GasStart`/`GasTime`,
 textures. The module preloads its custom textures from a top-level `task.spawn` +
 `pcall(ContentProvider.PreloadAsync)`. That doesn't yield the require, so it is allowed.
 
+### Lava eruption
+
+`LavaEruption`: a lava fissure on the ground below `ctx.CFrame`, running across the view
+(along its RightVector). Plain Luau, no Forge. `WallLength` (the fissure, 20 studs) sizes
+the fissure, curtain, wind, column and smoke spread; `Scale` sizes everything. Play returns when the crack has faded, at ~4.35 s.
+1. 0-0.6 s precursor: three streak clusters, flung rocks, upright flame bursts, ring
+   curls, dark smoke that shoots up to ~0.7 `WallLength` by 0.2 s, and embers. The crack
+   (three Top-face SurfaceGuis: a dark rift, a bright orange rift line and a faint red
+   pool) heats up from 0.3 s.
+2. 0.70 s (`EruptTime`): a spike row, then a curtain of flame tongues is up within
+   ~0.035 s. The tongues are in three bands whose boxes follow the curtain width: the edges
+   reach ~0.65 `WallLength` and the centre band, 1.3x taller, ~0.95. Tongues turn deep red
+   over the last 40% of their life. They come with a soft flame body, two faint scrolling beam
+   veils, wind arcs (flat on the ground plus a raised, tilted layer) and a hot ground line.
+3. From ~0.82 s: a tapered central flame (beam) with a yellow core, a glow and a dim red
+   streak above it. The curtain holds at 0.75 `WallLength` wide, with opaque dark tongues
+   alternating at its edges (they reuse the precursor burst box).
+4. From 2.85 s (`EruptTime` + `BurnTime`): the edge bands stop and the centre narrows to
+   a thin bundle. Emission stops ~0.15 s before `FadeTime` ends, and the tongue lifetime
+   shrinks so nothing lingers.
+
+One per-frame loop (`ctx.Wait(1/240)`) drives the bursts (one per step), channel rates,
+emitter box widths, beam widths, the light and the crack. Instances: ~49.
+
 ## VFX Forge layers
 
 [ForgeVFX](https://github.com/zilibobi/forge-vfx) is the emit module of the VFX Forge
@@ -360,8 +384,10 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 ## Engine gotchas (verified in Studio)
 
 - `ParticleEmitter.Size` is a **half-width**: `Size = 5` draws a 10x10-stud quad.
-- Moving an `Attachment` between `ctx.Emit` calls in the same frame does **not** move the
-  spawn point; every burst lands where the attachment was. To scatter particles, emit
+- Moving an `Attachment` (or an emitter's part) between `ctx.Emit` calls in the same frame
+  does **not** move the spawn point; every burst lands where it was. To burst clusters at
+  different spots from one emitter, give each cluster its own loop step (one burst per
+  `ctx.Wait`). To scatter particles, emit
   from an invisible part (`ctx.Anchor()` resized) with `Shape = Disc` (radius = half the
   part's X/Z size; `ShapePartial` < 1 turns it into a ring), or use separate attachments.
 - Flat ground/swirl layers: `Orientation = VelocityPerpendicular`,
@@ -372,7 +398,7 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 - Additive (`LightEmission = 1`) bright green with `Brightness` > 1 clips to mint/white on
   light ground. Keep `Brightness` ~1 and put a dark normal-blend layer behind it.
 - Camera-facing particles near the ground get cut by it (hard straight edge). Raise them
-  or shrink them. Used on purpose, a camera-facing disc centred on the ground reads as a
+  or shrink them; for flames, spawn ~0.5x their half-size above the ground. Used on purpose, a camera-facing disc centred on the ground reads as a
   dome (see `MagnetPull`).
 - `Shape = Sphere` with `ShapePartial = 0.5` emits from the upper hemisphere only; with
   `ShapeStyle = Surface` and `ShapeInOut = Inward` particles fly to the centre (suction).
@@ -425,6 +451,19 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 - Layout frames: `CFrame.lookAt(p, p + towardViewer)` has its RightVector pointing to the
   viewer's left. Build the frame facing away from the viewer
   (`CFrame.lookAt(p, p - towardViewer)`) so that +X = the viewer's right.
+- Many flame flipbooks start with tiny frames: as a OneShot burst they stay invisible for
+  most of a short lifetime. Use `FlipbookMode = Loop` + `FlipbookStartRandom = true` (and a
+  framerate ~16-24) so every particle shows a full-size frame at once.
+- A Top-face SurfaceGui runs the image's X along the part's **Z** axis. For a horizontal
+  texture (a crack), make the part long on Z and turn it 90 deg about Y so its Z runs
+  along the line you want.
+- Ground-flat particles (`VelocityPerpendicular`): `Squash = -0.8` at `Rotation = 0`
+  stretches the quad ~1.35x along the attachment's X and flattens it to ~0.3-0.4 across,
+  giving an ellipse along X. `RotSpeed` turns the whole ellipse, so keep it small. Tilt the
+  attachment to tilt the ellipse.
+- `VelocityParallel` streaks with any spread toward or away from the camera smear sideways
+  into long horizontal blades. For flames that lean, use `FacingCameraWorldUp` and lean
+  them with `Rotation` (one emitter per side).
 - A circular band (Tube mesh) can't follow a lumpy surface. Paint the band into the
   mesh's own texture instead, or draw the band as a camera-facing arc particle in front
   (`BandArc` on the gas dome).
