@@ -489,7 +489,7 @@ function Effect.Play(ctx)
 	-- wind: a swirl of arcs round the base, a little longer along the fissure (~1.3:1; on a
 	-- ground-flat particle a negative Squash stretches it along the attachment's X), flat
 	-- on the ground and raised + tilted so some wrap up round the flames. Each arc rises
-	-- ~0.12 B (~5 studs at Scale 3) as it spins out; VelocityPerpendicular keeps it flat
+	-- ~0.3 B (~13 studs at Scale 3) as it spins out; VelocityPerpendicular keeps it flat
 	-- while it moves up.
 	local windHalf = 0.31 * B -- arcs reach ~7 studs out along the fissure, ~5.5 across
 	local function windEmitter(att, sizeScale)
@@ -498,13 +498,13 @@ function Effect.Play(ctx)
 			Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
 			EmissionDirection = Enum.NormalId.Top,
 			Color = colors({ { 0, p.WindColor }, { 1, p.EdgeColor } }),
-			LightEmission = 0.75,
-			Brightness = 1.4,
+			LightEmission = 0.6,
+			Brightness = 1.1,
 			Size = seq({ { 0, windHalf * 1.25 * sizeScale }, { 0.5, windHalf * 1.55 * sizeScale }, { 1, windHalf * 1.7 * sizeScale } }),
 			Squash = NumberSequence.new(-0.45),
-			Transparency = seq({ { 0, 0.25 }, { 0.55, 0.4 }, { 1, 1 } }),
+			Transparency = seq({ { 0, 0.4 }, { 0.55, 0.52 }, { 1, 1 } }),
 			Lifetime = NumberRange.new(0.42, 0.5),
-			Speed = NumberRange.new(0.4 * B, 0.5 * B),
+			Speed = NumberRange.new(1 * B, 1.2 * B),
 			Drag = 2.5,
 			Rotation = NumberRange.new(-10, 10),
 			RotSpeed = NumberRange.new(30, 60),
