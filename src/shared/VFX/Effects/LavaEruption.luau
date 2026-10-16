@@ -530,14 +530,15 @@ function Effect.Play(ctx)
 
 	------------------------------------------------------------------ beams
 	-- Faint veil of tongues behind the particles (two scrolling sheets), the central
-	-- tapered flame with a soft glow, and a faint dim red streak above it (fixed, not
+	-- tapered flame with a soft glow, and a faint dim red streak above it (all fixed, not
 	-- camera-facing).
-	local bottom = attachment(base, CFrame.new(0, 0.2 * s, 0))
-	local wallTop = attachment(base, CFrame.new(0, 0.2 * s, 0))
-	-- The central flame is a fixed sheet (FaceCamera off) that lies across the fissure: a
-	-- non-camera-facing beam's face points along its attachments' Y axis, so these
-	-- attachments turn X up the flame, Y toward the viewer and Z along the fissure.
-	local upright = CFrame.fromMatrix(Vector3.zero, Vector3.yAxis, Vector3.zAxis)
+	-- The veil and the central flame are fixed sheets (FaceCamera off) that lie along the
+	-- fissure: a non-camera-facing beam spreads its width along its attachments' Y axis, so
+	-- these attachments turn X up the flame, Y along the fissure and Z toward the viewer's
+	-- side.
+	local upright = CFrame.fromMatrix(Vector3.zero, Vector3.yAxis, Vector3.xAxis)
+	local bottom = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
+	local wallTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
 	local columnBottom = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
 	local columnTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
 	local streakTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
@@ -545,6 +546,7 @@ function Effect.Play(ctx)
 	local veil = seq({ { 0, 1 }, { 0.55, 0.8 }, { 0.85, 0.5 }, { 1, 0.55 } })
 	local wisps = beam(wallTop, bottom, {
 		Name = "WallWisps",
+		FaceCamera = false,
 		Texture = ASSETS.FlameWisps,
 		Color = colors({ { 0, p.EdgeColor }, { 0.5, p.Color }, { 1, p.CoreColor } }),
 		LightEmission = 1,
@@ -555,6 +557,7 @@ function Effect.Play(ctx)
 	})
 	local peaks = beam(wallTop, bottom, {
 		Name = "WallPeaks",
+		FaceCamera = false,
 		Texture = ASSETS.FlamePeaks,
 		Color = colors({ { 0, p.EdgeColor }, { 0.6, p.Color }, { 1, p.CoreColor } }),
 		LightEmission = 1,
