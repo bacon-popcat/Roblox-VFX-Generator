@@ -148,7 +148,7 @@ Effect.Defaults = {
 	SmokeColor = Color3.fromRGB(40, 40, 48), -- darker than the sky
 	RockColor = Color3.fromRGB(45, 40, 40), -- near-black shards
 	WindColor = Color3.fromRGB(255, 150, 105), -- peach wind arcs (fading to red)
-	Scale = 1,
+	Scale = 3, -- 3x the original size (fissure ~60 studs long)
 	WallLength = 20, -- fissure length (studs); every other size follows it
 	-- timing: keep EruptTime >= 0.5 and FadeTime >= 0.7 (the precursor and die-down keys
 	-- are laid out inside those windows)
