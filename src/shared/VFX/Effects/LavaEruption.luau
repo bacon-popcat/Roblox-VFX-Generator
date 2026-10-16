@@ -116,7 +116,7 @@ local function attachment(parent, cframe)
 	return att
 end
 
--- Camera-facing beam from `top` down to `bottom` (a beam draws its texture's top at
+-- Beam (camera-facing unless props say otherwise) from `top` down to `bottom` (a beam draws its texture's top at
 -- Attachment0, so flames point up).
 local function beam(top, bottom, props)
 	local b = Instance.new("Beam")
@@ -530,12 +530,18 @@ function Effect.Play(ctx)
 
 	------------------------------------------------------------------ beams
 	-- Faint veil of tongues behind the particles (two scrolling sheets), the central
-	-- tapered flame with a soft glow, and a faint dim red streak above it.
+	-- tapered flame with a soft glow, and a faint dim red streak above it (fixed, not
+	-- camera-facing).
 	local bottom = attachment(base, CFrame.new(0, 0.2 * s, 0))
 	local wallTop = attachment(base, CFrame.new(0, 0.2 * s, 0))
-	local columnTop = attachment(base, CFrame.new(0, 0.2 * s, 0))
-	local streakTop = attachment(base, CFrame.new(0, 0.2 * s, 0))
-	local coreTop = attachment(base, CFrame.new(0, 0.2 * s, 0))
+	-- The central flame is a fixed sheet (FaceCamera off) that lies across the fissure: a
+	-- non-camera-facing beam's face points along its attachments' Y axis, so these
+	-- attachments turn X up the flame, Y toward the viewer and Z along the fissure.
+	local upright = CFrame.fromMatrix(Vector3.zero, Vector3.yAxis, Vector3.zAxis)
+	local columnBottom = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
+	local columnTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
+	local streakTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
+	local coreTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
 	local veil = seq({ { 0, 1 }, { 0.55, 0.8 }, { 0.85, 0.5 }, { 1, 0.55 } })
 	local wisps = beam(wallTop, bottom, {
 		Name = "WallWisps",
@@ -557,8 +563,9 @@ function Effect.Play(ctx)
 		TextureSpeed = 0.6 * ctx.TimeScale,
 		ZOffset = -0.4,
 	})
-	local column = beam(columnTop, bottom, {
+	local column = beam(columnTop, columnBottom, {
 		Name = "Column",
+		FaceCamera = false,
 		Texture = ASSETS.FireColumn,
 		Color = colors({ { 0, p.EdgeColor }, { 0.5, p.Color }, { 1, p.CoreColor } }),
 		LightEmission = 1,
@@ -567,8 +574,9 @@ function Effect.Play(ctx)
 		TextureSpeed = 1.4 * ctx.TimeScale,
 		ZOffset = 0.5,
 	})
-	local columnGlow = beam(columnTop, bottom, {
+	local columnGlow = beam(columnTop, columnBottom, {
 		Name = "ColumnGlow",
+		FaceCamera = false,
 		Texture = ASSETS.GlowCore,
 		Color = ColorSequence.new(p.Color),
 		LightEmission = 1,
@@ -577,8 +585,9 @@ function Effect.Play(ctx)
 		ZOffset = -0.6,
 	})
 	-- bright yellow interior over the column's lower half
-	local core = beam(coreTop, bottom, {
+	local core = beam(coreTop, columnBottom, {
 		Name = "Core",
+		FaceCamera = false,
 		Texture = ASSETS.GlowCore,
 		Color = ColorSequence.new(p.CoreColor),
 		LightEmission = 1,
@@ -588,6 +597,7 @@ function Effect.Play(ctx)
 	})
 	local streak = beam(streakTop, columnTop, {
 		Name = "Streak",
+		FaceCamera = false,
 		Texture = ASSETS.GlowCore,
 		Color = ColorSequence.new(p.EdgeColor),
 		LightEmission = 1,
