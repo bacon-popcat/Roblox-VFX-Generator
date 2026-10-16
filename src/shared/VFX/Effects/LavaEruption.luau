@@ -200,7 +200,8 @@ function Effect.Play(ctx)
 	local midFlames = box(0, 0.07 * B, 0.6 * B) -- precursor flames, rocks, smoke: middle of the crack
 	local tallLeft = box(-0.25 * B, 0.24 * B, 0.5 * B) -- tongue halves; widths follow the curtain
 	local tallRight = box(0.25 * B, 0.24 * B, 0.5 * B)
-	local tallCentre = box(0, 0.27 * B, 0.3 * B) -- taller tongues and the flame body, middle of the curtain
+	local tallCentre = box(0, 0.27 * B, 0.3 * B) -- taller tongues, middle of the curtain
+	local bodyBox = box(0, 0.27 * B, 0.3 * B) -- soft flame body, across nearly the whole curtain
 
 	local base = ctx.Anchor(frame)
 	local centre = attachment(base, CFrame.new(0, 0.4 * s, 0))
@@ -418,8 +419,8 @@ function Effect.Play(ctx)
 		return seq({ { 0, 0.21 * B * h, 0.03 * B }, { 0.5, 0.26 * B * h, 0.03 * B }, { 1, 0.24 * B * h } })
 	end
 	local lastCentreSize = 1
-	-- soft flame body filling the middle of the curtain up to ~0.85 of its height
-	local flameBody = emitter(tallCentre, {
+	-- soft flame body filling nearly the whole curtain up to ~0.85 of its height
+	local flameBody = emitter(bodyBox, {
 		Texture = ASSETS.FlameBody,
 		FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
 		FlipbookMode = Enum.ParticleFlipbookMode.Loop,
@@ -742,8 +743,8 @@ function Effect.Play(ctx)
 	local vLean = { { E + 0.2, 0 }, { E + 0.26, 1 }, { E + 0.36, 1 }, { E + 0.45, 0 },
 		{ burnEnd - 0.12, 0 }, { burnEnd - 0.06, 1 }, { burnEnd + 0.4, 1 }, { burnEnd + 0.5, 0 } }
 	local channels = {
-		{ tonguesLeft, p.FlameRate * 0.35, edgeBurning, vThin = true },
-		{ tonguesRight, p.FlameRate * 0.35, edgeBurning, vThin = true },
+		{ tonguesLeft, p.FlameRate * 0.5, edgeBurning, vThin = true },
+		{ tonguesRight, p.FlameRate * 0.5, edgeBurning, vThin = true },
 		{ tonguesCentre, p.FlameRate * 0.3, burning },
 		{ flameBody, p.FlameRate * 0.4, { { E + 0.12, 0 }, { E + 0.18, 1 }, { burnEnd + 0.3, 1 }, { burnEnd + 0.5, 0 } } },
 		{ darkTongues, p.DarkTongueRate, { { E + 0.3, 0 }, { E + 0.4, 1 }, { burnEnd, 1 }, { burnEnd + 0.2, 0 } } },
@@ -803,7 +804,7 @@ function Effect.Play(ctx)
 		for i, channel in channels do
 			local rate = channel[2] * track(channel[3], t)
 			if channel.vThin then
-				rate *= 1 - 0.55 * track(vLean, t)
+				rate *= 1 - 0.25 * track(vLean, t) -- only a light thinning, so the sides stay full
 			end
 			owed[i] += rate * dt
 			local n = math.floor(owed[i])
@@ -844,7 +845,8 @@ function Effect.Play(ctx)
 		tallRight.Size = tallLeft.Size
 		tallLeft.CFrame = frame * CFrame.new(-width / 4, 0.24 * B, 0)
 		tallRight.CFrame = frame * CFrame.new(width / 4, 0.24 * B, 0)
-		tallCentre.Size = Vector3.new(width * 0.6, 0.2 * s, 1 * s) -- body ~0.85 B wide with its quads
+		tallCentre.Size = Vector3.new(width * 0.6, 0.2 * s, 1 * s)
+		bodyBox.Size = Vector3.new(width * 0.9, 0.2 * s, 1 * s) -- the body backs the sides too
 		local veilWidth = width * 1.05 * track(wallAlpha, t)
 		wisps.Width0, wisps.Width1 = veilWidth * 0.7, veilWidth
 		peaks.Width0, peaks.Width1 = veilWidth * 0.55, veilWidth * 0.9
