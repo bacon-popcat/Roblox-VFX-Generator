@@ -148,7 +148,7 @@ Effect.Defaults = {
 	SmokeColor = Color3.fromRGB(40, 40, 48), -- darker than the sky
 	RockColor = Color3.fromRGB(45, 40, 40), -- near-black shards
 	WindColor = Color3.fromRGB(255, 150, 105), -- peach wind arcs (fading to red)
-	Scale = 3, -- 3x the original size (fissure ~60 studs long)
+	Scale = 2.5, -- 2.5x the original size (fissure ~50 studs long)
 	WallLength = 20, -- fissure length (studs); every other size follows it
 	-- timing: keep EruptTime >= 0.5 and FadeTime >= 0.7 (the precursor and die-down keys
 	-- are laid out inside those windows)
@@ -496,7 +496,7 @@ function Effect.Play(ctx)
 	-- wind: a swirl of arcs round the base, a little longer along the fissure (~1.3:1; on a
 	-- ground-flat particle a negative Squash stretches it along the attachment's X), flat
 	-- on the ground and raised + tilted so some wrap up round the flames. Each arc rises
-	-- ~0.3 B (~13 studs at Scale 3) as it spins out; VelocityPerpendicular keeps it flat
+	-- ~0.3 B (~11 studs at Scale 2.5) as it spins out; VelocityPerpendicular keeps it flat
 	-- while it moves up.
 	local windHalf = 0.31 * B -- arcs reach ~7 studs out along the fissure, ~5.5 across
 	local function windEmitter(att, sizeScale)

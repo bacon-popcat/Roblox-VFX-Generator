@@ -158,7 +158,7 @@ textures. The module preloads its custom textures from a top-level `task.spawn` 
 
 `LavaEruption`: a lava fissure on the ground below `ctx.CFrame`, running across the view
 (along its RightVector). Plain Luau, no Forge. `WallLength` (the fissure, 20 studs) sizes
-the fissure, curtain, wind, column and smoke spread; `Scale` (default 3) sizes everything. Play returns when the crack has faded, at ~4.35 s.
+the fissure, curtain, wind, column and smoke spread; `Scale` (default 2.5) sizes everything. Play returns when the crack has faded, at ~4.35 s.
 1. 0-0.6 s precursor: three streak clusters, flung rocks, upright flame bursts, ring
    curls, dark smoke that shoots up to ~0.7 `WallLength` by 0.2 s, and embers. The crack
    (three Top-face SurfaceGuis: a dark rift, a bright orange rift line and a faint red

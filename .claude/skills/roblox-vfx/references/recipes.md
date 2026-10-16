@@ -147,7 +147,7 @@ of flame, then crack glow to ~4.35 s. Size the big shapes off the fissure length
    tall. Stop emitting ~0.15 s early and shrink lifetimes so nothing lingers. The crack
    glow stays red-orange and dim.
 5. Playtest tuning (Oscar's changes after the first build, now in the module):
-   - Default `Scale = 3` (fissure ~60 studs).
+   - Default `Scale = 2.5` (fissure ~50 studs). Oscar tried 3 first, then settled on 2.5.
    - The central column, glow, core, streak and both veil beams use `FaceCamera = false`.
      Their attachments use `CFrame.fromMatrix(Vector3.zero, Vector3.yAxis, Vector3.xAxis)`
      (X up the flame, Y along the fissure).
