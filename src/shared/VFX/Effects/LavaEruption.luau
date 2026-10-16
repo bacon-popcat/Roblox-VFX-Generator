@@ -488,7 +488,9 @@ function Effect.Play(ctx)
 	})
 	-- wind: a swirl of arcs round the base, a little longer along the fissure (~1.3:1; on a
 	-- ground-flat particle a negative Squash stretches it along the attachment's X), flat
-	-- on the ground and raised + tilted so some wrap up round the flames
+	-- on the ground and raised + tilted so some wrap up round the flames. Each arc rises
+	-- ~0.12 B (~5 studs at Scale 3) as it spins out; VelocityPerpendicular keeps it flat
+	-- while it moves up.
 	local windHalf = 0.31 * B -- arcs reach ~7 studs out along the fissure, ~5.5 across
 	local function windEmitter(att, sizeScale)
 		return emitter(att, {
@@ -496,15 +498,16 @@ function Effect.Play(ctx)
 			Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
 			EmissionDirection = Enum.NormalId.Top,
 			Color = colors({ { 0, p.WindColor }, { 1, p.EdgeColor } }),
-			LightEmission = 0.5,
-			Brightness = 0.9,
+			LightEmission = 0.75,
+			Brightness = 1.4,
 			Size = seq({ { 0, windHalf * 1.25 * sizeScale }, { 0.5, windHalf * 1.55 * sizeScale }, { 1, windHalf * 1.7 * sizeScale } }),
 			Squash = NumberSequence.new(-0.45),
-			Transparency = seq({ { 0, 0.5 }, { 0.55, 0.62 }, { 1, 1 } }),
-			Lifetime = NumberRange.new(0.3, 0.35),
-			Speed = NumberRange.new(0.01),
+			Transparency = seq({ { 0, 0.25 }, { 0.55, 0.4 }, { 1, 1 } }),
+			Lifetime = NumberRange.new(0.42, 0.5),
+			Speed = NumberRange.new(0.4 * B, 0.5 * B),
+			Drag = 2.5,
 			Rotation = NumberRange.new(-10, 10),
-			RotSpeed = NumberRange.new(20, 45),
+			RotSpeed = NumberRange.new(30, 60),
 		})
 	end
 	local windGround = windEmitter(windLow, 1)
@@ -694,22 +697,23 @@ function Effect.Play(ctx)
 			ctx.Emit(tonguesCentre, 6)
 		end },
 		{ E + 0.02, function()
-			ctx.Emit(windGround, 2)
+			ctx.Emit(windGround, 3)
 		end },
 		{ E + 0.1, function()
 			setTongueSpeed(1)
 		end },
 		{ E + 0.09, function()
-			ctx.Emit(windTilt, 1)
+			ctx.Emit(windTilt, 2)
 			ctx.Emit(curls, 8)
 			ctx.Emit(flecks, 6)
 		end },
 		{ E + 0.14, function()
 			ctx.Emit(windTilt, 1)
-			ctx.Emit(windGround, 1)
+			ctx.Emit(windGround, 2)
 		end },
 		{ E + 0.22, function()
-			ctx.Emit(windTilt, 1)
+			ctx.Emit(windTilt, 2)
+			ctx.Emit(windGround, 1)
 			-- now the dark side tongue spot, starting at the curtain's right edge
 			burstBox.Size = Vector3.new(0.08 * B, 0.2 * s, 1 * s)
 			burstBox.CFrame = frame * CFrame.new(0.36 * B, 0.12 * B, 0)
