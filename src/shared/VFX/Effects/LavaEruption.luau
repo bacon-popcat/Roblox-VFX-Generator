@@ -375,8 +375,11 @@ function Effect.Play(ctx)
 	})
 	-- smooth thin upright tongues; each half leans a little inward so the curtain stays
 	-- tight, and the centre band is ~1.3x taller so the silhouette tapers. They shoot up
-	-- fast (TONGUE_RUSH) and die young, so the curtain keeps its height but rushes.
+	-- fast (TONGUE_RUSH) and die young, so the curtain rushes; WALL_HEIGHT trims the
+	-- tongues, flame body and the veil/column beams to ~0.85 of the original height.
 	local TONGUE_RUSH = 1.6
+	local WALL_HEIGHT = 0.85
+	local tongueLifeK = WALL_HEIGHT / TONGUE_RUSH
 	local function tongueEmitter(anchor, inward, height)
 		return emitter(anchor, {
 			Texture = ASSETS.FireTower,
@@ -392,7 +395,7 @@ function Effect.Play(ctx)
 			Size = seq({ { 0, 0.21 * B * height, 0.03 * B }, { 0.5, 0.26 * B * height, 0.03 * B }, { 1, 0.24 * B * height } }),
 			Squash = seq({ { 0, 0.5 }, { 1, 0.8 } }),
 			Transparency = seq({ { 0, 0.1 }, { 0.5, 0.3 }, { 0.6, 0.45 }, { 1, 1 } }),
-			Lifetime = NumberRange.new(0.35 / TONGUE_RUSH, 0.55 / TONGUE_RUSH),
+			Lifetime = NumberRange.new(0.35 * tongueLifeK, 0.55 * tongueLifeK),
 			Speed = NumberRange.new(0.44 * B * height * TONGUE_RUSH, 0.74 * B * height * TONGUE_RUSH),
 			Drag = 1.5,
 			SpreadAngle = Vector2.new(4, 4),
@@ -430,7 +433,7 @@ function Effect.Play(ctx)
 		Size = seq({ { 0, 0.18 * B }, { 0.5, 0.22 * B, 0.03 * B }, { 1, 0.2 * B } }),
 		Squash = NumberSequence.new(1), -- ~2:1 upright, so it never reads as round balls
 		Transparency = seq({ { 0, 0.4 }, { 0.4, 0.55 }, { 0.7, 0.75 }, { 1, 1 } }),
-		Lifetime = NumberRange.new(0.4 / TONGUE_RUSH, 0.6 / TONGUE_RUSH),
+		Lifetime = NumberRange.new(0.4 * tongueLifeK, 0.6 * tongueLifeK),
 		Speed = NumberRange.new(0.25 * B * TONGUE_RUSH, 0.43 * B * TONGUE_RUSH),
 		Drag = 1.5,
 		SpreadAngle = Vector2.new(6, 6),
@@ -761,13 +764,20 @@ function Effect.Play(ctx)
 		{ burnEnd + 0.15, 0.35 }, { burnEnd + 0.3, 0.2 }, { burnEnd + 0.45, 0.08 }, { fadeEnd, 0.03 },
 	}
 	-- the veil overshoots a little at the onset (the reference's first wall is tallest)
-	local wallHeight = { { E, 0 }, { E + 0.035, H * 1.15 }, { E + 0.35, H }, { narrowEnd, H }, { fadeEnd, H * 0.85 } }
+	local wallH = H * WALL_HEIGHT
+	local wallHeight = { { E, 0 }, { E + 0.035, wallH * 1.15 }, { E + 0.35, wallH }, { narrowEnd, wallH }, { fadeEnd, wallH * 0.85 } }
 	local wallAlpha = { { E, 0 }, { E + 0.02, 1 }, { narrowEnd - 0.1, 1 }, { fadeEnd - 0.05, 0 } }
-	local columnHeight = { { E + 0.12, 0 }, { E + 0.24, 0.75 * B }, { narrowEnd, 0.75 * B }, { fadeEnd, 0.7 * B } }
+	local colH = B * WALL_HEIGHT
+	local columnHeight = { { E + 0.12, 0 }, { E + 0.24, 0.75 * colH }, { narrowEnd, 0.75 * colH }, { fadeEnd, 0.7 * colH } }
 	local columnWidth = {
 		{ E + 0.12, 0 }, { E + 0.24, 0.32 * B }, { burnEnd, 0.32 * B }, { narrowEnd, 0.12 * B }, { fadeEnd, 0 },
 	}
-	local streakHeight = { { E + 0.3, 0.72 * B }, { E + 0.45, 0.9 * B }, { burnEnd, 0.9 * B }, { fadeEnd, 0.6 * B } }
+	local streakHeight = { { E + 0.3, 0.72 * colH }, { E + 0.45, 0.9 * colH }, { burnEnd, 0.9 * colH }, { fadeEnd, 0.6 * colH } }
+	-- side-to-side sway of the whole curtain: a sideways push on the live tongues and body
+	-- (they bend together) and the beam tops swinging the same way
+	local swayAmount = { { E + 0.1, 0 }, { E + 0.35, 1 }, { burnEnd + 0.2, 1 }, { fadeEnd, 0.3 } }
+	local swayRight = frame.RightVector
+	local swayed = { tonguesLeft, tonguesRight, tonguesCentre, flameBody }
 	local lightTrack = { { E, 0 }, { E + 0.05, p.LightBrightness * 1.5 }, { E + 0.3, p.LightBrightness },
 		{ burnEnd, p.LightBrightness }, { fadeEnd, 0 } }
 	local lineTrack = { { E + 0.012, 1 }, { E + 0.08, 0 }, { narrowEnd, 0 }, { fadeEnd + 0.2, 1 } }
@@ -810,7 +820,8 @@ function Effect.Play(ctx)
 		end
 
 		local life = track(tongueLife, t)
-		local edge = math.min(life, track(edgeLife, t))
+		local edge = math.min(life, track(edgeLife, t)) * tongueLifeK
+		life *= tongueLifeK
 		tonguesLeft.Lifetime = NumberRange.new(0.35 * edge, 0.55 * edge)
 		tonguesRight.Lifetime = tonguesLeft.Lifetime
 		tonguesCentre.Lifetime = NumberRange.new(0.35 * life, 0.55 * life)
@@ -837,16 +848,23 @@ function Effect.Play(ctx)
 		local veilWidth = width * 1.05 * track(wallAlpha, t)
 		wisps.Width0, wisps.Width1 = veilWidth * 0.7, veilWidth
 		peaks.Width0, peaks.Width1 = veilWidth * 0.55, veilWidth * 0.9
-		wallTop.Position = Vector3.new(0, 0.2 * s + track(wallHeight, t), 0)
+		-- two mixed sines (~0.9 and ~1.6 sways/s) so the swing never looks mechanical
+		local sway = track(swayAmount, t) * (0.75 * math.sin(t * 5.7) + 0.25 * math.sin(t * 10.1 + 1.3))
+		local push = swayRight * (1.6 * B * sway)
+		for _, e in swayed do
+			e.Acceleration = push
+		end
+		local swayX = 0.07 * B * sway
+		wallTop.Position = Vector3.new(swayX, 0.2 * s + track(wallHeight, t), 0)
 
 		local columnTopY = 0.2 * s + track(columnHeight, t)
-		columnTop.Position = Vector3.new(0, columnTopY, 0)
-		streakTop.Position = Vector3.new(0, math.max(columnTopY, 0.2 * s + track(streakHeight, t)), 0)
+		columnTop.Position = Vector3.new(swayX, columnTopY, 0)
+		streakTop.Position = Vector3.new(swayX * 1.2, math.max(columnTopY, 0.2 * s + track(streakHeight, t)), 0)
 		local cw = track(columnWidth, t)
 		column.Width0, column.Width1 = cw * 0.05, cw -- pointed tip, wide base
 		columnGlow.Width0, columnGlow.Width1 = cw * 0.5, cw * 1.8
 		streak.Width0, streak.Width1 = cw * 0.04, cw * 0.1
-		coreTop.Position = Vector3.new(0, 0.2 * s + (columnTopY - 0.2 * s) * 0.75, 0)
+		coreTop.Position = Vector3.new(swayX * 0.75, 0.2 * s + (columnTopY - 0.2 * s) * 0.75, 0)
 		core.Width0, core.Width1 = cw * 0.25, cw * 0.6
 
 		light.Brightness = track(lightTrack, t)
