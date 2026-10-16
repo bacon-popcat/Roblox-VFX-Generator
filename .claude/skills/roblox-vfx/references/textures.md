@@ -69,13 +69,27 @@ matching the MeshFactory UV layout.
 ## Making new textures
 
 When nothing in the library fits, generate one (white RGB, shape in alpha; tint with
-`Color`):
-1. Draw it with numpy inside Blender (`mcp__Blender__execute_blender_code`; Blender's
-   Python has numpy, system Python does not) and save a PNG to the scratchpad.
-2. Serve that folder over HTTP (`python -m http.server 8765 --bind 127.0.0.1`, in the
+`Color`). Pick the generator by how hard the image is:
+
+| Image | Generator |
+|---|---|
+| Default: any new texture or image | Google Gemini through Composio: `GEMINI_GENERATE_IMAGE` via `COMPOSIO_MULTI_EXECUTE_TOOL` (find it with `COMPOSIO_SEARCH_TOOLS`) on the default model |
+| Detailed, or the default model's result isn't good enough | Same tool with `model: "gemini-3-pro-image-preview"` (Nano Banana Pro; supports `image_size` 2K/4K and other aspect ratios) |
+| Very complex (exact flipbook grids, consistent frames across a sheet, tileable or img2img work, or Gemini Pro keeps missing) | ComfyUI (local, via comfy-mcp; call `server_info` first) |
+
+1. Generate the image. Prompt for a **single isolated shape, pure white on a pure black
+   background, no text, no frame**, and say the layout you need (centred, square, tall
+   streak for a beam, NxN grid of cells for a flipbook). Save the result (the response's
+   `data.image.s3url` is short-lived, so download it right away) to the scratchpad.
+2. Convert it to white RGB with the shape in alpha (alpha = brightness, RGB = 255) and
+   resize to a power of two. Do this with numpy inside Blender
+   (`mcp__Blender__execute_blender_code`; Blender's Python has numpy, system Python does
+   not). Simple exact shapes (gradients, rings, plain falloffs) can be drawn straight with
+   numpy instead of generated.
+3. Serve that folder over HTTP (`python -m http.server 8765 --bind 127.0.0.1`, in the
    background); `upload_image` only takes http URLs. Upload `http://127.0.0.1:8765/<file>`.
-3. Verify by reading pixels back: `AssetService:CreateEditableImageAsync(Content.fromAssetId(id))`.
-4. Add a row to the table above.
+4. Verify by reading pixels back: `AssetService:CreateEditableImageAsync(Content.fromAssetId(id))`.
+5. Add a row to the table above, noting which generator made it.
 
 Beam and Trail textures: X spans the beam's width, Y runs along its length and tiles,
 so draw them tall (e.g. 128 x 512) with the streak running vertically. A wide texture

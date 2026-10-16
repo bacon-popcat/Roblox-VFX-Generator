@@ -533,15 +533,23 @@ with ffmpeg at the same times (t = 0 at the slash's first frame).
 
 ### Matching a reference video (workflow)
 
-1. Extract frames with ffmpeg: 2-4 fps overview sheets first, then cropped 20-60 fps
-   sheets of one cycle, then full-res crops of key frames. A 0.25x slow-motion recording
-   is far easier to read than 1x; measure real timing from the 1x one.
+1. Extract frames with ffmpeg: 2-4 fps overview sheets first, then cropped sheets of one
+   cycle, then full-res crops of key frames. A 0.25x slow-motion recording is far easier
+   to read than 1x; measure real timing from the 1x one.
+   **Highly detailed or fast effects (explosions, slashes, flashes, impacts, anything whose
+   onset is under ~0.5 s) are analysed every 10 ms of real time**, start to finish. A 1x
+   60 fps video only has a frame every ~16.7 ms, so use the slow-motion recording (at 0.25x
+   and 60 fps, 10 ms real = every 2.4 frames: take every 2nd-3rd frame, or resample with
+   `ffmpeg -vf "setpts=...,fps=..."` to an exact 10 ms step) and label every frame with its
+   real-time offset. Slower effects can use ~25-50 ms through the onset and ~100 ms
+   through steady phases and the fade.
 2. Build the effect, then capture the same moments with VFXScrub and a fixed camera at
    the reference's elevation, and paste them side by side (reference left, ours right,
    labelled with real-time offsets).
    **The goal is that any timestamp looks almost the same as the reference**, not just a few
-   key frames: sample the whole effect densely (every ~25-50 ms of real time through the
-   onset, ~100 ms through steady phases and the fade), and when the reference comes from more
+   key frames: capture ours at the same increments as the reference (10 ms for detailed or
+   fast effects, see step 1; scrub at 0.05x for t < 0.3 s, since Studio Edit mode can stall
+   ~0.3 s mid-effect and overshoot the freeze time at 0.1x), and when the reference comes from more
    than one camera angle, match a camera to each and compare every angle at the same times.
    A layer that looks right from the front can be flat, thin or misplaced from the side.
 3. Grade each round with a grader subagent that compares **only against the reference**
