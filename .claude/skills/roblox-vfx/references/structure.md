@@ -526,6 +526,11 @@ with ffmpeg at the same times (t = 0 at the slash's first frame).
 2. Build the effect, then capture the same moments with VFXScrub and a fixed camera at
    the reference's elevation, and paste them side by side (reference left, ours right,
    labelled with real-time offsets).
+   **The goal is that any timestamp looks almost the same as the reference**, not just a few
+   key frames: sample the whole effect densely (every ~25-50 ms of real time through the
+   onset, ~100 ms through steady phases and the fade), and when the reference comes from more
+   than one camera angle, match a camera to each and compare every angle at the same times.
+   A layer that looks right from the front can be flat, thin or misplaced from the side.
 3. Grade each round with a grader subagent that compares **only against the reference**
    (state anything intentionally out of scope). Resume the same grader for later rounds so
    it remembers earlier scores. Apply its fixes, re-capture, repeat until it says the
