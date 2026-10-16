@@ -158,7 +158,7 @@ textures. The module preloads its custom textures from a top-level `task.spawn` 
 
 `LavaEruption`: a lava fissure on the ground below `ctx.CFrame`, running across the view
 (along its RightVector). Plain Luau, no Forge. `WallLength` (the fissure, 20 studs) sizes
-the fissure, curtain, wind, column and smoke spread; `Scale` sizes everything. Play returns when the crack has faded, at ~4.35 s.
+the fissure, curtain, wind, column and smoke spread; `Scale` (default 3) sizes everything. Play returns when the crack has faded, at ~4.35 s.
 1. 0-0.6 s precursor: three streak clusters, flung rocks, upright flame bursts, ring
    curls, dark smoke that shoots up to ~0.7 `WallLength` by 0.2 s, and embers. The crack
    (three Top-face SurfaceGuis: a dark rift, a bright orange rift line and a faint red
@@ -448,6 +448,19 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 - `ParticleEmitter.Squash`: positive values make the particle taller and narrower, and
   negative values make it wider. With `VelocityParallel`, use positive values for streaks
   along the flight.
+- A Beam with `FaceCamera = false` spreads its width along its attachments' **Y axis**
+  (verified on `LavaEruption`). Rotating the attachments so Y pointed at the viewer
+  showed the sheet edge-on. For an upright sheet along a direction D, set the
+  attachments to `CFrame.fromMatrix(pos, up, D)`. `Attachment.Position` is in the
+  **parent part's** space, not the attachment's own rotated axes, so sway or offset
+  rotated attachments in part axes.
+- Before you change an emitter or beam property, grep the module for every place that
+  writes it. Per-frame loops often reset `Lifetime`, `Speed`, `Size` or `Rotation` each
+  frame, which silently undoes a change made only where the emitter is created
+  (`LavaEruption` reset tongue `Lifetime` this way, so a "faster but same height"
+  change made the wall taller).
+- How high a rising particle gets ≈ `Speed × Lifetime` (less with `Drag`: `v/k ·
+  (1 − e^(−k·t))`). Changing one without the other changes the height.
 - Layout frames: `CFrame.lookAt(p, p + towardViewer)` has its RightVector pointing to the
   viewer's left. Build the frame facing away from the viewer
   (`CFrame.lookAt(p, p - towardViewer)`) so that +X = the viewer's right.

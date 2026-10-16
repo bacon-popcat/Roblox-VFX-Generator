@@ -3,6 +3,21 @@
 Timings are in effect seconds. Layers are listed in draw-priority order.
 "Mesh:" notes name the MeshFactory generator to use (see `meshes.md`).
 
+**Recreating a reference: Oscar's corrections so far** (apply these by default; they came
+from playtest screenshots, not from the reference video):
+- Big flame sheets (walls, curtains, central columns) stay fixed in the world, lying
+  along the effect's shape, not turned to the camera. Use beams with `FaceCamera = false`
+  (orientation rule in `structure.md` "Engine gotchas"). Particles can only face the
+  camera, so they can't be fixed this way; say so instead of trying.
+- Fire walls must be dense with no see-through gaps, including at the sides. Leave no
+  gaps between particles, back the particles with an opaque layer, and don't thin the
+  edges (details in the lava fissure recipe).
+- Flames should rush upward, not drift. Speed them up and cut their lifetime by the same
+  factor so the height stays put (height ≈ Speed × Lifetime, a bit less with Drag).
+- Fire walls sway side to side while they burn.
+- Wind and swirl arcs should rise as they spin out, not sit flat on the ground, and stay
+  subtle (start ~0.4 transparent).
+
 ## Impact (melee hit, punch, slash contact)
 Duration 0.3-0.6.
 1. Core flash: neon disc or sphere, scale up 1 -> 6-8 while fading, 0.1-0.25s.
@@ -131,6 +146,25 @@ of flame, then crack glow to ~4.35 s. Size the big shapes off the fissure length
 4. Die-down ~2.85-3.65 s: the curtain narrows to a bundle ~0.2 F wide while it stays
    tall. Stop emitting ~0.15 s early and shrink lifetimes so nothing lingers. The crack
    glow stays red-orange and dim.
+5. Playtest tuning (Oscar's changes after the first build, now in the module):
+   - Default `Scale = 3` (fissure ~60 studs).
+   - The central column, glow, core, streak and both veil beams use `FaceCamera = false`.
+     Their attachments use `CFrame.fromMatrix(Vector3.zero, Vector3.yAxis, Vector3.xAxis)`
+     (X up the flame, Y along the fissure).
+   - Wall height: `WALL_HEIGHT = 0.85` trims the tongue and body lifetimes and the beam
+     heights together. Speed: tongues and body move `TONGUE_RUSH = 1.6`× faster and live
+     1/1.6 as long. The per-frame loop rewrites the tongue `Lifetime`, so the factor is
+     applied there too.
+   - Density: `FlameRate = 100`. The tongues are wider (`Squash` 0.3→0.6). The flame
+     body has its own box at 0.9 of the curtain width, at rate `FlameRate * 0.4`,
+     starting 0.25 transparent. The veil reaches 0.3 transparency at its base. The side
+     tongues get `FlameRate * 0.5` each and the V phase thins them by only 25%; at 55%
+     the sides showed gaps.
+   - Sway: two mixed sines (`0.75 sin(5.7t) + 0.25 sin(10.1t + 1.3)`). They push every
+     live tongue and body particle sideways (`Acceleration = RightVector * 1.6 B * sway`)
+     and move the beam tops by `0.07 B * sway` along the fissure.
+   - Wind arcs: `Speed` 1-1.2 B up with `Drag` 2.5, so they rise ~0.3 B as they spin.
+     Lifetime 0.42-0.5 s, transparency 0.4 → 1, 13 arcs in total.
 
 ## Ground slam / earth ability
 Duration 0.6-1.2. See `examples/GroundSlam.luau`.
