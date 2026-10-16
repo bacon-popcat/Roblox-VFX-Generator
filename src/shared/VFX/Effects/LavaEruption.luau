@@ -393,7 +393,7 @@ function Effect.Play(ctx)
 			LightEmission = 0.75,
 			Brightness = 1,
 			Size = seq({ { 0, 0.21 * B * height, 0.03 * B }, { 0.5, 0.26 * B * height, 0.03 * B }, { 1, 0.24 * B * height } }),
-			Squash = seq({ { 0, 0.5 }, { 1, 0.8 } }),
+			Squash = seq({ { 0, 0.3 }, { 1, 0.6 } }), -- wider tongues overlap, so no gaps between them
 			Transparency = seq({ { 0, 0.1 }, { 0.5, 0.3 }, { 0.6, 0.45 }, { 1, 1 } }),
 			Lifetime = NumberRange.new(0.35 * tongueLifeK, 0.55 * tongueLifeK),
 			Speed = NumberRange.new(0.44 * B * height * TONGUE_RUSH, 0.74 * B * height * TONGUE_RUSH),
@@ -430,9 +430,9 @@ function Effect.Play(ctx)
 		Color = colors({ { 0, p.CoreColor }, { 0.35, p.Color }, { 1, p.EdgeColor } }),
 		LightEmission = 0.6,
 		Brightness = 1,
-		Size = seq({ { 0, 0.18 * B }, { 0.5, 0.22 * B, 0.03 * B }, { 1, 0.2 * B } }),
+		Size = seq({ { 0, 0.21 * B }, { 0.5, 0.26 * B, 0.03 * B }, { 1, 0.23 * B } }),
 		Squash = NumberSequence.new(1), -- ~2:1 upright, so it never reads as round balls
-		Transparency = seq({ { 0, 0.4 }, { 0.4, 0.55 }, { 0.7, 0.75 }, { 1, 1 } }),
+		Transparency = seq({ { 0, 0.25 }, { 0.4, 0.4 }, { 0.7, 0.65 }, { 1, 1 } }),
 		Lifetime = NumberRange.new(0.4 * tongueLifeK, 0.6 * tongueLifeK),
 		Speed = NumberRange.new(0.25 * B * TONGUE_RUSH, 0.43 * B * TONGUE_RUSH),
 		Drag = 1.5,
@@ -552,7 +552,7 @@ function Effect.Play(ctx)
 	local columnTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
 	local streakTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
 	local coreTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
-	local veil = seq({ { 0, 1 }, { 0.55, 0.8 }, { 0.85, 0.5 }, { 1, 0.55 } })
+	local veil = seq({ { 0, 1 }, { 0.5, 0.65 }, { 0.85, 0.3 }, { 1, 0.35 } }) -- backs the tongues so gaps stay lit
 	local wisps = beam(wallTop, bottom, {
 		Name = "WallWisps",
 		FaceCamera = false,
@@ -745,7 +745,7 @@ function Effect.Play(ctx)
 		{ tonguesLeft, p.FlameRate * 0.35, edgeBurning, vThin = true },
 		{ tonguesRight, p.FlameRate * 0.35, edgeBurning, vThin = true },
 		{ tonguesCentre, p.FlameRate * 0.3, burning },
-		{ flameBody, p.FlameRate * 0.25, { { E + 0.12, 0 }, { E + 0.18, 1 }, { burnEnd + 0.3, 1 }, { burnEnd + 0.5, 0 } } },
+		{ flameBody, p.FlameRate * 0.4, { { E + 0.12, 0 }, { E + 0.18, 1 }, { burnEnd + 0.3, 1 }, { burnEnd + 0.5, 0 } } },
 		{ darkTongues, p.DarkTongueRate, { { E + 0.3, 0 }, { E + 0.4, 1 }, { burnEnd, 1 }, { burnEnd + 0.2, 0 } } },
 		{ embers, p.EmberRate, { { E, 0 }, { E + 0.1, 1 }, { burnEnd, 1 }, { burnEnd + 0.3, 0.2 }, { fadeEnd - 0.1, 0 } } },
 		{ curls, p.CurlRate, { { E + 0.1, 0 }, { E + 0.15, 1 }, { burnEnd - 0.2, 1 }, { burnEnd, 0 } } },
