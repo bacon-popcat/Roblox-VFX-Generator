@@ -156,7 +156,7 @@ Effect.Defaults = {
 	BurnTime = 2.3, -- eruption -> the curtain starts to narrow
 	FadeTime = 0.67, -- narrowing to a thin bundle and going out (abruptly at the end)
 	CrackFadeTime = 0.7, -- the crack's glow after the flames are gone
-	FlameRate = 40, -- flame tongues / s while burning
+	FlameRate = 64, -- flame tongues / s while burning
 	EmberRate = 10, -- embers / s while burning
 	CurlRate = 8, -- orange curls and ring curls / s
 	FleckRate = 9, -- dark flecks / s
@@ -374,13 +374,15 @@ function Effect.Play(ctx)
 		ZOffset = 2,
 	})
 	-- smooth thin upright tongues; each half leans a little inward so the curtain stays
-	-- tight, and the centre band is ~1.3x taller so the silhouette tapers
+	-- tight, and the centre band is ~1.3x taller so the silhouette tapers. They shoot up
+	-- fast (TONGUE_RUSH) and die young, so the curtain keeps its height but rushes.
+	local TONGUE_RUSH = 1.6
 	local function tongueEmitter(anchor, inward, height)
 		return emitter(anchor, {
 			Texture = ASSETS.FireTower,
 			FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
 			FlipbookMode = Enum.ParticleFlipbookMode.Loop, -- random start: no tiny first frames
-			FlipbookFramerate = NumberRange.new(16, 22),
+			FlipbookFramerate = NumberRange.new(24, 32),
 			FlipbookStartRandom = true,
 			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
 			EmissionDirection = Enum.NormalId.Top,
@@ -390,8 +392,8 @@ function Effect.Play(ctx)
 			Size = seq({ { 0, 0.21 * B * height, 0.03 * B }, { 0.5, 0.26 * B * height, 0.03 * B }, { 1, 0.24 * B * height } }),
 			Squash = seq({ { 0, 0.5 }, { 1, 0.8 } }),
 			Transparency = seq({ { 0, 0.1 }, { 0.5, 0.3 }, { 0.6, 0.45 }, { 1, 1 } }),
-			Lifetime = NumberRange.new(0.35, 0.55),
-			Speed = NumberRange.new(0.44 * B * height, 0.74 * B * height),
+			Lifetime = NumberRange.new(0.35 / TONGUE_RUSH, 0.55 / TONGUE_RUSH),
+			Speed = NumberRange.new(0.44 * B * height * TONGUE_RUSH, 0.74 * B * height * TONGUE_RUSH),
 			Drag = 1.5,
 			SpreadAngle = Vector2.new(4, 4),
 			-- positive Rotation turns counter-clockwise on screen (tops lean left)
@@ -403,6 +405,7 @@ function Effect.Play(ctx)
 	local tonguesRight = tongueEmitter(tallRight, 1, 1)
 	local tonguesCentre = tongueEmitter(tallCentre, 0, 1.3)
 	local function setTongueSpeed(k)
+		k *= TONGUE_RUSH
 		tonguesLeft.Speed = NumberRange.new(0.44 * B * k, 0.74 * B * k)
 		tonguesRight.Speed = tonguesLeft.Speed
 		tonguesCentre.Speed = NumberRange.new(0.44 * B * 1.3 * k, 0.74 * B * 1.3 * k)
@@ -427,8 +430,8 @@ function Effect.Play(ctx)
 		Size = seq({ { 0, 0.18 * B }, { 0.5, 0.22 * B, 0.03 * B }, { 1, 0.2 * B } }),
 		Squash = NumberSequence.new(1), -- ~2:1 upright, so it never reads as round balls
 		Transparency = seq({ { 0, 0.4 }, { 0.4, 0.55 }, { 0.7, 0.75 }, { 1, 1 } }),
-		Lifetime = NumberRange.new(0.4, 0.6),
-		Speed = NumberRange.new(0.25 * B, 0.43 * B),
+		Lifetime = NumberRange.new(0.4 / TONGUE_RUSH, 0.6 / TONGUE_RUSH),
+		Speed = NumberRange.new(0.25 * B * TONGUE_RUSH, 0.43 * B * TONGUE_RUSH),
 		Drag = 1.5,
 		SpreadAngle = Vector2.new(6, 6),
 		ZOffset = 0.8,
