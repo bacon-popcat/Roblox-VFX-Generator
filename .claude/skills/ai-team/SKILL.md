@@ -7,12 +7,15 @@ description: Run Claude and Codex together on this project, with Claude as lead.
 
 Claude leads. Codex is a helper that Claude calls **one task at a time**; its answers come
 back to Claude, who decides, applies and verifies. Claude and Codex never act in parallel.
-Do not bring in other AI CLIs (e.g. Gemini) as team members.
+The one other AI is **agy** (Antigravity CLI, Gemini), used only to grade effects against
+reference frames (see `roblox-vfx` `references/structure.md`, "Matching a reference video").
+Do not bring in other AI CLIs, or give agy other roles.
 
 | Who | Role | Gets |
 |---|---|---|
 | Claude | Lead: plans, writes effects (via `roblox-vfx`), drives Studio, grades visuals, applies changes | Everything |
 | Codex | Code reviewer / second coder | Diffs, file paths, bug descriptions |
+| agy | Reference grader | Side-by-side comparison sheets, grading prompt |
 
 ## Hard rules
 
@@ -45,8 +48,8 @@ The Codex plugin runs the local Codex CLI (logged in with the user's ChatGPT acc
 ## Standard loop
 
 1. Claude builds or changes the effect and previews it in Studio (`roblox-vfx` skill).
-2. Claude grades the look itself, or with a grader subagent against reference frames
-   (see memory `vfx-reference-grading-workflow`), and fixes visual issues.
+2. Claude grades the look itself, or, when there is a reference, has agy grade it against
+   the reference frames (see memory `vfx-reference-grading-workflow`), and fixes visual issues.
 3. **Codex reviews** the code diff.
 4. Claude verifies each finding, applies or rejects it (asking the user when a fix would
    change the look), re-previews, and commits.

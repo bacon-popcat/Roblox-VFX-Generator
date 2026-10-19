@@ -552,10 +552,17 @@ with ffmpeg at the same times (t = 0 at the slash's first frame).
    ~0.3 s mid-effect and overshoot the freeze time at 0.1x), and when the reference comes from more
    than one camera angle, match a camera to each and compare every angle at the same times.
    A layer that looks right from the front can be flat, thin or misplaced from the side.
-3. Grade each round with a grader subagent that compares **only against the reference**
-   (state anything intentionally out of scope). Resume the same grader for later rounds so
-   it remembers earlier scores. Apply its fixes, re-capture, repeat until it says the
-   remaining gaps are noise (usually 3-4 rounds).
+3. Grade each round with **agy** (Antigravity CLI, Gemini; the `agy-bridge` MCP server), not
+   a Claude subagent. Call `mcp__agy-bridge__analyze_files` with the side-by-side sheets as
+   `files` (it reads the images; use the scratchpad as `cwd`) and a prompt that says: the
+   reference is ground truth, grade **only against it**, what the sheet layout is
+   (timestamps, which column is REF, which row is which angle, grid spacing), what is out of
+   scope, and asks for a 0-10 score per timestamp and angle, concrete differences (shape,
+   size in studs, colour, missing or extra layers, detail), and the top fixes in order.
+   For later rounds use `mcp__agy-bridge__follow_up` with the returned `session_id`, so it
+   remembers earlier scores. Treat its stud sizes as estimates and its hex colours as
+   guesses, and check each fix against the sheet yourself before applying it. Apply, re-capture,
+   repeat until it says the remaining gaps are noise (usually 3-4 rounds).
 4. Finish with a read-only file-integrity subagent: contract, rules grep, Linger maths,
    budget counts, docs accuracy.
 5. Before every capture, check the Studio module's Source hash matches the disk file (Rojo
