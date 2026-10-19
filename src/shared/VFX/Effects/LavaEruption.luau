@@ -41,7 +41,7 @@ local ASSETS = {
 	LavaStreak = "rbxassetid://138131925212643", -- lava_streak: straight flame streak, soft root, sharp tip (128x512)
 	LavaWedge = "rbxassetid://109547847796563", -- lava_wedge: soft flare wedge, bright root at the bottom (64x256)
 	LavaRing = "rbxassetid://113782032324685", -- lava_ring: thick soft, slightly lumpy ring (128x128)
-	LavaGlow = "rbxassetid://87365446017300", -- lava_glow: round soft glow falling to zero at the edge (128x128)
+	LavaArch = "rbxassetid://91461964686009", -- lava_arch2: inverted U with a wobbly flame-edged rim, warm interior (128x192)
 }
 
 --------------------------------------------------------------------------------
@@ -210,7 +210,7 @@ function Effect.Play(ctx)
 	local bodyBox = box(0, 0.27 * B, 0.3 * B) -- soft flame body, the middle ~55% of the curtain
 
 	local base = ctx.Anchor(frame)
-	local archAt = attachment(base, CFrame.new(0, 0.23 * B, 0)) -- quad bottom just above the ground
+	local archAt = attachment(base, CFrame.new(0, 0.3 * B, 0)) -- quad bottom just above the ground
 	local centre = attachment(base, CFrame.new(0, 0.4 * s, 0))
 	-- wind arcs: flat on the ground, and raised + tilted so some wrap up round the flames
 	local windLow = centre
@@ -452,25 +452,30 @@ function Effect.Play(ctx)
 	-- die-down (~3.0-3.65 s): a fan of straight streaks shooting up from a narrowing base. Each
 	-- streak flies along its tilted direction and drag stops it with its root at the base,
 	-- so the bundle fans out from the bottom (centred quads would cross like an X)
-	local dieBox = box(0, 0.05 * B, 0.28 * B)
+	-- two half-boxes tilted away from each other, so left streaks lean left and right ones
+	-- lean right and none cross
+	local dieLeft = box(-0.06 * B, 0.05 * B, 0.17 * B)
+	local dieRight = box(0.06 * B, 0.05 * B, 0.17 * B)
 	local DIE_DRAG = 12
-	local dieStreaks = emitter(dieBox, {
+	local dieProps = {
 		Texture = ASSETS.LavaStreak,
 		Orientation = Enum.ParticleOrientation.VelocityParallel,
 		EmissionDirection = Enum.NormalId.Top,
-		Color = colors({ { 0, Color3.fromRGB(255, 140, 40) }, { 1, Color3.fromRGB(220, 60, 20) } }),
-		LightEmission = 0.75,
-		Brightness = 1.3,
-		Size = NumberSequence.new(0.27 * B),
+		Color = colors({ { 0, Color3.fromRGB(255, 140, 40) }, { 0.5, Color3.fromRGB(240, 120, 35) }, { 1, Color3.fromRGB(215, 55, 20) } }),
+		LightEmission = 0.7,
+		Brightness = 1.2,
+		Size = seq({ { 0, 0.27 * B, 0.065 * B }, { 1, 0.27 * B, 0.065 * B } }), -- uneven heights
 		Squash = NumberSequence.new(0.7),
 		Transparency = seq({ { 0, 0.1 }, { 0.7, 0.3 }, { 1, 1 } }),
 		Lifetime = NumberRange.new(0.18, 0.24),
 		Speed = NumberRange.new(DIE_DRAG * 0.36 * B),
 		Drag = DIE_DRAG,
-		SpreadAngle = Vector2.new(2, 15),
+		SpreadAngle = Vector2.new(2, 6),
 		Rotation = NumberRange.new(-90), -- VelocityParallel runs the texture's X along the velocity
 		ZOffset = 1.2,
-	})
+	}
+	local dieStreaksL = emitter(dieLeft, dieProps)
+	local dieStreaksR = emitter(dieRight, dieProps)
 	-- soft flame body filling the middle of the curtain up to ~0.85 of its height
 	local flameBody = emitter(bodyBox, {
 		Texture = ASSETS.FlameBody,
@@ -578,10 +583,10 @@ function Effect.Play(ctx)
 		Texture = ASSETS.LavaWedge,
 		Orientation = Enum.ParticleOrientation.VelocityParallel,
 		EmissionDirection = Enum.NormalId.Front,
-		Color = colors({ { 0, Color3.fromRGB(255, 200, 110) }, { 1, Color3.fromRGB(255, 130, 40) } }),
-		LightEmission = 0.8,
-		Brightness = 0.8,
-		Size = seq({ { 0, 2 * s, 0.4 * s }, { 1, 2.5 * s } }),
+		Color = colors({ { 0, Color3.fromRGB(255, 180, 80) }, { 1, Color3.fromRGB(240, 110, 30) } }),
+		LightEmission = 0.7,
+		Brightness = 0.5,
+		Size = seq({ { 0, 1.5 * s, 0.3 * s }, { 1, 1.9 * s } }),
 		Squash = NumberSequence.new(0.6),
 		Transparency = seq({ { 0, 0.15 }, { 0.6, 0.35 }, { 1, 1 } }),
 		Lifetime = NumberRange.new(0.07, 0.1),
@@ -591,19 +596,20 @@ function Effect.Play(ctx)
 		Rotation = NumberRange.new(-90), -- VelocityParallel runs the texture's X along the velocity
 		ZOffset = 2.5,
 	})
-	-- arch core (0.80-0.95 s): a tall soft yellow glow at the base centre, ~3 x 4 Scale-1 studs
+	-- arch core (0.80-0.92 s): an inverted-U glow at the base centre, ~3 x 4 Scale-1 studs
 	local archGlow = emitter(archAt, {
-		Texture = ASSETS.LavaGlow, -- SoftGlow (Blurred Spec 11) has a hard bottom edge
+		Texture = ASSETS.LavaArch, -- an inverted U: bright rim, open interior
 		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, -- upright: a camera-facing quad tilts into the floor
-		Color = ColorSequence.new(Color3.fromRGB(255, 200, 80)),
-		LightEmission = 1,
-		Brightness = 2.2,
-		Size = seq({ { 0, 0.3 * B }, { 1, 0.33 * B } }),
-		Squash = NumberSequence.new(0.35), -- taller than wide
-		Transparency = seq({ { 0, 0.5 }, { 0.3, 0.2 }, { 0.7, 0.3 }, { 1, 1 } }),
-		Lifetime = NumberRange.new(0.12, 0.16),
+		Color = colors({ { 0, Color3.fromRGB(255, 190, 80) }, { 1, Color3.fromRGB(240, 110, 30) } }),
+		LightEmission = 0.8,
+		Brightness = 1.1,
+		Size = seq({ { 0, 0.27 * B }, { 1, 0.29 * B } }),
+		Squash = NumberSequence.new(0.3), -- taller than wide
+		Transparency = seq({ { 0, 0.5 }, { 0.3, 0.25 }, { 0.7, 0.35 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.08, 0.1),
 		Speed = NumberRange.new(0),
-		ZOffset = 1.6,
+		Rotation = NumberRange.new(-6, 6),
+		ZOffset = 0.9, -- just behind the tongues, so some cross in front of it
 	})
 	-- base splash at the onset: short bright streaks radiating out low from the fissure
 	-- (VelocityParallel quads smear along their motion, which is the look here)
@@ -612,10 +618,10 @@ function Effect.Play(ctx)
 		Texture = ASSETS.LavaWedge,
 		Orientation = Enum.ParticleOrientation.VelocityParallel,
 		EmissionDirection = Enum.NormalId.Front, -- across the fissure, fanned all round flat
-		Color = colors({ { 0, Color3.fromRGB(255, 220, 120) }, { 1, Color3.fromRGB(255, 140, 40) } }),
-		LightEmission = 0.8,
-		Brightness = 1.2,
-		Size = seq({ { 0, 1.9 * s }, { 1, 2.4 * s } }),
+		Color = colors({ { 0, Color3.fromRGB(255, 180, 80) }, { 1, Color3.fromRGB(240, 110, 30) } }),
+		LightEmission = 0.7,
+		Brightness = 0.7,
+		Size = seq({ { 0, 1.5 * s }, { 1, 1.9 * s } }),
 		Squash = NumberSequence.new(0.7), -- long soft wedges
 		Rotation = NumberRange.new(-90), -- VelocityParallel runs the texture's X along the velocity
 		Transparency = seq({ { 0, 0 }, { 0.6, 0.25 }, { 1, 1 } }),
@@ -825,11 +831,11 @@ function Effect.Play(ctx)
 	-- the wavy centre tongues hand over to the straight die-down streaks at ~3.0-3.15 s
 	local centreBurning = { { E + 0.01, 0 }, { E + 0.04, 1 }, { burnEnd + 0.15, 1 }, { burnEnd + 0.3, 0 } }
 	-- die-down streaks per second (~10 alive at 3.2 s, ~7 at 3.4 s, ~5 at 3.6 s), the spawn
-	-- base narrowing 5 -> 3 -> 1.5 Scale-1 studs and the fan closing 14 -> 4 -> 1 deg
+	-- base narrowing 5 -> 3 -> 1.5 Scale-1 studs and each half tilting out 7 -> 2 -> 0 deg
 	local dieRate = { { burnEnd + 0.1, 0 }, { burnEnd + 0.2, 48 }, { burnEnd + 0.35, 48 }, { burnEnd + 0.55, 34 },
 		{ fadeEnd - 0.05, 26 }, { fadeEnd - 0.03, 0 } }
 	local dieWidth = { { burnEnd + 0.35, 0.34 * B }, { burnEnd + 0.5, 0.21 * B }, { fadeEnd - 0.05, 0.1 * B } }
-	local dieFan = { { burnEnd + 0.3, 14 }, { burnEnd + 0.5, 4 }, { fadeEnd - 0.05, 1 } }
+	local dieFan = { { burnEnd + 0.3, 7 }, { burnEnd + 0.48, 2 }, { burnEnd + 0.6, 0 } } -- each half's tilt
 	local dieLife = { { burnEnd + 0.55, 1 }, { fadeEnd - 0.05, 0.6 } }
 	local tongueLife = { { burnEnd + 0.45, 1 }, { fadeEnd - 0.1, 0.5 } }
 	-- the opening burst of tongues rushes up ~2.8x faster (and lives 1/2.8 as long), so the
@@ -853,8 +859,9 @@ function Effect.Play(ctx)
 		{ tonguesLeft, p.FlameRate * 0.5, edgeBurning, vThin = true, boost = true },
 		{ tonguesRight, p.FlameRate * 0.5, edgeBurning, vThin = true, boost = true },
 		{ tonguesCentre, p.FlameRate * 0.3, centreBurning, boost = true },
-		{ dieStreaks, 1, dieRate },
-		{ archGlow, 45, { { E + 0.09, 0 }, { E + 0.11, 1 }, { E + 0.22, 1 }, { E + 0.26, 0 } } },
+		{ dieStreaksL, 0.5, dieRate },
+		{ dieStreaksR, 0.5, dieRate },
+		{ archGlow, 45, { { E + 0.09, 0 }, { E + 0.11, 1 }, { E + 0.2, 1 }, { E + 0.22, 0 } } },
 		{ baseGlow, 25, { { E, 0 }, { E + 0.005, 1 }, { E + 0.04, 1 }, { E + 0.07, 0 } } },
 		{ flameBody, p.FlameRate * 0.4, { { E + 0.02, 0 }, { E + 0.06, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.05, 0 } } },
 		{ darkTongues, p.DarkTongueRate, { { E + 0.3, 0 }, { E + 0.4, 1 }, { burnEnd, 1 }, { burnEnd + 0.2, 0 } } },
@@ -976,14 +983,19 @@ function Effect.Play(ctx)
 			tonguesLeft.Transparency = seq({ { 0, 1 - 0.9 * op }, { 0.5, 1 - 0.7 * op }, { 0.6, 1 - 0.55 * op }, { 1, 1 } })
 			tonguesRight.Transparency = tonguesLeft.Transparency
 		end)
-		dieBox.Size = Vector3.new(track(dieWidth, t), 0.2 * s, 1 * s)
-		changed("fan", math.floor(track(dieFan, t) + 0.5), function(fan)
-			dieStreaks.SpreadAngle = Vector2.new(2, fan)
-		end)
+		local dw = track(dieWidth, t)
+		local tilt = math.rad(track(dieFan, t))
+		-- positive Z rotation tips a part's top toward its -X (left)
+		-- the halves overlap in the middle, so the bundle never splits into two groups
+		dieLeft.Size = Vector3.new(dw * 0.62, 0.2 * s, 1 * s)
+		dieRight.Size = dieLeft.Size
+		dieLeft.CFrame = frame * CFrame.new(-dw * 0.19, 0.05 * B, 0) * CFrame.Angles(0, 0, tilt)
+		dieRight.CFrame = frame * CFrame.new(dw * 0.19, 0.05 * B, 0) * CFrame.Angles(0, 0, -tilt)
 		changed("dieLife", track(dieLife, t), function(k)
-			dieStreaks.Lifetime = NumberRange.new(0.18 * k, 0.24 * k)
+			dieStreaksL.Lifetime = NumberRange.new(0.18 * k, 0.24 * k)
+			dieStreaksR.Lifetime = dieStreaksL.Lifetime
 		end)
-		core.Brightness = 1.4 + 3 * lean
+		core.Brightness = 1.4 + 1.4 * lean
 		column.Brightness = 1.1 + 1.2 * lean
 		tonguesLeft.Brightness = 1 - 0.3 * lean
 		tonguesRight.Brightness = tonguesLeft.Brightness
@@ -1020,7 +1032,7 @@ function Effect.Play(ctx)
 		local columnTopY = 0.2 * s + track(columnHeight, t) * (1 + 0.2 * lean)
 		columnTop.Position = Vector3.new(swayX, columnTopY, 0)
 		streakTop.Position = Vector3.new(swayX * 1.2, math.max(columnTopY, 0.2 * s + track(streakHeight, t)), 0)
-		local cw = track(columnWidth, t) * (1 - 0.4 * lean)
+		local cw = track(columnWidth, t) * (1 - 0.6 * lean)
 		column.Width0, column.Width1 = cw * 0.05, cw -- pointed tip, wide base
 		columnGlow.Width0, columnGlow.Width1 = cw * 0.4, cw * 1.1
 		streak.Width0, streak.Width1 = cw * 0.06, cw * 0.16
