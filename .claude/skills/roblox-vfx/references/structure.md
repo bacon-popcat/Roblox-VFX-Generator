@@ -157,26 +157,31 @@ textures. The module preloads its custom textures from a top-level `task.spawn` 
 ### Lava eruption
 
 `LavaEruption`: a lava fissure on the ground below `ctx.CFrame`, running across the view
-(along its RightVector). Plain Luau, no Forge. `WallLength` (the fissure, 20 studs) sizes
-the fissure, curtain, wind, column and smoke spread; `Scale` (default 2.5) sizes everything. Play returns when the crack has faded, at ~4.35 s.
-1. 0-0.6 s precursor: three streak clusters, flung rocks, upright flame bursts, ring
-   curls, dark smoke that shoots up to ~0.7 `WallLength` by 0.2 s, and embers. The crack
-   (three Top-face SurfaceGuis: a dark rift, a bright orange rift line and a faint red
-   pool) heats up from 0.3 s.
-2. 0.70 s (`EruptTime`): a spike row, then a curtain of flame tongues is up within
-   ~0.035 s. The tongues are in three bands whose boxes follow the curtain width: the edges
-   reach ~0.65 `WallLength` and the centre band, 1.3x taller, ~0.95. Tongues turn deep red
-   over the last 40% of their life. They come with a soft flame body, two faint scrolling beam
-   veils, wind arcs (flat on the ground plus a raised, tilted layer) and a hot ground line.
-3. From ~0.82 s: a tapered central flame (beam) with a yellow core, a glow and a dim red
-   streak above it. The curtain holds at 0.75 `WallLength` wide, with opaque dark tongues
-   alternating at its edges (they reuse the precursor burst box).
-4. From 2.85 s (`EruptTime` + `BurnTime`): the edge bands stop and the centre narrows to
-   a thin bundle. Emission stops ~0.15 s before `FadeTime` ends, and the tongue lifetime
-   shrinks so nothing lingers.
+(along its RightVector). Plain Luau, no Forge. `WallLength` sizes the crack (F = 20 studs
+at Scale 1); the curtain, wind, column and smoke use the body size B = 0.72 F. `Scale`
+(default 2.5) sizes everything. Play returns when the crack has faded, at ~4.35 s. Matched
+frame by frame against two reference camera angles.
+1. 0.04-0.6 s precursor: one wide burst of orange and dark streaks, grey rocks, upright
+   flame bursts (gone by ~0.45 s), 4 bold orange rings (custom `lava_ring`), dark smoke and
+   embers. The crack (Top-face SurfaceGuis: a branched dark crack, a lumpy lava line and a
+   red pool) heats up from 0.3 s.
+2. 0.69 s (`EruptTime`): a spike row, a low radial starburst of wedge flares (custom
+   `lava_wedge`) and a curtain of flame tongues up within ~0.04 s (the opening burst rushes
+   up faster and stands ~20% taller). Three tongue bands follow the curtain width: the
+   sides reach ~0.65 B, the centre band ~0.95 B. A soft flame body, two faint beam veils,
+   wind arcs that rise as they spin, and the hot line along the whole crack come with it.
+3. 0.80-0.92 s: an inverted-U arch glow (custom `lava_arch2`) sits behind the tongues.
+   ~0.95-1.05 s: the curtain opens into a V around a bright narrow column (sides shorter,
+   fainter and leaning out). The curtain then holds ~0.72 B wide with dark tongues at its
+   edges.
+4. From 2.85 s (`EruptTime` + `BurnTime`): the sides stop, small flame clumps flare at the
+   old edges, and the centre hands over (~3.0-3.15 s) to a die-down fan of straight streaks
+   (custom `lava_streak`, two outward-tilted half-boxes plus a bright core) that closes into
+   a parallel bundle by 3.4 s and is gone by ~3.67 s.
 
 One per-frame loop (`ctx.Wait(1/240)`) drives the bursts (one per step), channel rates,
-emitter box widths, beam widths, the light and the crack. Instances: ~49.
+emitter box widths, beam widths, the light and the crack. Instances: ~56 (a deliberate
+overrun of the ~50 guideline to match the reference); burst particles ~194.
 
 ## VFX Forge layers
 
