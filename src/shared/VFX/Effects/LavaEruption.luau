@@ -37,6 +37,11 @@ local ASSETS = {
 	LineFlare = "rbxassetid://103854278038347", -- StaticVFXTextures/Blurry Horizontal Flare
 	SoftGlow = "rbxassetid://284205403", -- StaticVFXTextures/Blurred Spec 11 (stretched along the crack = glow band)
 	Speck = "rbxassetid://16879822194", -- StaticVFXTextures/Spec31
+	-- drawn for this effect (PIL, white RGB with the shape in alpha) and uploaded
+	LavaStreak = "rbxassetid://138131925212643", -- lava_streak: straight flame streak, soft root, sharp tip (128x512)
+	LavaWedge = "rbxassetid://109547847796563", -- lava_wedge: soft flare wedge, bright root at the bottom (64x256)
+	LavaRing = "rbxassetid://113782032324685", -- lava_ring: thick soft, slightly lumpy ring (128x128)
+	LavaGlow = "rbxassetid://87365446017300", -- lava_glow: round soft glow falling to zero at the edge (128x128)
 }
 
 --------------------------------------------------------------------------------
@@ -146,7 +151,7 @@ Effect.Defaults = {
 	EdgeColor = Color3.fromRGB(200, 45, 15), -- deep red tongue edges and crack lava
 	DarkColor = Color3.fromRGB(22, 14, 12), -- crack, dark streaks, flecks, dark tongues
 	SmokeColor = Color3.fromRGB(40, 40, 48), -- darker than the sky
-	RockColor = Color3.fromRGB(85, 80, 78), -- dark grey shards
+	RockColor = Color3.fromRGB(120, 115, 110), -- grey rocks, readable on dark ground
 	WindColor = Color3.fromRGB(255, 150, 105), -- peach wind arcs (fading to red)
 	Scale = 2.5, -- 2.5x the original size (fissure ~50 studs long)
 	WallLength = 20, -- fissure length (studs); every other size follows it
@@ -205,6 +210,7 @@ function Effect.Play(ctx)
 	local bodyBox = box(0, 0.27 * B, 0.3 * B) -- soft flame body, the middle ~55% of the curtain
 
 	local base = ctx.Anchor(frame)
+	local archAt = attachment(base, CFrame.new(0, 0.23 * B, 0)) -- quad bottom just above the ground
 	local centre = attachment(base, CFrame.new(0, 0.4 * s, 0))
 	-- wind arcs: flat on the ground, and raised + tilted so some wrap up round the flames
 	local windLow = centre
@@ -280,8 +286,8 @@ function Effect.Play(ctx)
 		EmissionDirection = Enum.NormalId.Top,
 		Color = ColorSequence.new(p.RockColor),
 		LightEmission = 0,
-		Size = seq({ { 0, 1.1 * s, 0.3 * s }, { 0.8, 1 * s }, { 1, 0 } }),
-		Squash = NumberSequence.new(0.9), -- tall thin shards
+		Size = seq({ { 0, 0.9 * s, 0.25 * s }, { 0.8, 0.85 * s }, { 1, 0 } }),
+		Squash = NumberSequence.new(0.35), -- chunky rocks
 		Lifetime = NumberRange.new(0.2, 0.3),
 		Speed = NumberRange.new(12 * s, 20 * s),
 		SpreadAngle = Vector2.new(18, 18),
@@ -302,10 +308,10 @@ function Effect.Play(ctx)
 		Color = colors({ { 0, p.Color }, { 0.6, p.EdgeColor }, { 1, p.EdgeColor } }),
 		LightEmission = 0.8,
 		Brightness = 1.2,
-		Size = seq({ { 0, 1.3 * s }, { 0.4, 1.8 * s, 0.3 * s }, { 1, 1.6 * s } }),
+		Size = seq({ { 0, 1.5 * s }, { 0.4, 2.1 * s, 0.3 * s }, { 1, 1.8 * s } }),
 		Squash = NumberSequence.new(0.4),
 		Transparency = seq({ { 0, 0 }, { 0.7, 0.2 }, { 1, 1 } }),
-		Lifetime = NumberRange.new(0.14, 0.2),
+		Lifetime = NumberRange.new(0.12, 0.16),
 		Speed = NumberRange.new(1 * s, 2 * s),
 		Rotation = NumberRange.new(-8, 8),
 		ZOffset = 1,
@@ -321,10 +327,26 @@ function Effect.Play(ctx)
 		LightEmission = 1,
 		Brightness = 1.4,
 		Size = seq({ { 0, 1.3 * s, 0.2 * s }, { 1, 1.5 * s } }),
-		Lifetime = NumberRange.new(0.35, 0.5), -- precursor rings gone before the eruption
+		Lifetime = NumberRange.new(0.3, 0.45),
 		Speed = NumberRange.new(8 * s, 16 * s),
 		SpreadAngle = Vector2.new(35, 35),
 		Acceleration = Vector3.new(0, -4 * s, 0),
+		Drag = 4,
+		Rotation = NumberRange.new(0, 360),
+		ZOffset = 1.5,
+	})
+	-- precursor rings: 3-4 bold round orange rings flung up from the crack (gone by ~0.35 s)
+	local rings = emitter(line, {
+		Texture = ASSETS.LavaRing,
+		EmissionDirection = Enum.NormalId.Top,
+		Color = ColorSequence.new(Color3.fromRGB(255, 120, 40)),
+		LightEmission = 1,
+		Brightness = 1.5,
+		Size = seq({ { 0, 0.85 * s, 0.1 * s }, { 1, 0.6 * s } }),
+		Transparency = seq({ { 0, 0 }, { 0.7, 0.15 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.12, 0.26),
+		Speed = NumberRange.new(10 * s, 18 * s),
+		SpreadAngle = Vector2.new(35, 35),
 		Drag = 4,
 		Rotation = NumberRange.new(0, 360),
 		ZOffset = 1.5,
@@ -427,16 +449,28 @@ function Effect.Play(ctx)
 		return seq({ { 0, 0.21 * B * h, 0.065 * B * h }, { 0.5, 0.26 * B * h, 0.075 * B * h }, { 1, 0.24 * B * h, 0.07 * B * h } })
 	end
 	local lastCentreSize = 1
-	-- from ~3.15 s the centre tongues become straight streaks fanned out from the base (the
-	-- wavy Fire Tower flipbook reads as one S-shaped flame once it is alone)
-	local function centreToStreaks()
-		tonguesCentre.Texture = ASSETS.FlameStreak
-		tonguesCentre.FlipbookLayout = Enum.ParticleFlipbookLayout.None
-		tonguesCentre.Rotation = NumberRange.new(-20, 20) -- the fan: tops spread from the base
-		tonguesCentre.Squash = NumberSequence.new(0.25)
-		tonguesCentre.Acceleration = Vector3.zero
-	end
-	local centreStreaks = false
+	-- die-down (~3.0-3.65 s): a fan of straight streaks shooting up from a narrowing base. Each
+	-- streak flies along its tilted direction and drag stops it with its root at the base,
+	-- so the bundle fans out from the bottom (centred quads would cross like an X)
+	local dieBox = box(0, 0.05 * B, 0.28 * B)
+	local DIE_DRAG = 12
+	local dieStreaks = emitter(dieBox, {
+		Texture = ASSETS.LavaStreak,
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		EmissionDirection = Enum.NormalId.Top,
+		Color = colors({ { 0, Color3.fromRGB(255, 140, 40) }, { 1, Color3.fromRGB(220, 60, 20) } }),
+		LightEmission = 0.75,
+		Brightness = 1.3,
+		Size = NumberSequence.new(0.27 * B),
+		Squash = NumberSequence.new(0.7),
+		Transparency = seq({ { 0, 0.1 }, { 0.7, 0.3 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.18, 0.24),
+		Speed = NumberRange.new(DIE_DRAG * 0.36 * B),
+		Drag = DIE_DRAG,
+		SpreadAngle = Vector2.new(2, 15),
+		Rotation = NumberRange.new(-90), -- VelocityParallel runs the texture's X along the velocity
+		ZOffset = 1.2,
+	})
 	-- soft flame body filling the middle of the curtain up to ~0.85 of its height
 	local flameBody = emitter(bodyBox, {
 		Texture = ASSETS.FlameBody,
@@ -446,8 +480,8 @@ function Effect.Play(ctx)
 		FlipbookStartRandom = true,
 		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
 		EmissionDirection = Enum.NormalId.Top,
-		Color = colors({ { 0, p.CoreColor }, { 0.35, p.Color }, { 1, p.EdgeColor } }),
-		LightEmission = 0.6,
+		Color = colors({ { 0, p.CoreColor:Lerp(p.Color, 0.5) }, { 0.35, p.Color }, { 1, p.EdgeColor } }),
+		LightEmission = 0.45,
 		Brightness = 1,
 		Size = seq({ { 0, 0.21 * B }, { 0.5, 0.26 * B, 0.03 * B }, { 1, 0.23 * B } }),
 		Squash = NumberSequence.new(1), -- ~2:1 upright, so it never reads as round balls
@@ -537,34 +571,53 @@ function Effect.Play(ctx)
 	end
 	local windGround = windEmitter(windLow, 1)
 	local windTilt = windEmitter(windHigh, 0.75)
-	-- onset base glow: short bright flares packed along the bottom of the wall (0.7-0.8 s), so
-	-- the first wall has a hot base (a soft glow quad here reads as a lit puddle)
+	-- onset base glow (0.70-0.78 s): short spiky yellow-orange flares radiating low from
+	-- the crack (~2-3 Scale-1 studs long), so the wall has a hot starburst at its base; soft
+	-- glow quads here read as a flat white puddle
 	local baseGlow = emitter(line, {
-		Texture = ASSETS.FlameStreak,
-		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
-		Color = colors({ { 0, p.CoreColor }, { 1, p.Color } }),
-		LightEmission = 1,
-		Brightness = 1.2,
-		Size = seq({ { 0, 0.05 * B, 0.015 * B }, { 1, 0.06 * B } }),
-		Squash = NumberSequence.new(0.3),
-		Transparency = seq({ { 0, 0.1 }, { 0.6, 0.3 }, { 1, 1 } }),
-		Lifetime = NumberRange.new(0.06, 0.1),
-		Speed = NumberRange.new(0),
-		Rotation = NumberRange.new(-25, 25),
+		Texture = ASSETS.LavaWedge,
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		EmissionDirection = Enum.NormalId.Front,
+		Color = colors({ { 0, Color3.fromRGB(255, 200, 110) }, { 1, Color3.fromRGB(255, 130, 40) } }),
+		LightEmission = 0.8,
+		Brightness = 0.8,
+		Size = seq({ { 0, 2 * s, 0.4 * s }, { 1, 2.5 * s } }),
+		Squash = NumberSequence.new(0.6),
+		Transparency = seq({ { 0, 0.15 }, { 0.6, 0.35 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.07, 0.1),
+		Speed = NumberRange.new(6 * s, 10 * s),
+		Drag = 8,
+		SpreadAngle = Vector2.new(25, 180),
+		Rotation = NumberRange.new(-90), -- VelocityParallel runs the texture's X along the velocity
 		ZOffset = 2.5,
+	})
+	-- arch core (0.80-0.95 s): a tall soft yellow glow at the base centre, ~3 x 4 Scale-1 studs
+	local archGlow = emitter(archAt, {
+		Texture = ASSETS.LavaGlow, -- SoftGlow (Blurred Spec 11) has a hard bottom edge
+		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, -- upright: a camera-facing quad tilts into the floor
+		Color = ColorSequence.new(Color3.fromRGB(255, 200, 80)),
+		LightEmission = 1,
+		Brightness = 2.2,
+		Size = seq({ { 0, 0.3 * B }, { 1, 0.33 * B } }),
+		Squash = NumberSequence.new(0.35), -- taller than wide
+		Transparency = seq({ { 0, 0.5 }, { 0.3, 0.2 }, { 0.7, 0.3 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.12, 0.16),
+		Speed = NumberRange.new(0),
+		ZOffset = 1.6,
 	})
 	-- base splash at the onset: short bright streaks radiating out low from the fissure
 	-- (VelocityParallel quads smear along their motion, which is the look here)
 	-- along the middle of the crack, fanned flat (SpreadAngle.Y spreads round the vertical)
 	local splash = emitter(line, {
-		Texture = ASSETS.FlameStreak,
+		Texture = ASSETS.LavaWedge,
 		Orientation = Enum.ParticleOrientation.VelocityParallel,
 		EmissionDirection = Enum.NormalId.Front, -- across the fissure, fanned all round flat
-		Color = colors({ { 0, p.CoreColor }, { 0.4, p.Color }, { 1, p.EdgeColor } }),
-		LightEmission = 1,
-		Brightness = 2.2,
-		Size = seq({ { 0, 1.4 * s }, { 1, 2.2 * s } }),
-		Squash = NumberSequence.new(0.15), -- wedges, not hairlines
+		Color = colors({ { 0, Color3.fromRGB(255, 220, 120) }, { 1, Color3.fromRGB(255, 140, 40) } }),
+		LightEmission = 0.8,
+		Brightness = 1.2,
+		Size = seq({ { 0, 1.9 * s }, { 1, 2.4 * s } }),
+		Squash = NumberSequence.new(0.7), -- long soft wedges
+		Rotation = NumberRange.new(-90), -- VelocityParallel runs the texture's X along the velocity
 		Transparency = seq({ { 0, 0 }, { 0.6, 0.25 }, { 1, 1 } }),
 		Lifetime = NumberRange.new(0.06, 0.09),
 		Speed = NumberRange.new(25 * s, 40 * s),
@@ -588,7 +641,7 @@ function Effect.Play(ctx)
 	local columnTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
 	local streakTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
 	local coreTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
-	local veil = seq({ { 0, 1 }, { 0.5, 0.8 }, { 0.85, 0.5 }, { 1, 0.55 } }) -- backs the tongues so gaps stay lit
+	local veil = seq({ { 0, 1 }, { 0.5, 0.8 }, { 0.82, 0.5 }, { 1, 0.92 } }) -- backs the tongues; feathered bottom
 	local wisps = beam(wallTop, bottom, {
 		Name = "WallWisps",
 		FaceCamera = false,
@@ -618,7 +671,7 @@ function Effect.Play(ctx)
 		Color = colors({ { 0, p.EdgeColor }, { 0.5, p.Color }, { 1, p.CoreColor } }),
 		LightEmission = 1,
 		Brightness = 1.1,
-		Transparency = seq({ { 0, 1 }, { 0.3, 0.35 }, { 0.6, 0.05 }, { 1, 0 } }),
+		Transparency = seq({ { 0, 1 }, { 0.3, 0.35 }, { 0.6, 0.05 }, { 0.88, 0.1 }, { 1, 0.75 } }), -- feathered bottom
 		TextureSpeed = 1.4 * ctx.TimeScale,
 		ZOffset = 0.5,
 	})
@@ -629,7 +682,7 @@ function Effect.Play(ctx)
 		Color = ColorSequence.new(p.Color),
 		LightEmission = 1,
 		Brightness = 1,
-		Transparency = seq({ { 0, 1 }, { 0.5, 0.7 }, { 1, 0.55 } }),
+		Transparency = seq({ { 0, 1 }, { 0.5, 0.7 }, { 0.88, 0.6 }, { 1, 0.9 } }),
 		ZOffset = -0.6,
 	})
 	-- bright yellow interior over the column's lower half
@@ -640,7 +693,7 @@ function Effect.Play(ctx)
 		Color = ColorSequence.new(p.CoreColor),
 		LightEmission = 1,
 		Brightness = 1.4,
-		Transparency = seq({ { 0, 1 }, { 0.4, 0.4 }, { 1, 0.15 } }),
+		Transparency = seq({ { 0, 1 }, { 0.4, 0.4 }, { 0.88, 0.2 }, { 1, 0.75 } }),
 		ZOffset = 0.6,
 	})
 	local streak = beam(streakTop, columnTop, {
@@ -690,23 +743,25 @@ function Effect.Play(ctx)
 	local bursts = {
 		{ 0.04, function()
 			-- one burst over the whole middle (moving the box between clusters lags a frame)
-			ctx.Emit(streakOrange, 13)
-			ctx.Emit(streakDark, 8)
+			ctx.Emit(streakOrange, 10)
+			ctx.Emit(streakDark, 10)
 		end },
-		{ 0.045, function()
+		{ 0.042, function()
 			ctx.Emit(rocks, p.RockCount)
 			ctx.Emit(preFlames, 5)
 		end },
 		{ 0.075, function()
 			ctx.Emit(smoke, 9)
-			ctx.Emit(embers, 2)
 		end },
 		{ 0.09, function()
-			ctx.Emit(ringCurls, 4)
+			ctx.Emit(rings, 2)
 		end },
 		{ 0.11, function()
 			ctx.Emit(preFlames, 6)
 			ctx.Emit(smoke, 8)
+		end },
+		{ 0.13, function()
+			ctx.Emit(rings, 2)
 		end },
 		{ 0.15, function()
 			ctx.Emit(smoke, 5)
@@ -715,10 +770,10 @@ function Effect.Play(ctx)
 			ctx.Emit(preFlames, 6)
 		end },
 		{ 0.23, function()
-			ctx.Emit(preFlames, 5)
+			ctx.Emit(preFlames, 6)
 		end },
-		{ 0.28, function()
-			ctx.Emit(preFlames, 4)
+		{ 0.27, function()
+			ctx.Emit(preFlames, 5)
 		end },
 		{ E - 0.03, function()
 			-- re-centre the burst box over the middle 0.8 B for the onset's dark streaks
@@ -728,10 +783,11 @@ function Effect.Play(ctx)
 		{ E, function()
 			ctx.Emit(spikes, 30)
 			ctx.Emit(streakDark, 8)
+			ctx.Emit(baseGlow, 4) -- glowing spike roots
 		end },
-		{ E + 0.012, function()
+		{ E + 0.006, function()
 			ctx.Emit(splash, 14)
-			ctx.Emit(baseGlow, 16)
+			ctx.Emit(baseGlow, 5)
 			ctx.Emit(tonguesLeft, 12)
 			ctx.Emit(tonguesRight, 12)
 			ctx.Emit(tonguesCentre, 8)
@@ -766,11 +822,19 @@ function Effect.Play(ctx)
 	-- channel rates over time (per second)
 	-- emission stops ~0.08 s before fadeEnd and the tongue lifetime shrinks to half, so the
 	-- last tongues outlive fadeEnd by up to ~0.06 s (a short tail, kept on purpose)
-	local burning = { { E + 0.01, 0 }, { E + 0.04, 1 }, { narrowEnd - 0.05, 1 }, { fadeEnd - 0.08, 0 } }
+	-- the wavy centre tongues hand over to the straight die-down streaks at ~3.0-3.15 s
+	local centreBurning = { { E + 0.01, 0 }, { E + 0.04, 1 }, { burnEnd + 0.15, 1 }, { burnEnd + 0.3, 0 } }
+	-- die-down streaks per second (~10 alive at 3.2 s, ~7 at 3.4 s, ~5 at 3.6 s), the spawn
+	-- base narrowing 5 -> 3 -> 1.5 Scale-1 studs and the fan closing 14 -> 4 -> 1 deg
+	local dieRate = { { burnEnd + 0.1, 0 }, { burnEnd + 0.2, 48 }, { burnEnd + 0.35, 48 }, { burnEnd + 0.55, 34 },
+		{ fadeEnd - 0.05, 26 }, { fadeEnd - 0.03, 0 } }
+	local dieWidth = { { burnEnd + 0.35, 0.34 * B }, { burnEnd + 0.5, 0.21 * B }, { fadeEnd - 0.05, 0.1 * B } }
+	local dieFan = { { burnEnd + 0.3, 14 }, { burnEnd + 0.5, 4 }, { fadeEnd - 0.05, 1 } }
+	local dieLife = { { burnEnd + 0.55, 1 }, { fadeEnd - 0.05, 0.6 } }
 	local tongueLife = { { burnEnd + 0.45, 1 }, { fadeEnd - 0.1, 0.5 } }
-	-- the opening burst of tongues rushes up ~2.2x faster (and lives 1/2.2 as long), so the
+	-- the opening burst of tongues rushes up ~2.8x faster (and lives 1/2.8 as long), so the
 	-- wall is full height by ~0.75 s without overshooting; the steady tongues take over at once
-	local onsetRush = { { E - 0.03, 2.2 }, { E + 0.02, 2.2 }, { E + 0.05, 1 } }
+	local onsetRush = { { E - 0.03, 2.8 }, { E + 0.02, 2.8 }, { E + 0.05, 1 } }
 	local lastRush = 0
 	-- the steady tongues come out ~2.5x thicker for the first ~0.25 s, so the wall stays full
 	-- while the rushed opening burst dies
@@ -778,7 +842,7 @@ function Effect.Play(ctx)
 	local edgeLife = { { burnEnd, 1 }, { burnEnd + 0.1, 0.4 } } -- no tall edge strays after ~3 s
 	local centreGlow = { { burnEnd, 1 }, { burnEnd + 0.2, 1.3 } } -- brighter bundle in the die-down
 	-- small low flame clumps at the curtain's old edges as it narrows (~3 Scale-1 studs tall)
-	local clumpBurning = { { burnEnd - 0.05, 0 }, { burnEnd, 1 }, { burnEnd + 0.3, 1 }, { burnEnd + 0.4, 0 } }
+	local clumpBurning = { { burnEnd - 0.07, 0 }, { burnEnd - 0.02, 1 }, { burnEnd + 0.3, 1 }, { burnEnd + 0.4, 0 } }
 	local centreSize = { { burnEnd, 1 }, { burnEnd + 0.4, 0.9 }, { burnEnd + 0.65, 0.75 } }
 	local edgeBurning = { { E + 0.01, 0 }, { E + 0.04, 1 }, { burnEnd, 1 }, { burnEnd + 0.1, 0 } }
 	-- the reference opens into a V twice: a bright central column with sparse tongues leaning
@@ -788,15 +852,17 @@ function Effect.Play(ctx)
 	local channels = {
 		{ tonguesLeft, p.FlameRate * 0.5, edgeBurning, vThin = true, boost = true },
 		{ tonguesRight, p.FlameRate * 0.5, edgeBurning, vThin = true, boost = true },
-		{ tonguesCentre, p.FlameRate * 0.3, burning, boost = true },
-		{ baseGlow, 120, { { E, 0 }, { E + 0.005, 1 }, { E + 0.07, 1 }, { E + 0.11, 0 } } },
+		{ tonguesCentre, p.FlameRate * 0.3, centreBurning, boost = true },
+		{ dieStreaks, 1, dieRate },
+		{ archGlow, 45, { { E + 0.09, 0 }, { E + 0.11, 1 }, { E + 0.22, 1 }, { E + 0.26, 0 } } },
+		{ baseGlow, 25, { { E, 0 }, { E + 0.005, 1 }, { E + 0.04, 1 }, { E + 0.07, 0 } } },
 		{ flameBody, p.FlameRate * 0.4, { { E + 0.02, 0 }, { E + 0.06, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.05, 0 } } },
 		{ darkTongues, p.DarkTongueRate, { { E + 0.3, 0 }, { E + 0.4, 1 }, { burnEnd, 1 }, { burnEnd + 0.2, 0 } } },
 		{ embers, p.EmberRate, { { E, 0 }, { E + 0.1, 1 }, { burnEnd, 1 }, { burnEnd + 0.3, 0.2 }, { fadeEnd - 0.1, 0 } } },
 		{ curls, p.CurlRate, { { E + 0.1, 0 }, { E + 0.15, 1 }, { burnEnd - 0.2, 1 }, { burnEnd, 0 } } },
 		{ ringCurls, p.CurlRate * 0.6, { { E + 0.1, 0 }, { E + 0.15, 1 }, { burnEnd - 0.3, 1 }, { burnEnd, 0 } } },
 		{ flecks, p.FleckRate, { { E + 0.1, 0 }, { E + 0.15, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.1, 0 } } },
-		{ preFlames, 24, clumpBurning },
+		{ preFlames, 34, clumpBurning },
 	}
 	local owed = {}
 	for i = 1, #channels do
@@ -832,11 +898,20 @@ function Effect.Play(ctx)
 	local lineWidth = { { E, 1.2 * s }, { E + 0.03, 3.2 * s }, { E + 0.22, 1.2 * s } }
 	-- the dark rift recedes while the hot line burns along it
 	local crackDarkTrack = { { 0.03, 1 }, { 0.09, 0.15 }, { E, 0.15 }, { E + 0.1, 0.55 }, { fadeEnd, 0.4 },
-		{ crackEnd - 0.3, 0.3 }, { crackEnd, 1 } }
+		{ fadeEnd + math.max(0, p.CrackFadeTime - 0.3), 0.3 }, { crackEnd, 1 } }
 	local crackLineTrack = { { 0.3, 1 }, { 0.5, 0.1 }, { E, 0 }, { fadeEnd, 0.15 }, { crackEnd, 1 } }
 	-- the pool is a soft glow stretched along the crack: brightest in the middle
 	local crackPoolTrack = { { 0.3, 1 }, { 0.5, 0.45 }, { E, 0.4 }, { E + 0.2, 0.7 }, { fadeEnd, 0.8 }, { crackEnd, 1 } }
 	local crackBrightTrack = { { 0.3, 1 }, { 0.6, 2.6 }, { E + 0.1, 3.2 }, { fadeEnd, 2 }, { crackEnd, 0.8 } }
+
+	-- assign a derived property only when its input changes (no per-frame allocations)
+	local last = {}
+	local function changed(key, value, apply)
+		if last[key] == nil or math.abs(last[key] - value) > 1e-3 then
+			last[key] = value
+			apply(value)
+		end
+	end
 
 	local t = 0
 	while t < crackEnd do
@@ -879,24 +954,38 @@ function Effect.Play(ctx)
 		local life = track(tongueLife, t)
 		local edge = math.min(life, track(edgeLife, t)) * tongueLifeK / rush
 		life *= tongueLifeK / rush
-		tonguesLeft.Lifetime = NumberRange.new(0.35 * edge, 0.55 * edge)
-		tonguesRight.Lifetime = tonguesLeft.Lifetime
-		tonguesCentre.Lifetime = NumberRange.new(0.35 * life, 0.55 * life)
+		changed("edge", edge, function()
+			tonguesLeft.Lifetime = NumberRange.new(0.35 * edge, 0.55 * edge)
+			tonguesRight.Lifetime = tonguesLeft.Lifetime
+		end)
+		changed("life", life, function()
+			tonguesCentre.Lifetime = NumberRange.new(0.35 * life, 0.55 * life)
+		end)
 		tonguesCentre.Brightness = track(centreGlow, t)
 		local lean = track(vLean, t)
-		if not centreStreaks and t >= burnEnd + 0.3 then
-			centreStreaks = true
-			centreToStreaks()
-		end
-		-- positive Rotation leans tops left: the left half leans in by default, out in a V
-		tonguesLeft.Rotation = NumberRange.new(-5 + 17 * lean, 24 * lean)
-		tonguesRight.Rotation = NumberRange.new(-24 * lean, 5 - 17 * lean)
-		if not centreStreaks then
+		changed("lean", lean, function()
+			-- positive Rotation leans tops left: the left half leans in by default, out in a V
+			tonguesLeft.Rotation = NumberRange.new(-5 + 17 * lean, 24 * lean)
+			tonguesRight.Rotation = NumberRange.new(-24 * lean, 5 - 17 * lean)
 			tonguesCentre.Rotation = NumberRange.new(-20 * lean, 20 * lean) -- the core fans out
-		end
-		core.Brightness = 1.4 + 2 * lean
+			-- at the V the sides drop to ~0.6x height and ~0.4x opacity, so the column reads
+			local k, op = 1 - 0.5 * lean, 1 - 0.6 * lean
+			tonguesLeft.Size = seq({ { 0, 0.21 * B * 0.8 * k, 0.065 * B * 0.8 * k }, { 0.5, 0.26 * B * 0.8 * k, 0.075 * B * 0.8 * k },
+				{ 1, 0.24 * B * 0.8 * k, 0.07 * B * 0.8 * k } })
+			tonguesRight.Size = tonguesLeft.Size
+			tonguesLeft.Transparency = seq({ { 0, 1 - 0.9 * op }, { 0.5, 1 - 0.7 * op }, { 0.6, 1 - 0.55 * op }, { 1, 1 } })
+			tonguesRight.Transparency = tonguesLeft.Transparency
+		end)
+		dieBox.Size = Vector3.new(track(dieWidth, t), 0.2 * s, 1 * s)
+		changed("fan", math.floor(track(dieFan, t) + 0.5), function(fan)
+			dieStreaks.SpreadAngle = Vector2.new(2, fan)
+		end)
+		changed("dieLife", track(dieLife, t), function(k)
+			dieStreaks.Lifetime = NumberRange.new(0.18 * k, 0.24 * k)
+		end)
+		core.Brightness = 1.4 + 3 * lean
 		column.Brightness = 1.1 + 1.2 * lean
-		tonguesLeft.Brightness = 1 - 0.5 * lean
+		tonguesLeft.Brightness = 1 - 0.3 * lean
 		tonguesRight.Brightness = tonguesLeft.Brightness
 		local cs = track(centreSize, t)
 		if cs ~= lastCentreSize then
@@ -910,8 +999,10 @@ function Effect.Play(ctx)
 		tallRight.Size = tallLeft.Size
 		tallLeft.CFrame = frame * CFrame.new(-width / 4, 0.24 * B, 0)
 		tallRight.CFrame = frame * CFrame.new(width / 4, 0.24 * B, 0)
-		tallCentre.Size = Vector3.new(width * 0.6, 0.2 * s, 1 * s)
-		bodyBox.Size = Vector3.new(width * 0.55, 0.2 * s, 1 * s) -- middle only: no straight sides
+		-- at the V the centre band and body pull in to a ~2 Scale-1 stud column
+		local pull = 1 - 0.85 * lean
+		tallCentre.Size = Vector3.new(width * 0.6 * pull, 0.2 * s, 1 * s)
+		bodyBox.Size = Vector3.new(width * 0.55 * pull, 0.2 * s, 1 * s) -- middle only: no straight sides
 		-- narrower than the tongues and tapered to the top, so the fixed sheets never show
 		-- straight vertical sides
 		local veilWidth = width * 0.65 * track(wallAlpha, t)
@@ -921,26 +1012,26 @@ function Effect.Play(ctx)
 		local sway = track(swayAmount, t) * (0.75 * math.sin(t * 5.7) + 0.25 * math.sin(t * 10.1 + 1.3))
 		local push = swayRight * (1.6 * B * sway)
 		for _, e in swayed do
-			if not (centreStreaks and e == tonguesCentre) then
-				e.Acceleration = push
-			end
+			e.Acceleration = push
 		end
 		local swayX = 0.07 * B * sway
 		wallTop.Position = Vector3.new(swayX, 0.2 * s + track(wallHeight, t), 0)
 
-		local columnTopY = 0.2 * s + track(columnHeight, t)
+		local columnTopY = 0.2 * s + track(columnHeight, t) * (1 + 0.2 * lean)
 		columnTop.Position = Vector3.new(swayX, columnTopY, 0)
 		streakTop.Position = Vector3.new(swayX * 1.2, math.max(columnTopY, 0.2 * s + track(streakHeight, t)), 0)
 		local cw = track(columnWidth, t) * (1 - 0.4 * lean)
 		column.Width0, column.Width1 = cw * 0.05, cw -- pointed tip, wide base
-		columnGlow.Width0, columnGlow.Width1 = cw * 0.5, cw * 1.8
+		columnGlow.Width0, columnGlow.Width1 = cw * 0.4, cw * 1.1
 		streak.Width0, streak.Width1 = cw * 0.06, cw * 0.16
 		coreTop.Position = Vector3.new(swayX * 0.75, 0.2 * s + (columnTopY - 0.2 * s) * 0.75, 0)
 		core.Width0, core.Width1 = cw * 0.25, cw * 0.6
 
 		light.Brightness = track(lightTrack, t)
 		local lineAlpha = track(lineTrack, t)
-		hotLine.Transparency = seq({ { 0, 1 }, { 0.12, lineAlpha }, { 0.88, lineAlpha }, { 1, 1 } })
+		changed("lineAlpha", lineAlpha, function()
+			hotLine.Transparency = seq({ { 0, 1 }, { 0.12, lineAlpha }, { 0.88, lineAlpha }, { 1, 1 } })
+		end)
 		local lw = track(lineWidth, t)
 		hotLine.Width0, hotLine.Width1 = lw, lw
 		crackDark.ImageTransparency = track(crackDarkTrack, t)
