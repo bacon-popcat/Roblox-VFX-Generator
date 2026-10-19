@@ -476,6 +476,12 @@ function Effect.Play(ctx)
 	}
 	local dieStreaksL = emitter(dieLeft, dieProps)
 	local dieStreaksR = emitter(dieRight, dieProps)
+	-- a dense bright core of wider vertical streaks in the middle of the bundle
+	local dieMid = box(0, 0.05 * B, 0.07 * B)
+	local dieCore = emitter(dieMid, dieProps)
+	dieCore.Color = colors({ { 0, Color3.fromRGB(255, 170, 60) }, { 1, Color3.fromRGB(235, 90, 25) } })
+	dieCore.Squash = NumberSequence.new(0.45) -- ~1.5x wider than the side streaks
+	dieCore.SpreadAngle = Vector2.new(1, 2)
 	-- soft flame body filling the middle of the curtain up to ~0.85 of its height
 	local flameBody = emitter(bodyBox, {
 		Texture = ASSETS.FlameBody,
@@ -831,17 +837,20 @@ function Effect.Play(ctx)
 	-- the wavy centre tongues hand over to the straight die-down streaks at ~3.0-3.15 s
 	local centreBurning = { { E + 0.01, 0 }, { E + 0.04, 1 }, { burnEnd + 0.15, 1 }, { burnEnd + 0.3, 0 } }
 	-- die-down streaks per second (~10 alive at 3.2 s, ~7 at 3.4 s, ~5 at 3.6 s), the spawn
-	-- base narrowing 5 -> 3 -> 1.5 Scale-1 studs and each half tilting out 7 -> 2 -> 0 deg
+	-- base narrowing 4 -> 3 -> 1.5 Scale-1 studs and each half tilting out 5 -> 2 -> 0 deg
+	-- (3.2 -> 3.3 -> 3.4 s), plus a bright core of wider streaks in the middle
 	local dieRate = { { burnEnd + 0.1, 0 }, { burnEnd + 0.2, 48 }, { burnEnd + 0.35, 48 }, { burnEnd + 0.55, 34 },
 		{ fadeEnd - 0.05, 26 }, { fadeEnd - 0.03, 0 } }
-	local dieWidth = { { burnEnd + 0.35, 0.34 * B }, { burnEnd + 0.5, 0.21 * B }, { fadeEnd - 0.05, 0.1 * B } }
-	local dieFan = { { burnEnd + 0.3, 7 }, { burnEnd + 0.48, 2 }, { burnEnd + 0.6, 0 } } -- each half's tilt
+	local dieWidth = { { burnEnd + 0.35, 0.28 * B }, { burnEnd + 0.55, 0.21 * B }, { fadeEnd - 0.05, 0.1 * B } }
+	local dieFan = { { burnEnd + 0.25, 7 }, { burnEnd + 0.35, 5 }, { burnEnd + 0.45, 2 }, { burnEnd + 0.55, 0 } } -- each half's tilt
 	local dieLife = { { burnEnd + 0.55, 1 }, { fadeEnd - 0.05, 0.6 } }
 	local tongueLife = { { burnEnd + 0.45, 1 }, { fadeEnd - 0.1, 0.5 } }
 	-- the opening burst of tongues rushes up ~2.8x faster (and lives 1/2.8 as long), so the
 	-- wall is full height by ~0.75 s without overshooting; the steady tongues take over at once
 	local onsetRush = { { E - 0.03, 2.8 }, { E + 0.02, 2.8 }, { E + 0.05, 1 } }
 	local lastRush = 0
+	-- the flame body thins behind the arch (0.80-0.92 s) so its interior reads darker
+	local archDim = { { E + 0.07, 0 }, { E + 0.1, 1 }, { E + 0.2, 1 }, { E + 0.24, 0 } }
 	-- the steady tongues come out ~2.5x thicker for the first ~0.25 s, so the wall stays full
 	-- while the rushed opening burst dies
 	local onsetBoost = { { E, 2.5 }, { E + 0.2, 2.5 }, { E + 0.3, 1 } }
@@ -861,9 +870,10 @@ function Effect.Play(ctx)
 		{ tonguesCentre, p.FlameRate * 0.3, centreBurning, boost = true },
 		{ dieStreaksL, 0.5, dieRate },
 		{ dieStreaksR, 0.5, dieRate },
+		{ dieCore, 0.35, dieRate },
 		{ archGlow, 45, { { E + 0.09, 0 }, { E + 0.11, 1 }, { E + 0.2, 1 }, { E + 0.22, 0 } } },
 		{ baseGlow, 25, { { E, 0 }, { E + 0.005, 1 }, { E + 0.04, 1 }, { E + 0.07, 0 } } },
-		{ flameBody, p.FlameRate * 0.4, { { E + 0.02, 0 }, { E + 0.06, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.05, 0 } } },
+		{ flameBody, p.FlameRate * 0.4, bodyDim = true, { { E + 0.02, 0 }, { E + 0.06, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.05, 0 } } },
 		{ darkTongues, p.DarkTongueRate, { { E + 0.3, 0 }, { E + 0.4, 1 }, { burnEnd, 1 }, { burnEnd + 0.2, 0 } } },
 		{ embers, p.EmberRate, { { E, 0 }, { E + 0.1, 1 }, { burnEnd, 1 }, { burnEnd + 0.3, 0.2 }, { fadeEnd - 0.1, 0 } } },
 		{ curls, p.CurlRate, { { E + 0.1, 0 }, { E + 0.15, 1 }, { burnEnd - 0.2, 1 }, { burnEnd, 0 } } },
@@ -936,6 +946,9 @@ function Effect.Play(ctx)
 			if channel.boost then
 				rate *= track(onsetBoost, t)
 			end
+			if channel.bodyDim then
+				rate *= math.max(0.2, 1 - 0.6 * track(vLean, t) - 0.5 * track(archDim, t))
+			end
 			if channel.vThin then
 				rate *= 1 - 0.6 * track(vLean, t) -- thinner sides, so the bright core reads
 			end
@@ -990,10 +1003,12 @@ function Effect.Play(ctx)
 		dieLeft.Size = Vector3.new(dw * 0.62, 0.2 * s, 1 * s)
 		dieRight.Size = dieLeft.Size
 		dieLeft.CFrame = frame * CFrame.new(-dw * 0.19, 0.05 * B, 0) * CFrame.Angles(0, 0, tilt)
+		dieMid.Size = Vector3.new(dw * 0.25, 0.2 * s, 1 * s)
 		dieRight.CFrame = frame * CFrame.new(dw * 0.19, 0.05 * B, 0) * CFrame.Angles(0, 0, -tilt)
 		changed("dieLife", track(dieLife, t), function(k)
 			dieStreaksL.Lifetime = NumberRange.new(0.18 * k, 0.24 * k)
 			dieStreaksR.Lifetime = dieStreaksL.Lifetime
+			dieCore.Lifetime = dieStreaksL.Lifetime
 		end)
 		core.Brightness = 1.4 + 1.4 * lean
 		column.Brightness = 1.1 + 1.2 * lean
@@ -1017,7 +1032,7 @@ function Effect.Play(ctx)
 		bodyBox.Size = Vector3.new(width * 0.55 * pull, 0.2 * s, 1 * s) -- middle only: no straight sides
 		-- narrower than the tongues and tapered to the top, so the fixed sheets never show
 		-- straight vertical sides
-		local veilWidth = width * 0.65 * track(wallAlpha, t)
+		local veilWidth = width * 0.65 * track(wallAlpha, t) * (1 - 0.5 * lean)
 		wisps.Width0, wisps.Width1 = veilWidth * 0.35, veilWidth
 		peaks.Width0, peaks.Width1 = veilWidth * 0.3, veilWidth * 0.85
 		-- two mixed sines (~0.9 and ~1.6 sways/s) so the swing never looks mechanical

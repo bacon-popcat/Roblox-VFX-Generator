@@ -95,6 +95,19 @@ Beam and Trail textures: X spans the beam's width, Y runs along its length and t
 so draw them tall (e.g. 128 x 512) with the streak running vertically. A wide texture
 shows up as stripes across the beam.
 
+`VelocityParallel` particles run the texture's **X** along the velocity, so an upright
+(tall) texture needs `Rotation = -90` to point its tip along the motion.
+
+Uploaded textures (drawn with PIL in Python, white RGB, shape in alpha):
+
+| Name | Id | Use |
+|---|---|---|
+| lava_streak | rbxassetid://138131925212643 | Straight flame streak, soft root, long taper to a sharp tip (128x512). LavaEruption die-down fan. |
+| lava_wedge | rbxassetid://109547847796563 | Soft flare wedge, bright rounded root (64x256). Radial ground starbursts and splashes (VelocityParallel, Rotation -90). |
+| lava_ring | rbxassetid://113782032324685 | Thick soft, slightly lumpy ring (128x128). Bold flung rings; reads better than the hollow curl flipbooks. |
+| lava_glow | rbxassetid://87365446017300 | Round soft glow that falls to exactly zero at the edge (128x128). Use instead of Blurred Spec 11 (284205403), which has a hard bottom edge on upright quads. |
+| lava_arch2 | rbxassetid://91461964686009 | Inverted U with a wobbly flame-edged rim and a warm interior (128x192). Arch-shaped core glow behind flames. |
+
 <!-- Add your own uploaded textures below, e.g.
 | soft_glow | rbxassetid://000000 | Round soft glow for cores and auras |
 | slash_gradient | rbxassetid://000000 | Horizontal fade for Crescent meshes |
