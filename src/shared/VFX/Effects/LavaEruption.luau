@@ -7,7 +7,7 @@
 -- Layers: crack decal (branched dark crack, lava line, red pool) + hot line, precursor
 -- streaks/rocks/rings/flames/smoke/embers, eruption spike row, base wedge flares and splash,
 -- arch glow, wind arcs, flame-veil beams, flame tongues (taller in the centre) + soft flame
--- body + dark tongues, central flame with a yellow core, glow and faint streak, curls, dark
+-- body + dark tongues, central flame with a yellow core and glow, upper plume rays, curls, dark
 -- flecks, side flame clumps, die-down streak fan with a bright core, embers, light.
 --
 -- ctx.CFrame: the fissure sits on the ground below it and runs across the view (along
@@ -217,7 +217,7 @@ function Effect.Play(ctx)
 	local bodyBox = box(0, 0.27 * B, 0.3 * B) -- soft flame body, the middle ~55% of the curtain
 
 	local base = ctx.Anchor(frame)
-	local archAt = attachment(base, CFrame.new(0, 0.3 * B, 0)) -- quad bottom just above the ground
+	local archAt = attachment(base, CFrame.new(0, 0.27 * B, 0)) -- quad bottom just above the ground
 	local coreAt = attachment(base, CFrame.new(0, 0.24 * B, 0))
 	local centre = attachment(base, CFrame.new(0, 0.4 * s, 0))
 	-- wind arcs: flat on the ground, and raised + tilted so some wrap up round the flames
@@ -379,11 +379,13 @@ function Effect.Play(ctx)
 	})
 	local embers = emitter(line, {
 		Texture = ASSETS.Speck,
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		Squash = NumberSequence.new(-0.75), -- stretched along the velocity (texture X)
 		EmissionDirection = Enum.NormalId.Top,
 		Color = colors({ { 0, p.Color }, { 1, p.EdgeColor } }),
 		LightEmission = 1,
 		Brightness = 1.5,
-		Size = seq({ { 0, 0.35 * s, 0.1 * s }, { 0.8, 0.3 * s }, { 1, 0 } }),
+		Size = seq({ { 0, 0.24 * s, 0.08 * s }, { 0.8, 0.2 * s }, { 1, 0 } }),
 		Lifetime = NumberRange.new(0.6, 1.1),
 		Speed = NumberRange.new(6 * s, 16 * s),
 		SpreadAngle = Vector2.new(35, 35),
@@ -409,8 +411,8 @@ function Effect.Play(ctx)
 		ZOffset = 2,
 	})
 	-- smooth thin upright tongues; each half leans a little inward so the curtain stays
-	-- tight, and the centre band is ~1.3x taller than the sides (1.25 vs 0.95), so the top is
-	-- nearly flat with a slightly taller middle. They shoot up
+	-- tight, and the centre band is ~1.7x taller than the sides (1.25 vs 0.75), so the curtain
+	-- tapers to a peaked middle. They shoot up
 	-- fast (TONGUE_RUSH) and die young, so the curtain rushes; WALL_HEIGHT trims the
 	-- tongues, flame body and the veil/column beams to ~0.95 of the original height.
 	local TONGUE_RUSH = 1.6
@@ -443,14 +445,17 @@ function Effect.Play(ctx)
 		})
 	end
 	-- the side halves are shorter than the centre band, so the curtain tapers to the edges
-	local tonguesLeft = tongueEmitter(tallLeft, -1, 0.95) -- left half leans right (inward)
-	local tonguesRight = tongueEmitter(tallRight, 1, 0.95)
+	local tonguesLeft = tongueEmitter(tallLeft, -1, 0.75) -- left half leans right (inward)
+	local tonguesRight = tongueEmitter(tallRight, 1, 0.75)
+	-- the side bands burn redder than the centre
+	local sideColor = colors({ { 0, p.Color:Lerp(p.EdgeColor, 0.25) }, { 0.5, deep }, { 1, p.EdgeColor } })
+	tonguesLeft.Color, tonguesRight.Color = sideColor, sideColor
 	local tonguesCentre = tongueEmitter(tallCentre, 0, 1.25)
 	-- speed multiplier on top of TONGUE_RUSH; lifetimes are divided by it, so a faster
 	-- tongue reaches the same height sooner (used for the onset wall)
 	local function setTongueSpeed(k)
 		k *= TONGUE_RUSH
-		tonguesLeft.Speed = NumberRange.new(0.44 * B * 0.95 * k, 0.74 * B * 0.95 * k)
+		tonguesLeft.Speed = NumberRange.new(0.44 * B * 0.75 * k, 0.74 * B * 0.75 * k)
 		tonguesRight.Speed = tonguesLeft.Speed
 		tonguesCentre.Speed = NumberRange.new(0.44 * B * 1.25 * k, 0.74 * B * 1.25 * k)
 	end
@@ -522,11 +527,11 @@ function Effect.Play(ctx)
 			FlipbookStartRandom = true,
 			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
 			EmissionDirection = Enum.NormalId.Top,
-			Color = ColorSequence.new(p.DarkColor:Lerp(p.EdgeColor, 0.2)),
+			Color = ColorSequence.new(p.DarkColor:Lerp(p.EdgeColor, 0.35)),
 			LightEmission = 0,
-			Size = seq({ { 0, 0.12 * B }, { 0.5, 0.16 * B }, { 1, 0.14 * B } }),
-			Squash = NumberSequence.new(0.5),
-			Transparency = seq({ { 0, 0.3 }, { 0.6, 0.45 }, { 1, 1 } }),
+			Size = seq({ { 0, 0.1 * B }, { 0.5, 0.13 * B }, { 1, 0.12 * B } }),
+			Squash = NumberSequence.new(0.6),
+			Transparency = seq({ { 0, 0.55 }, { 0.6, 0.65 }, { 1, 1 } }),
 			Lifetime = NumberRange.new(0.3, 0.45),
 			Speed = NumberRange.new(0.15 * B, 0.3 * B),
 			Rotation = NumberRange.new(-15, 15),
@@ -648,16 +653,16 @@ function Effect.Play(ctx)
 		Speed = NumberRange.new(0),
 		ZOffset = 1.4,
 	})
-	-- arch core (0.80-0.92 s): an inverted-U glow at the base centre (~4.5 x 8 Scale-1 studs,
-	-- squashed upright)
+	-- arch core (0.80 s to ~2.9 s, strongest at 0.80-0.92 s): an inverted-U glow at the base
+	-- centre (~4.5 x 8 Scale-1 studs, squashed upright)
 	local archGlow = emitter(archAt, {
 		Texture = ASSETS.LavaArch, -- an inverted U: bright rim, open interior
 		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, -- upright: a camera-facing quad tilts into the floor
 		Color = colors({ { 0, p.Color }, { 1, p.Color:Lerp(p.EdgeColor, 0.5) } }),
 		LightEmission = 0.75,
 		Brightness = 1.05,
-		Size = seq({ { 0, 0.27 * B }, { 1, 0.29 * B } }),
-		Squash = NumberSequence.new(0.3), -- taller than wide
+		Size = seq({ { 0, 0.24 * B }, { 1, 0.26 * B } }),
+		Squash = NumberSequence.new(0.35), -- taller than wide
 		Transparency = seq({ { 0, 0.5 }, { 0.3, 0.25 }, { 0.7, 0.35 }, { 1, 1 } }),
 		Lifetime = NumberRange.new(0.08, 0.1),
 		Speed = NumberRange.new(0),
@@ -686,7 +691,7 @@ function Effect.Play(ctx)
 
 	------------------------------------------------------------------ beams
 	-- Faint veil of tongues behind the particles (two scrolling sheets), the central
-	-- tapered flame with a soft glow, and a faint dim red streak above it (all fixed, not
+	-- tapered flame with a soft glow and a yellow core (all fixed, not
 	-- camera-facing).
 	-- The veil and the central flame are fixed sheets (FaceCamera off) that lie along the
 	-- fissure: a non-camera-facing beam spreads its width along its attachments' Y axis, so
@@ -696,7 +701,6 @@ function Effect.Play(ctx)
 	local bottom = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
 	local wallTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
 	local columnTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
-	local streakTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
 	local coreTop = attachment(base, CFrame.new(0, 0.2 * s, 0) * upright)
 	local veil = seq({ { 0, 1 }, { 0.5, 0.8 }, { 0.82, 0.5 }, { 1, 0.92 } }) -- backs the tongues; feathered bottom
 	local wisps = beam(wallTop, bottom, {
@@ -753,15 +757,23 @@ function Effect.Play(ctx)
 		Transparency = seq({ { 0, 1 }, { 0.4, 0.4 }, { 0.88, 0.2 }, { 1, 0.75 } }),
 		ZOffset = 0.6,
 	})
-	local streak = beam(streakTop, columnTop, {
-		Name = "Streak",
-		FaceCamera = false,
-		Texture = ASSETS.GlowCore,
-		Color = ColorSequence.new(p.EdgeColor),
-		LightEmission = 1,
+	-- upper plume: straight red-orange streaks shooting up through the top of the curtain
+	-- (the reference's upper flames read as smooth vertical rays, not wavy tips)
+	local plume = emitter(tallCentre, {
+		Texture = ASSETS.LavaStreak,
+		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
+		EmissionDirection = Enum.NormalId.Top,
+		Color = colors({ { 0, p.Color }, { 0.5, deep }, { 1, p.EdgeColor } }),
+		LightEmission = 0.6,
 		Brightness = 1,
-		Transparency = seq({ { 0, 1 }, { 0.4, 0.5 }, { 1, 0.45 } }),
-		ZOffset = 0.4,
+		Size = seq({ { 0, 0.16 * B, 0.03 * B }, { 1, 0.2 * B } }),
+		Squash = NumberSequence.new(1.6), -- long thin rays
+		Transparency = seq({ { 0, 1 }, { 0.2, 0.55 }, { 0.7, 0.7 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.25, 0.35),
+		Speed = NumberRange.new(0.5 * B, 0.7 * B),
+		Drag = 2,
+		SpreadAngle = Vector2.new(4, 4),
+		ZOffset = 0.3,
 	})
 
 	-- hot line along the whole crack: a razor-thin untextured yellow core plus a wider faint
@@ -769,8 +781,8 @@ function Effect.Play(ctx)
 	-- flat on the ground (FaceCamera off): a fixed beam spreads its width along its
 	-- attachments' Y axis, so Y is turned to lie across the crack
 	local flat = CFrame.Angles(math.pi / 2, 0, 0)
-	local lineLeft = attachment(base, CFrame.new(-F * 0.5, 0.08 * s, 0) * flat)
-	local lineRight = attachment(base, CFrame.new(F * 0.5, 0.08 * s, 0) * flat)
+	local lineLeft = attachment(base, CFrame.new(-F * 0.34, 0.08 * s, 0) * flat)
+	local lineRight = attachment(base, CFrame.new(F * 0.34, 0.08 * s, 0) * flat)
 	local hotLine = beam(lineLeft, lineRight, {
 		Name = "HotLine",
 		FaceCamera = false,
@@ -941,8 +953,11 @@ function Effect.Play(ctx)
 		{ dieStreaksR, 0.5, dieRate },
 		{ dieCore, 0.35, dieRate },
 		{ baseFill, 70, { { E + 0.02, 0 }, { E + 0.06, 1 }, { burnEnd - 0.05, 1 }, { burnEnd + 0.15, 0 } } },
-		{ coreGlow, 40, { { E + 0.2, 0 }, { E + 0.3, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.15, 0.6 }, { burnEnd + 0.3, 0 } } },
-		{ archGlow, 45, { { E + 0.09, 0 }, { E + 0.11, 1 }, { E + 0.2, 1 }, { E + 0.22, 0 } } },
+		{ plume, 18, { { E + 0.25, 0 }, { E + 0.35, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.05, 0 } } },
+		{ coreGlow, 12, { { E + 0.2, 0 }, { E + 0.3, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.15, 0.6 }, { burnEnd + 0.3, 0 } } },
+		-- the arch stays on through the burn at lower density (the reference's core is an arch
+		-- with a darker interior the whole time)
+		{ archGlow, 45, { { E + 0.09, 0 }, { E + 0.11, 1 }, { E + 0.2, 1 }, { E + 0.3, 0.6 }, { burnEnd - 0.1, 0.6 }, { burnEnd + 0.1, 0 } } },
 		{ baseGlow, 25, { { E, 0 }, { E + 0.005, 1 }, { E + 0.04, 1 }, { E + 0.07, 0 } } },
 		{ flameBody, p.FlameRate * 0.4, bodyDim = true, { { E + 0.02, 0 }, { E + 0.06, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.05, 0 } } },
 		{ darkTongues, p.DarkTongueRate, { { E + 0.3, 0 }, { E + 0.4, 1 }, { burnEnd, 1 }, { burnEnd + 0.2, 0 } } },
@@ -961,7 +976,7 @@ function Effect.Play(ctx)
 	-- ~1.5 a side): ~12 across at the onset, ~10 while burning, a ~3-4 stud core from ~3.0 s
 	-- and a ~1 stud bundle at 3.6 s
 	local curtain = {
-		{ E, 0.7 }, { E + 0.03, 0.85 }, { E + 0.3, 0.72 }, { burnEnd, 0.72 },
+		{ E, 0.7 }, { E + 0.03, 0.85 }, { E + 0.3, 0.64 }, { burnEnd, 0.64 },
 		{ burnEnd + 0.12, 0.22 }, { burnEnd + 0.45, 0.17 }, { burnEnd + 0.62, 0.05 }, { fadeEnd, 0.02 },
 	}
 	-- the veil overshoots a little at the onset (the reference's first wall is tallest)
@@ -973,7 +988,6 @@ function Effect.Play(ctx)
 	local columnWidth = {
 		{ E + 0.12, 0 }, { E + 0.24, 0.24 * B }, { burnEnd, 0.24 * B }, { narrowEnd, 0.1 * B }, { fadeEnd, 0 },
 	}
-	local streakHeight = { { E + 0.3, 0.8 * colH }, { E + 0.45, 1.05 * colH }, { burnEnd, 1.05 * colH }, { fadeEnd, 0.7 * colH } }
 	-- side-to-side sway of the whole curtain: a sideways push on the live tongues and body
 	-- (they bend together) and the beam tops swinging the same way
 	local swayAmount = { { E + 0.1, 0 }, { E + 0.35, 1 }, { burnEnd + 0.1, 1 }, { burnEnd + 0.25, 0 } }
@@ -1064,8 +1078,8 @@ function Effect.Play(ctx)
 			tonguesCentre.Squash = seq({ { 0, 0.3 + 0.6 * lean }, { 1, 0.6 + 0.5 * lean } }) -- narrow at the V
 			-- at the V the sides drop to ~0.7x height and ~0.55x opacity, so the column reads
 			local k, op = 1 - 0.3 * lean, 1 - 0.45 * lean
-			tonguesLeft.Size = seq({ { 0, 0.21 * B * 0.95 * k, 0.065 * B * 0.95 * k }, { 0.5, 0.26 * B * 0.95 * k, 0.075 * B * 0.95 * k },
-				{ 1, 0.24 * B * 0.95 * k, 0.07 * B * 0.95 * k } })
+			tonguesLeft.Size = seq({ { 0, 0.21 * B * 0.75 * k, 0.065 * B * 0.75 * k }, { 0.5, 0.26 * B * 0.75 * k, 0.075 * B * 0.75 * k },
+				{ 1, 0.24 * B * 0.75 * k, 0.07 * B * 0.75 * k } })
 			tonguesRight.Size = tonguesLeft.Size
 			tonguesLeft.Transparency = seq({ { 0, 1 - 0.9 * op }, { 0.5, 1 - 0.7 * op }, { 0.6, 1 - 0.55 * op }, { 1, 1 } })
 			tonguesRight.Transparency = tonguesLeft.Transparency
@@ -1124,20 +1138,19 @@ function Effect.Play(ctx)
 
 		local columnTopY = 0.2 * s + track(columnHeight, t) * (1 + 0.05 * lean)
 		columnTop.Position = Vector3.new(swayX, columnTopY, 0)
-		streakTop.Position = Vector3.new(swayX * 1.2, math.max(columnTopY, 0.2 * s + track(streakHeight, t)), 0)
 		local cw = track(columnWidth, t) * (1 - 0.6 * lean)
 		column.Width0, column.Width1 = cw * 0.05, cw -- pointed tip, wide base
 		columnGlow.Width0, columnGlow.Width1 = cw * 0.4, cw * 1.1
-		streak.Width0, streak.Width1 = cw * 0.06, cw * 0.16
 		coreTop.Position = Vector3.new(swayX * 0.75, 0.2 * s + (columnTopY - 0.2 * s) * 0.75, 0)
 		core.Width0, core.Width1 = cw * 0.25, cw * 0.6
 
 		light.Brightness = track(lightTrack, t)
 		local lineAlpha = track(lineTrack, t)
 		changed("lineAlpha", lineAlpha, function()
-			hotLine.Transparency = seq({ { 0, 1 }, { 0.15, lineAlpha }, { 0.85, lineAlpha }, { 1, 1 } })
+			-- bright through the middle ~half, fading out toward both ends
+			hotLine.Transparency = seq({ { 0, 1 }, { 0.25, lineAlpha }, { 0.75, lineAlpha }, { 1, 1 } })
 			local g = 1 - (1 - lineAlpha) * 0.3 -- the glow at ~30% opacity
-			hotGlow.Transparency = seq({ { 0, 1 }, { 0.15, g }, { 0.85, g }, { 1, 1 } })
+			hotGlow.Transparency = seq({ { 0, 1 }, { 0.3, g }, { 0.7, g }, { 1, 1 } })
 		end)
 		local lw = track(lineWidth, t)
 		hotGlow.Width0, hotGlow.Width1 = lw, lw
