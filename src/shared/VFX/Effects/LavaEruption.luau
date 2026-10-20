@@ -6,7 +6,7 @@
 -- that closes into a thin bundle.
 -- Layers: crack decal (branched dark crack, lava line, red pool) + hot line, precursor
 -- streaks/rocks/rings/flames/smoke/embers, eruption spike row, base wedge flares and splash,
--- arch glow, wind arcs, flame-veil beams, flame tongues (taller in the centre) + soft flame
+-- heart flames (bright tongues + a dark flame in front), wind arcs, flame-veil beams, flame tongues (taller in the centre) + soft flame
 -- body + dark tongues, central flame with a yellow core and glow, upper plume rays, curls, dark
 -- flecks, side flame clumps, die-down streak fan with a bright core, embers, light.
 --
@@ -44,7 +44,7 @@ local ASSETS = {
 	LavaWedge = "rbxassetid://109547847796563", -- lava_wedge: soft flare wedge, bright root at the bottom (64x256)
 	LavaRing = "rbxassetid://113782032324685", -- lava_ring: thick soft, slightly lumpy ring (128x128)
 	LavaGlow = "rbxassetid://87365446017300", -- lava_glow: round soft glow falling to zero at the edge (128x128)
-	LavaArch = "rbxassetid://91461964686009", -- lava_arch2: inverted U with a wobbly flame-edged rim, warm interior (128x192)
+	LavaHollow = "rbxassetid://104220462120494", -- lava_hollow2: soft egg with a wavy flame-licked rim, wide falloff (128x128)
 }
 
 --------------------------------------------------------------------------------
@@ -214,10 +214,13 @@ function Effect.Play(ctx)
 	local tallLeft = box(-0.25 * B, 0.24 * B, 0.5 * B) -- tongue halves; widths follow the curtain
 	local tallRight = box(0.25 * B, 0.24 * B, 0.5 * B)
 	local tallCentre = box(0, 0.27 * B, 0.3 * B) -- taller tongues, middle of the curtain
+	local heartBox = box(0, 0.26 * B, 0.05 * B) -- bright heart blob, base centre (bottom at the ground)
+	local heartFront = box(0, 0.13 * B, 0.02 * B) -- the dark flame in front of the heart
+	local tearBox = box(0, 0.04 * B, 0.08 * B) -- the bright teardrop flame of each pulse
+	local tearGlowBox = box(0, 0.38 * B, 0.03 * B) -- its glowing body (quad root at the ground)
 	local bodyBox = box(0, 0.27 * B, 0.3 * B) -- soft flame body, the middle ~55% of the curtain
 
 	local base = ctx.Anchor(frame)
-	local archAt = attachment(base, CFrame.new(0, 0.27 * B, 0)) -- quad bottom just above the ground
 	local coreAt = attachment(base, CFrame.new(0, 0.24 * B, 0))
 	local centre = attachment(base, CFrame.new(0, 0.4 * s, 0))
 	-- wind arcs: flat on the ground, and raised + tilted so some wrap up round the flames
@@ -653,21 +656,69 @@ function Effect.Play(ctx)
 		Speed = NumberRange.new(0),
 		ZOffset = 1.4,
 	})
-	-- arch core (0.80 s to ~2.9 s, strongest at 0.80-0.92 s): an inverted-U glow at the base
-	-- centre (~4.5 x 8 Scale-1 studs, squashed upright)
-	local archGlow = emitter(archAt, {
-		Texture = ASSETS.LavaArch, -- an inverted U: bright rim, open interior
-		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, -- upright: a camera-facing quad tilts into the floor
-		Color = colors({ { 0, p.Color }, { 1, p.Color:Lerp(p.EdgeColor, 0.5) } }),
-		LightEmission = 0.75,
-		Brightness = 1.05,
-		Size = seq({ { 0, 0.24 * B }, { 1, 0.26 * B } }),
-		Squash = NumberSequence.new(0.35), -- taller than wide
-		Transparency = seq({ { 0, 0.5 }, { 0.3, 0.25 }, { 0.7, 0.35 }, { 1, 1 } }),
+	-- heart pulse (see heartCycle below): the reference has no ring. Each ~0.49 s a bright blob
+	-- of soft yellow flame swells at the base centre (an egg ~5 x 8 Scale-1 studs) ...
+	local heartFlames = emitter(heartBox, {
+		Texture = ASSETS.LavaGlow, -- a soft oval that fills (flipbook flames leave gaps)
+		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
+		EmissionDirection = Enum.NormalId.Top,
+		Color = colors({ { 0, warm }, { 1, p.Color:Lerp(p.CoreColor, 0.4) } }),
+		LightEmission = 0.9,
+		Brightness = 1.5,
+		Size = seq({ { 0, 0.2 * B }, { 0.5, 0.25 * B, 0.01 * B }, { 1, 0.25 * B } }),
+		Squash = NumberSequence.new(0.6), -- an upright egg
+		Transparency = seq({ { 0, 0.4 }, { 0.3, 0.15 }, { 0.7, 0.3 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.12, 0.16),
+		Speed = NumberRange.new(0.05 * B, 0.1 * B), -- swells and rises a little
+		SpreadAngle = Vector2.new(3, 3),
+		ZOffset = 0.95,
+	})
+	-- ... then a darker red-orange flame burns up through it from the ground: it grows taller
+	-- every frame, so the blob's bright rim stretches into an arch and thins out (~0.05 s)
+	local heartShadow = emitter(heartFront, {
+		-- a solid dark egg: the blob stays a bright rim round it (lava_glow's alpha is a steep
+		-- cone that reads big only when added, and the smoke puffs are too faint)
+		Texture = ASSETS.LavaHollow,
+		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
+		EmissionDirection = Enum.NormalId.Top,
+		-- unlit: the effect's light would brighten it back to orange and hide the hollow
+		Color = colors({ { 0, deep:Lerp(p.EdgeColor, 0.5) }, { 1, p.EdgeColor:Lerp(p.DarkColor, 0.3) } }), -- orange-red, not maroon
+		LightEmission = 0,
+		LightInfluence = 0,
+		Brightness = 1,
+		Size = seq({ { 0, 0.12 * B }, { 1, 0.24 * B } }), -- grows up through the blob
+		Squash = NumberSequence.new(0.5), -- an upright egg
+		Transparency = seq({ { 0, 0.3 }, { 0.3, 0 }, { 0.7, 0.1 }, { 1, 1 } }),
 		Lifetime = NumberRange.new(0.08, 0.1),
+		Speed = NumberRange.new(0.8 * B, 0.9 * B), -- its centre climbs ~0.08 B
+		SpreadAngle = Vector2.new(2, 2),
+		-- emitters sort by their anchor's distance plus ZOffset, and the blob's anchor sits ~2
+		-- studs nearer an elevated camera, so the hollow needs a clear margin to draw over it
+		ZOffset = 3,
+	})
+	-- ~0.22 s later a tall narrow bright teardrop flame peaks in the middle
+	local tearFlames = tongueEmitter(tearBox, 0, 1.1)
+	tearFlames.Color = colors({ { 0, warm }, { 0.45, p.Color:Lerp(p.CoreColor, 0.35) }, { 1, p.Color } })
+	tearFlames.LightEmission = 0.8
+	tearFlames.Brightness = 1.2
+	tearFlames.Squash = seq({ { 0, 0.6 }, { 1, 0.9 } }) -- narrow
+	tearFlames.Transparency = seq({ { 0, 0.15 }, { 0.5, 0.3 }, { 1, 1 } })
+	tearFlames.ZOffset = 1.1
+	-- the teardrop's body: a tall bright wedge, wide at the root and tapering to the tip (~3 x 13
+	-- Scale-1 studs), standing still while it flares (lava_streak is too thin here)
+	local tearGlow = emitter(tearGlowBox, {
+		Texture = ASSETS.LavaWedge,
+		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
+		Color = colors({ { 0, warm }, { 1, p.Color:Lerp(p.CoreColor, 0.4) } }),
+		LightEmission = 0.75,
+		Brightness = 1.25,
+		Size = seq({ { 0, 0.3 * B }, { 1, 0.33 * B } }),
+		Squash = NumberSequence.new(0.6), -- a tall slender spire
+		Transparency = seq({ { 0, 0.7 }, { 0.3, 0.42 }, { 0.7, 0.5 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.1, 0.14),
 		Speed = NumberRange.new(0),
-		Rotation = NumberRange.new(-6, 6),
-		ZOffset = 0.9, -- just behind the tongues, so some cross in front of it
+		Rotation = NumberRange.new(-3, 3),
+		ZOffset = 1.15,
 	})
 	-- base splash at the onset: short bright streaks radiating out low from the fissure
 	-- (VelocityParallel quads smear along their motion, which is the look here)
@@ -789,9 +840,9 @@ function Effect.Play(ctx)
 		Segments = 12, -- Transparency/Color are sampled per segment vertex (1 = ends only)
 		Color = colors({ { 0, p.EdgeColor }, { 0.25, p.CoreColor }, { 0.75, p.CoreColor }, { 1, p.EdgeColor } }),
 		LightEmission = 1,
-		Brightness = 2,
-		Width0 = 0.3 * s,
-		Width1 = 0.3 * s,
+		Brightness = 1.4,
+		Width0 = 0.24 * s,
+		Width1 = 0.24 * s,
 		Transparency = NumberSequence.new(1),
 		ZOffset = 3,
 	})
@@ -908,6 +959,7 @@ function Effect.Play(ctx)
 		end },
 	}
 	local nextBurst = 1
+	local nextHollow = 1
 	local darkSide = 1
 
 	-- channel rates over time (per second)
@@ -930,7 +982,8 @@ function Effect.Play(ctx)
 	local lastRush = 0
 	-- the first wall stands ~20% taller (to ~12 Scale-1 studs) until ~0.85 s
 	local onsetTall = { { E, 1.2 }, { E + 0.14, 1.2 }, { E + 0.24, 1 } }
-	-- the flame body thins behind the arch (0.80-0.92 s) so its interior reads darker
+	-- the flame body thins behind the heart (0.80-0.92 s) so its hollow reads darker, and
+	-- the side tongues turn see-through (~0.5x opacity) so the heart stands out
 	local archDim = { { E + 0.07, 0 }, { E + 0.1, 1 }, { E + 0.2, 1 }, { E + 0.24, 0 } }
 	-- the steady tongues come out ~2.5x thicker for the first ~0.15 s, so the wall stays full
 	-- while the rushed opening burst dies (ending before the V at ~0.95 s)
@@ -943,8 +996,35 @@ function Effect.Play(ctx)
 	local edgeBurning = { { E + 0.01, 0 }, { E + 0.04, 1 }, { burnEnd, 1 }, { burnEnd + 0.1, 0 } }
 	-- the reference opens into a V twice: a bright central column with sparse tongues leaning
 	-- 20-30 deg outward (~1.0 s), and again as it dies (an inverted cone at ~3.3 s)
-	local vLean = { { E + 0.2, 0 }, { E + 0.26, 1 }, { E + 0.36, 1 }, { E + 0.45, 0 },
-		{ burnEnd - 0.05, 0 }, { burnEnd + 0.05, 1 }, { burnEnd + 0.5, 1 }, { burnEnd + 0.6, 0 } }
+	local vLean = { { E + 0.2, 0 }, { E + 0.26, 1 }, { E + 0.36, 1 }, { E + 0.45, 0 } }
+	-- the burn loops a ~0.49 s pulse (both videos, from 60 fps strips): blob -> a dark flame
+	-- burns up through it (an arch for ~0.05 s, at 0.85, 1.34, 1.83, 2.32, 2.81, 3.30 s) ->
+	-- a tall bright teardrop ~0.22 s later -> the sides lean out into a small V (~0.33 s)
+	local HEART_PERIOD = 0.49
+	local heartBlob, heartTear = {}, {}
+	local hollows = {} -- { time, count }: bursts, since a window this short can fall between frames
+	for n = 0, 5 do
+		local h = E + 0.16 + n * HEART_PERIOD
+		local k = if n == 0 or n == 5 then 1 else 0.6 -- strongest at the onset and the die-down
+		for _, key in { { h - 0.08, 0 }, { h - 0.05, k }, { h + 0.02, k }, { h + 0.05, 0 } } do
+			table.insert(heartBlob, key)
+		end
+		table.insert(hollows, { h, if k == 1 then 2 else 1 })
+		if n <= 4 then -- the last teardrop is ~3.03 s; the die-down streaks carry the end
+			for _, key in { { h + 0.1, 0 }, { h + 0.14, k }, { h + 0.26, k }, { h + 0.31, 0 } } do
+				table.insert(heartTear, key)
+			end
+		end
+		if n >= 1 and n <= 3 then
+			local v = h + 0.33
+			for _, key in { { v - 0.06, 0 }, { v - 0.02, 0.5 }, { v + 0.04, 0.5 }, { v + 0.1, 0 } } do
+				table.insert(vLean, key)
+			end
+		end
+	end
+	for _, key in { { burnEnd - 0.05, 0 }, { burnEnd + 0.05, 1 }, { burnEnd + 0.5, 1 }, { burnEnd + 0.6, 0 } } do
+		table.insert(vLean, key)
+	end
 	local channels = {
 		{ tonguesLeft, p.FlameRate * 0.5, edgeBurning, vThin = true, boost = true },
 		{ tonguesRight, p.FlameRate * 0.5, edgeBurning, vThin = true, boost = true },
@@ -955,9 +1035,9 @@ function Effect.Play(ctx)
 		{ baseFill, 70, { { E + 0.02, 0 }, { E + 0.06, 1 }, { burnEnd - 0.05, 1 }, { burnEnd + 0.15, 0 } } },
 		{ plume, 18, { { E + 0.25, 0 }, { E + 0.35, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.05, 0 } } },
 		{ coreGlow, 12, { { E + 0.2, 0 }, { E + 0.3, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.15, 0.6 }, { burnEnd + 0.3, 0 } } },
-		-- the arch stays on through the burn at lower density (the reference's core is an arch
-		-- with a darker interior the whole time)
-		{ archGlow, 45, { { E + 0.09, 0 }, { E + 0.11, 1 }, { E + 0.2, 1 }, { E + 0.3, 0.6 }, { burnEnd - 0.1, 0.6 }, { burnEnd + 0.1, 0 } } },
+		{ heartFlames, 70, heartBlob },
+		{ tearFlames, 45, heartTear },
+		{ tearGlow, 50, heartTear },
 		{ baseGlow, 25, { { E, 0 }, { E + 0.005, 1 }, { E + 0.04, 1 }, { E + 0.07, 0 } } },
 		{ flameBody, p.FlameRate * 0.4, bodyDim = true, { { E + 0.02, 0 }, { E + 0.06, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.05, 0 } } },
 		{ darkTongues, p.DarkTongueRate, { { E + 0.3, 0 }, { E + 0.4, 1 }, { burnEnd, 1 }, { burnEnd + 0.2, 0 } } },
@@ -1022,6 +1102,11 @@ function Effect.Play(ctx)
 			burst[2]()
 			nextBurst += 1
 		end
+		local hollow = hollows[nextHollow]
+		if hollow and t >= hollow[1] then
+			ctx.Emit(heartShadow, hollow[2])
+			nextHollow += 1
+		end
 
 		local dt = ctx.Wait(1 / 240) -- every rendered frame, so the ~30 ms pops hold up in slow-mo
 		t += dt
@@ -1070,14 +1155,15 @@ function Effect.Play(ctx)
 		end)
 		tonguesCentre.Brightness = track(centreGlow, t)
 		local lean = track(vLean, t)
-		changed("lean", lean, function()
+		local dim = track(archDim, t)
+		changed("lean", lean * 1000 + dim, function()
 			-- positive Rotation leans tops left: the left half leans in by default, out in a V
 			tonguesLeft.Rotation = NumberRange.new(-5 + 17 * lean, 24 * lean)
 			tonguesRight.Rotation = NumberRange.new(-24 * lean, 5 - 17 * lean)
 			tonguesCentre.Rotation = NumberRange.new(-20 * lean, 20 * lean) -- the core fans out
 			tonguesCentre.Squash = seq({ { 0, 0.3 + 0.6 * lean }, { 1, 0.6 + 0.5 * lean } }) -- narrow at the V
 			-- at the V the sides drop to ~0.7x height and ~0.55x opacity, so the column reads
-			local k, op = 1 - 0.3 * lean, 1 - 0.45 * lean
+			local k, op = 1 - 0.3 * lean, (1 - 0.45 * lean) * (1 - 0.5 * dim)
 			tonguesLeft.Size = seq({ { 0, 0.21 * B * 0.75 * k, 0.065 * B * 0.75 * k }, { 0.5, 0.26 * B * 0.75 * k, 0.075 * B * 0.75 * k },
 				{ 1, 0.24 * B * 0.75 * k, 0.07 * B * 0.75 * k } })
 			tonguesRight.Size = tonguesLeft.Size

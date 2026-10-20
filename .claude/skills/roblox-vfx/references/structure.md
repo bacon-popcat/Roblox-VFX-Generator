@@ -170,10 +170,14 @@ frame by frame against two reference camera angles.
    up faster and stands ~20% taller). Three tongue bands follow the curtain width: the
    sides reach ~0.65 B, the centre band ~0.95 B. A soft flame body, two faint beam veils,
    wind arcs that rise as they spin, and the hot line along the whole crack come with it.
-3. 0.80-0.92 s: an inverted-U arch glow (custom `lava_arch2`) sits behind the tongues.
-   ~0.95-1.05 s: the curtain opens into a V around a bright narrow column (sides shorter,
-   fainter and leaning out). The curtain then holds ~0.72 B wide with dark tongues at its
-   edges.
+3. From 0.80 s the centre loops a ~0.49 s pulse (measured on 60 fps strips of both videos):
+   a bright soft blob swells at the base (`lava_glow`), then a darker red flame burns up
+   through it (custom `lava_hollow2`, unlit, emitted as bursts at 0.85, 1.34, 1.83, 2.32,
+   2.81 and 3.30 s), so its rim reads as an arch for ~0.05 s; ~0.2 s later a tall slender
+   teardrop flares (`lava_wedge`), and the sides lean into a small V. There is no standing
+   ring: the reference's "arch" is these moving layers. ~0.95-1.05 s: the curtain opens
+   into a V around the first teardrop. The curtain holds ~0.72 B wide with dark tongues at
+   its edges.
 4. From 2.85 s (`EruptTime` + `BurnTime`): the sides stop, small flame clumps flare at the
    old edges, and the centre hands over (~3.0-3.15 s) to a die-down fan of straight streaks
    (custom `lava_streak`, two outward-tilted half-boxes plus a bright core) that closes into
@@ -394,6 +398,14 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
   draws nothing at all. Give beams with mid-length keys enough segments (e.g. 12).
 - `VelocityParallel` particles run the texture's X along the velocity; an upright texture
   needs `Rotation = -90` to point its tip along the motion.
+- Particles are depth-tested against the floor: one centred at ground level loses its lower
+  half. Raise the emitter so the quad's bottom sits at the ground.
+- Emitters sort by their anchor's distance to the camera plus `ZOffset`. With an elevated
+  camera, a higher anchor is nearer, so a dark layer meant to draw over a bright one needs
+  a clear margin (e.g. `ZOffset` 3 vs 0.95), not +0.5.
+- A dark particle over additive glow needs `LightInfluence = 0`: the effect's PointLight
+  otherwise lights it back to orange and it disappears.
+- A rate window shorter than a frame (~0.02 s) can emit nothing; use explicit bursts.
 - Moving an `Attachment` (or an emitter's part) between `ctx.Emit` calls in the same frame
   does **not** move the spawn point; every burst lands where it was. To burst clusters at
   different spots from one emitter, give each cluster its own loop step (one burst per

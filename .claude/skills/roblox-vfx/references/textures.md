@@ -106,7 +106,8 @@ Uploaded textures (drawn with PIL in Python, white RGB, shape in alpha):
 | lava_wedge | rbxassetid://109547847796563 | Soft flare wedge, bright rounded root (64x256). Radial ground starbursts and splashes (VelocityParallel, Rotation -90). |
 | lava_ring | rbxassetid://113782032324685 | Thick soft, slightly lumpy ring (128x128). Bold flung rings; reads better than the hollow curl flipbooks. |
 | lava_glow | rbxassetid://87365446017300 | Round soft glow that falls to exactly zero at the edge (128x128). Use instead of Blurred Spec 11 (284205403), which has a hard bottom edge on upright quads. |
-| lava_arch2 | rbxassetid://91461964686009 | Inverted U with a wobbly flame-edged rim and a warm interior (128x192). Arch-shaped core glow behind flames. |
+| lava_arch2 | rbxassetid://91461964686009 | Inverted U with a wobbly flame-edged rim (128x192). No longer used: as a standing glow it read as a ring sticker. |
+| lava_hollow2 | rbxassetid://104220462120494 | Soft egg with a wavy flame-licked rim and wide falloff (128x128). A dark unlit particle in front of a bright glow cuts a soft hollow. lava_glow's alpha is a steep cone, so it only reads big when added; it can't darken. |
 
 <!-- Add your own uploaded textures below, e.g.
 | soft_glow | rbxassetid://000000 | Round soft glow for cores and auras |
