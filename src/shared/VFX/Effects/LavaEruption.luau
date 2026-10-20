@@ -166,7 +166,7 @@ Effect.Defaults = {
 	FadeTime = 0.8, -- narrowing to a column + V, a thin bundle, then out (~3.65 s)
 	CrackFadeTime = 0.7, -- the crack's glow after the flames are gone
 	FlameRate = 100, -- flame tongues / s while burning
-	EmberRate = 10, -- embers / s while burning
+	EmberRate = 16, -- embers / s while burning
 	CurlRate = 5, -- orange curls and ring curls / s
 	FleckRate = 5, -- dark flecks / s
 	DarkTongueRate = 6, -- dark charcoal tongues / s at the curtain's sides
@@ -214,7 +214,7 @@ function Effect.Play(ctx)
 	local tallLeft = box(-0.25 * B, 0.24 * B, 0.5 * B) -- tongue halves; widths follow the curtain
 	local tallRight = box(0.25 * B, 0.24 * B, 0.5 * B)
 	local tallCentre = box(0, 0.27 * B, 0.3 * B) -- taller tongues, middle of the curtain
-	local heartBox = box(0, 0.26 * B, 0.05 * B) -- bright heart blob, base centre (bottom at the ground)
+	local heartBox = box(0, 0.2 * B, 0.05 * B) -- bright heart blob, base centre (bottom at the ground)
 	local heartFront = box(0, 0.13 * B, 0.02 * B) -- the dark flame in front of the heart
 	local tearBox = box(0, 0.04 * B, 0.08 * B) -- the bright teardrop flame of each pulse
 	local tearGlowBox = box(0, 0.38 * B, 0.03 * B) -- its glowing body (quad root at the ground)
@@ -386,7 +386,7 @@ function Effect.Play(ctx)
 		Color = colors({ { 0, p.Color }, { 1, p.EdgeColor } }),
 		LightEmission = 1,
 		Brightness = 1.5,
-		Size = seq({ { 0, 0.16 * s, 0.05 * s }, { 0.8, 0.13 * s }, { 1, 0 } }),
+		Size = seq({ { 0, 0.22 * s, 0.07 * s }, { 0.8, 0.18 * s }, { 1, 0 } }),
 		Lifetime = NumberRange.new(0.6, 1.1),
 		Speed = NumberRange.new(6 * s, 16 * s),
 		SpreadAngle = Vector2.new(35, 35),
@@ -412,8 +412,8 @@ function Effect.Play(ctx)
 		ZOffset = 2,
 	})
 	-- smooth thin upright tongues; each half leans a little inward so the curtain stays
-	-- tight, and the centre band is ~1.7x taller than the sides (1.25 vs 0.75), so the curtain
-	-- tapers to a peaked middle. They shoot up
+	-- tight, and the centre band is ~1.4x taller than the sides (1.25 vs 0.9), so the curtain
+	-- is nearly flat-topped with a slightly taller middle. They shoot up
 	-- fast (TONGUE_RUSH) and die young, so the curtain rushes; WALL_HEIGHT trims the
 	-- tongues, flame body and the veil/column beams to ~0.95 of the original height.
 	local TONGUE_RUSH = 1.6
@@ -446,8 +446,8 @@ function Effect.Play(ctx)
 		})
 	end
 	-- the side halves are shorter than the centre band, so the curtain tapers to the edges
-	local tonguesLeft = tongueEmitter(tallLeft, -1, 0.75) -- left half leans right (inward)
-	local tonguesRight = tongueEmitter(tallRight, 1, 0.75)
+	local tonguesLeft = tongueEmitter(tallLeft, -1, 0.9) -- left half leans right (inward)
+	local tonguesRight = tongueEmitter(tallRight, 1, 0.9)
 	-- the side bands burn redder than the centre
 	local sideColor = colors({ { 0, p.Color:Lerp(p.EdgeColor, 0.25) }, { 0.5, deep }, { 1, p.EdgeColor } })
 	tonguesLeft.Color, tonguesRight.Color = sideColor, sideColor
@@ -456,7 +456,7 @@ function Effect.Play(ctx)
 	-- tongue reaches the same height sooner (used for the onset wall)
 	local function setTongueSpeed(k)
 		k *= TONGUE_RUSH
-		tonguesLeft.Speed = NumberRange.new(0.44 * B * 0.75 * k, 0.74 * B * 0.75 * k)
+		tonguesLeft.Speed = NumberRange.new(0.44 * B * 0.9 * k, 0.74 * B * 0.9 * k)
 		tonguesRight.Speed = tonguesLeft.Speed
 		tonguesCentre.Speed = NumberRange.new(0.44 * B * 1.25 * k, 0.74 * B * 1.25 * k)
 	end
@@ -664,8 +664,8 @@ function Effect.Play(ctx)
 		Color = colors({ { 0, warm }, { 1, p.Color:Lerp(p.CoreColor, 0.4) } }),
 		LightEmission = 0.9,
 		Brightness = 1.5,
-		Size = seq({ { 0, 0.2 * B }, { 0.5, 0.25 * B, 0.01 * B }, { 1, 0.25 * B } }),
-		Squash = NumberSequence.new(0.6), -- an upright egg
+		Size = seq({ { 0, 0.17 * B }, { 0.5, 0.21 * B, 0.01 * B }, { 1, 0.21 * B } }),
+		Squash = NumberSequence.new(0.5), -- an upright egg
 		Transparency = seq({ { 0, 0.4 }, { 0.3, 0.15 }, { 0.7, 0.3 }, { 1, 1 } }),
 		Lifetime = NumberRange.new(0.12, 0.16),
 		Speed = NumberRange.new(0.05 * B, 0.1 * B), -- swells and rises a little
@@ -708,9 +708,9 @@ function Effect.Play(ctx)
 	local tearGlow = emitter(tearGlowBox, {
 		Texture = ASSETS.LavaWedge,
 		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
-		Color = colors({ { 0, warm }, { 1, p.Color:Lerp(p.CoreColor, 0.4) } }),
-		LightEmission = 0.75,
-		Brightness = 1.25,
+		Color = colors({ { 0, p.Color:Lerp(p.CoreColor, 0.5) }, { 1, p.Color } }), -- yellow only at the root
+		LightEmission = 0.7,
+		Brightness = 1.1,
 		Size = seq({ { 0, 0.3 * B }, { 1, 0.33 * B } }),
 		Squash = NumberSequence.new(0.6), -- a tall slender spire
 		Transparency = seq({ { 0, 0.7 }, { 0.3, 0.42 }, { 0.7, 0.5 }, { 1, 1 } }),
@@ -831,8 +831,8 @@ function Effect.Play(ctx)
 	-- flat on the ground (FaceCamera off): a fixed beam spreads its width along its
 	-- attachments' Y axis, so Y is turned to lie across the crack
 	local flat = CFrame.Angles(math.pi / 2, 0, 0)
-	local lineLeft = attachment(base, CFrame.new(-F * 0.34, 0.08 * s, 0) * flat)
-	local lineRight = attachment(base, CFrame.new(F * 0.34, 0.08 * s, 0) * flat)
+	local lineLeft = attachment(base, CFrame.new(-F * 0.42, 0.08 * s, 0) * flat)
+	local lineRight = attachment(base, CFrame.new(F * 0.42, 0.08 * s, 0) * flat)
 	local hotLine = beam(lineLeft, lineRight, {
 		Name = "HotLine",
 		FaceCamera = false,
@@ -1046,7 +1046,7 @@ function Effect.Play(ctx)
 		{ curls, p.CurlRate, { { E + 0.1, 0 }, { E + 0.15, 1 }, { burnEnd - 0.2, 1 }, { burnEnd, 0 } } },
 		{ ringCurls, p.CurlRate * 0.2, { { E + 0.1, 0 }, { E + 0.15, 1 }, { E + 0.6, 1 }, { E + 0.8, 0 } } },
 		{ flecks, p.FleckRate, { { E + 0.1, 0 }, { E + 0.15, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.1, 0 } } },
-		{ preFlames, 34, clumpBurning },
+		{ preFlames, 16, clumpBurning },
 	}
 	local owed = {}
 	for i = 1, #channels do
@@ -1167,8 +1167,8 @@ function Effect.Play(ctx)
 			tonguesCentre.Squash = seq({ { 0, 0.3 + 0.6 * lean }, { 1, 0.6 + 0.5 * lean } }) -- narrow at the V
 			-- at the V the sides drop to ~0.7x height and ~0.55x opacity, so the column reads
 			local k, op = 1 - 0.3 * lean, (1 - 0.45 * lean) * (1 - 0.5 * dim)
-			tonguesLeft.Size = seq({ { 0, 0.21 * B * 0.75 * k, 0.065 * B * 0.75 * k }, { 0.5, 0.26 * B * 0.75 * k, 0.075 * B * 0.75 * k },
-				{ 1, 0.24 * B * 0.75 * k, 0.07 * B * 0.75 * k } })
+			tonguesLeft.Size = seq({ { 0, 0.21 * B * 0.9 * k, 0.065 * B * 0.9 * k }, { 0.5, 0.26 * B * 0.9 * k, 0.075 * B * 0.9 * k },
+				{ 1, 0.24 * B * 0.9 * k, 0.07 * B * 0.9 * k } })
 			tonguesRight.Size = tonguesLeft.Size
 			tonguesLeft.Transparency = seq({ { 0, 1 - 0.9 * op }, { 0.5, 1 - 0.7 * op }, { 0.6, 1 - 0.55 * op }, { 1, 1 } })
 			tonguesRight.Transparency = tonguesLeft.Transparency

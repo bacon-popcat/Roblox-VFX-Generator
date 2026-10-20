@@ -406,6 +406,10 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 - A dark particle over additive glow needs `LightInfluence = 0`: the effect's PointLight
   otherwise lights it back to orange and it disappears.
 - A rate window shorter than a frame (~0.02 s) can emit nothing; use explicit bursts.
+- Studio renders only a fraction of particles at low graphics quality. With Editor Quality
+  Level on Automatic it can drop to Level 1 (for example when a live-editing session joins),
+  and captures show a shorter wall with small bursts missing. Before grading, check
+  `settings().Rendering.EditQualityLevel` and keep it at Level 21.
 - Moving an `Attachment` (or an emitter's part) between `ctx.Emit` calls in the same frame
   does **not** move the spawn point; every burst lands where it was. To burst clusters at
   different spots from one emitter, give each cluster its own loop step (one burst per
