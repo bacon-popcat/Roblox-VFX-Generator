@@ -578,15 +578,18 @@ with ffmpeg at the same times (t = 0 at the slash's first frame).
    ~0.3 s mid-effect and overshoot the freeze time at 0.1x), and when the reference comes from more
    than one camera angle, match a camera to each and compare every angle at the same times.
    A layer that looks right from the front can be flat, thin or misplaced from the side.
-3. Grade each round with **agy** (Antigravity CLI, Gemini; the `agy-bridge` MCP server), not
-   a Claude subagent. Call `mcp__agy-bridge__analyze_files` with the side-by-side sheets as
-   `files` (it reads the images; use the scratchpad as `cwd`) and a prompt that says: the
+3. Grade each round with **agy** (Antigravity CLI, Gemini), not a Claude subagent. Run
+   `.claude/skills/roblox-vfx/scripts/agy_grade.sh <sheet dir> [NNNN ...]` as a background
+   Bash command: it calls `agy.exe` directly on one sheet JPEG at a time (retry once) and
+   writes `agy_NNNN.txt` next to it. Don't grade through the `agy-bridge` MCP: an image grade
+   takes ~1-2 min (agy logs in again on every call, ~40 s even for a trivial prompt) and the
+   app's MCP hop gives up at ~60 s, so about half the calls fail with "Request timed out".
+   Set `AGY_QUESTION` to replace the default (lava) question. It should say: the
    reference is ground truth, grade **only against it**, what the sheet layout is
    (timestamps, which column is REF, which row is which angle, grid spacing), what is out of
-   scope, and asks for a 0-10 score per timestamp and angle, concrete differences (shape,
+   scope, and ask for a 0-10 score per timestamp and angle, concrete differences (shape,
    size in studs, colour, missing or extra layers, detail), and the top fixes in order.
-   For later rounds use `mcp__agy-bridge__follow_up` with the returned `session_id`, so it
-   remembers earlier scores. Treat its stud sizes as estimates and its hex colours as
+   Treat its stud sizes as estimates and its hex colours as
    guesses, and check each fix against the sheet yourself before applying it. Apply, re-capture,
    repeat until it says the remaining gaps are noise (usually 3-4 rounds).
 4. Finish with a read-only file-integrity subagent: contract, rules grep, Linger maths,
