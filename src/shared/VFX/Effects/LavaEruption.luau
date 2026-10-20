@@ -169,7 +169,7 @@ Effect.Defaults = {
 	EmberRate = 16, -- embers / s while burning
 	CurlRate = 5, -- orange curls and ring curls / s
 	FleckRate = 5, -- dark flecks / s
-	DarkTongueRate = 6, -- dark charcoal tongues / s at the curtain's sides
+	DarkTongueRate = 9, -- dark charcoal tongues / s at the curtain's sides
 	RockCount = 8,
 	LightBrightness = 1.2,
 	LightRange = 16,
@@ -256,7 +256,7 @@ function Effect.Play(ctx)
 	-- lumpy lava in the middle of the crack (the rift texture, bright orange) and a soft red
 	-- pool round it; the hot line beam below covers the whole crack once it erupts
 	local lineGui, crackLine = crackLayer("CrackLine", 4 * s, F * 0.36, ASSETS.Rift, p.Color, 0.02)
-	local poolGui, crackPool = crackLayer("CrackPool", 3 * s, F * 0.45, ASSETS.SoftGlow, p.EdgeColor, 0.01)
+	local poolGui, crackPool = crackLayer("CrackPool", 8 * s, F * 0.55, ASSETS.SoftGlow, p.EdgeColor, 0.01)
 
 	------------------------------------------------------------------ precursor emitters
 	local streakOrange = emitter(burstBox, {
@@ -388,8 +388,8 @@ function Effect.Play(ctx)
 		Brightness = 1.5,
 		Size = seq({ { 0, 0.22 * s, 0.07 * s }, { 0.8, 0.18 * s }, { 1, 0 } }),
 		Lifetime = NumberRange.new(0.6, 1.1),
-		Speed = NumberRange.new(6 * s, 16 * s),
-		SpreadAngle = Vector2.new(35, 35),
+		Speed = NumberRange.new(9 * s, 20 * s),
+		SpreadAngle = Vector2.new(50, 50),
 		Acceleration = Vector3.new(2 * s, -6 * s, 0),
 		Drag = 1.2,
 		ZOffset = 2,
@@ -499,6 +499,7 @@ function Effect.Play(ctx)
 	dieCore.Color = colors({ { 0, p.Color:Lerp(p.CoreColor, 0.35) }, { 1, ember } })
 	dieCore.Squash = NumberSequence.new(0.45) -- ~1.5x wider than the side streaks
 	dieCore.SpreadAngle = Vector2.new(1, 2)
+	dieCore.Brightness = 0.8 -- separated streaks, not a white slab
 	-- soft flame body filling the middle of the curtain up to ~0.85 of its height
 	local flameBody = emitter(bodyBox, {
 		Texture = ASSETS.FlameBody,
@@ -529,11 +530,12 @@ function Effect.Play(ctx)
 			FlipbookStartRandom = true,
 			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
 			EmissionDirection = Enum.NormalId.Top,
-			Color = ColorSequence.new(p.DarkColor:Lerp(p.EdgeColor, 0.35)),
+			Color = ColorSequence.new(p.DarkColor:Lerp(p.EdgeColor, 0.3)),
 			LightEmission = 0,
-			Size = seq({ { 0, 0.1 * B }, { 0.5, 0.13 * B }, { 1, 0.12 * B } }),
-			Squash = NumberSequence.new(0.6),
-			Transparency = seq({ { 0, 0.55 }, { 0.6, 0.65 }, { 1, 1 } }),
+			LightInfluence = 0, -- the effect's light would brighten them back to orange
+			Size = seq({ { 0, 0.12 * B }, { 0.5, 0.16 * B }, { 1, 0.14 * B } }),
+			Squash = NumberSequence.new(0.9), -- tall narrow streaks (~1.5 x 4 Scale-1 studs)
+			Transparency = seq({ { 0, 0.3 }, { 0.6, 0.45 }, { 1, 1 } }),
 			Lifetime = NumberRange.new(0.3, 0.45),
 			Speed = NumberRange.new(0.15 * B, 0.3 * B),
 			Rotation = NumberRange.new(-15, 15),
@@ -709,8 +711,8 @@ function Effect.Play(ctx)
 		Texture = ASSETS.LavaWedge,
 		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
 		Color = colors({ { 0, p.Color:Lerp(p.CoreColor, 0.5) }, { 1, p.Color } }), -- yellow only at the root
-		LightEmission = 0.7,
-		Brightness = 1.1,
+		LightEmission = 0.65,
+		Brightness = 0.9,
 		Size = seq({ { 0, 0.3 * B }, { 1, 0.33 * B } }),
 		Squash = NumberSequence.new(0.6), -- a tall slender spire
 		Transparency = seq({ { 0, 0.7 }, { 0.3, 0.42 }, { 0.7, 0.5 }, { 1, 1 } }),
@@ -971,7 +973,7 @@ function Effect.Play(ctx)
 	-- (3.2 -> 3.3 -> 3.4 s), plus a bright core of wider streaks in the middle
 	local dieRate = { { burnEnd + 0.1, 0 }, { burnEnd + 0.2, 48 }, { burnEnd + 0.35, 48 }, { burnEnd + 0.55, 34 },
 		{ fadeEnd - 0.05, 26 }, { fadeEnd - 0.03, 0 } }
-	local dieWidth = { { burnEnd + 0.35, 0.2 * B }, { burnEnd + 0.55, 0.13 * B }, { fadeEnd - 0.05, 0.06 * B } }
+	local dieWidth = { { burnEnd + 0.35, 0.18 * B }, { burnEnd + 0.55, 0.11 * B }, { fadeEnd - 0.05, 0.045 * B } }
 	local dieFan = { { burnEnd + 0.25, 4 }, { burnEnd + 0.35, 3 }, { burnEnd + 0.45, 1 }, { burnEnd + 0.55, 0 } } -- each half's tilt
 	local dieLife = { { burnEnd + 0.55, 1 }, { fadeEnd - 0.05, 0.6 } }
 	local dieSpread = { { burnEnd + 0.35, 6 }, { burnEnd + 0.55, 0.5 } } -- per-streak scatter (deg)
@@ -1086,7 +1088,7 @@ function Effect.Play(ctx)
 		{ fadeEnd + math.max(0.5 * p.CrackFadeTime, p.CrackFadeTime - 0.3), 0.3 }, { crackEnd, 1 } }
 	local crackLineTrack = { { 0.3, 1 }, { 0.5, 0.1 }, { E, 0 }, { fadeEnd, 0.15 }, { crackEnd, 1 } }
 	-- the pool is a soft glow stretched along the crack: brightest in the middle
-	local crackPoolTrack = { { 0.3, 1 }, { 0.5, 0.45 }, { E, 0.4 }, { E + 0.2, 0.5 }, { fadeEnd, 0.65 }, { crackEnd, 1 } }
+	local crackPoolTrack = { { 0.3, 1 }, { 0.5, 0.45 }, { E, 0.35 }, { E + 0.2, 0.4 }, { fadeEnd, 0.6 }, { crackEnd, 1 } }
 	local crackBrightTrack = { { 0.3, 1 }, { 0.6, 2.6 }, { E + 0.1, 3.2 }, { fadeEnd, 2 }, { crackEnd, 0.8 } }
 
 	-- assign a derived property only when its input changes (no per-frame allocations)
