@@ -1027,8 +1027,8 @@ function Effect.Play(ctx)
 		table.insert(vLean, key)
 	end
 	local channels = {
-		{ tonguesLeft, p.FlameRate * 0.5, edgeBurning, vThin = true, boost = true },
-		{ tonguesRight, p.FlameRate * 0.5, edgeBurning, vThin = true, boost = true },
+		{ tonguesLeft, p.FlameRate * 0.75, edgeBurning, vThin = true, boost = true }, -- denser sides (was 0.5)
+		{ tonguesRight, p.FlameRate * 0.75, edgeBurning, vThin = true, boost = true },
 		{ tonguesCentre, p.FlameRate * 0.3, centreBurning, boost = true },
 		{ dieStreaksL, 0.5, dieRate },
 		{ dieStreaksR, 0.5, dieRate },
