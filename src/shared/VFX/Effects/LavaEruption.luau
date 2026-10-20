@@ -43,6 +43,7 @@ local ASSETS = {
 	LavaStreak = "rbxassetid://138131925212643", -- lava_streak: straight flame streak, soft root, sharp tip (128x512)
 	LavaWedge = "rbxassetid://109547847796563", -- lava_wedge: soft flare wedge, bright root at the bottom (64x256)
 	LavaRing = "rbxassetid://113782032324685", -- lava_ring: thick soft, slightly lumpy ring (128x128)
+	LavaGlow = "rbxassetid://87365446017300", -- lava_glow: round soft glow falling to zero at the edge (128x128)
 	LavaArch = "rbxassetid://91461964686009", -- lava_arch2: inverted U with a wobbly flame-edged rim, warm interior (128x192)
 }
 
@@ -202,7 +203,7 @@ function Effect.Play(ctx)
 	-- ground from slicing them with a hard straight edge.
 	local function box(x, y, width)
 		local part = ctx.Anchor(frame * CFrame.new(x, y, 0))
-		part.Size = Vector3.new(width, 0.2 * s, 1 * s)
+		part.Size = Vector3.new(width, 0.2 * s, 0.4 * s) -- thin: the curtain is a sheet
 		return part
 	end
 	local line = box(0, 0.6 * s, 0.75 * B) -- along the middle of the fissure (~±5.4 studs)
@@ -217,6 +218,7 @@ function Effect.Play(ctx)
 
 	local base = ctx.Anchor(frame)
 	local archAt = attachment(base, CFrame.new(0, 0.3 * B, 0)) -- quad bottom just above the ground
+	local coreAt = attachment(base, CFrame.new(0, 0.24 * B, 0))
 	local centre = attachment(base, CFrame.new(0, 0.4 * s, 0))
 	-- wind arcs: flat on the ground, and raised + tilted so some wrap up round the flames
 	local windLow = centre
@@ -341,7 +343,7 @@ function Effect.Play(ctx)
 		Rotation = NumberRange.new(0, 360),
 		ZOffset = 1.5,
 	})
-	-- precursor rings: 4 bold round orange rings (2 at 0.09 s, 2 at 0.13 s), gone by ~0.39 s
+	-- precursor rings: 4 bold round orange rings, one at a time (0.09-0.14 s), gone by ~0.4 s
 	local rings = emitter(line, {
 		Texture = ASSETS.LavaRing,
 		EmissionDirection = Enum.NormalId.Top,
@@ -407,8 +409,8 @@ function Effect.Play(ctx)
 		ZOffset = 2,
 	})
 	-- smooth thin upright tongues; each half leans a little inward so the curtain stays
-	-- tight, and the centre band is ~1.8x taller than the sides (1.45 vs 0.8) so the silhouette
-	-- tapers. They shoot up
+	-- tight, and the centre band is ~1.3x taller than the sides (1.25 vs 0.95), so the top is
+	-- nearly flat with a slightly taller middle. They shoot up
 	-- fast (TONGUE_RUSH) and die young, so the curtain rushes; WALL_HEIGHT trims the
 	-- tongues, flame body and the veil/column beams to ~0.95 of the original height.
 	local TONGUE_RUSH = 1.6
@@ -441,19 +443,19 @@ function Effect.Play(ctx)
 		})
 	end
 	-- the side halves are shorter than the centre band, so the curtain tapers to the edges
-	local tonguesLeft = tongueEmitter(tallLeft, -1, 0.8) -- left half leans right (inward)
-	local tonguesRight = tongueEmitter(tallRight, 1, 0.8)
-	local tonguesCentre = tongueEmitter(tallCentre, 0, 1.45)
+	local tonguesLeft = tongueEmitter(tallLeft, -1, 0.95) -- left half leans right (inward)
+	local tonguesRight = tongueEmitter(tallRight, 1, 0.95)
+	local tonguesCentre = tongueEmitter(tallCentre, 0, 1.25)
 	-- speed multiplier on top of TONGUE_RUSH; lifetimes are divided by it, so a faster
 	-- tongue reaches the same height sooner (used for the onset wall)
 	local function setTongueSpeed(k)
 		k *= TONGUE_RUSH
-		tonguesLeft.Speed = NumberRange.new(0.44 * B * 0.8 * k, 0.74 * B * 0.8 * k)
+		tonguesLeft.Speed = NumberRange.new(0.44 * B * 0.95 * k, 0.74 * B * 0.95 * k)
 		tonguesRight.Speed = tonguesLeft.Speed
-		tonguesCentre.Speed = NumberRange.new(0.44 * B * 1.45 * k, 0.74 * B * 1.45 * k)
+		tonguesCentre.Speed = NumberRange.new(0.44 * B * 1.25 * k, 0.74 * B * 1.25 * k)
 	end
 	local function centreSizeAt(k)
-		local h = 1.45 * k
+		local h = 1.25 * k
 		return seq({ { 0, 0.21 * B * h, 0.065 * B * h }, { 0.5, 0.26 * B * h, 0.075 * B * h }, { 1, 0.24 * B * h, 0.07 * B * h } })
 	end
 	local lastCentreSize = 1
@@ -520,11 +522,11 @@ function Effect.Play(ctx)
 			FlipbookStartRandom = true,
 			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
 			EmissionDirection = Enum.NormalId.Top,
-			Color = ColorSequence.new(p.DarkColor),
+			Color = ColorSequence.new(p.DarkColor:Lerp(p.EdgeColor, 0.2)),
 			LightEmission = 0,
 			Size = seq({ { 0, 0.12 * B }, { 0.5, 0.16 * B }, { 1, 0.14 * B } }),
 			Squash = NumberSequence.new(0.5),
-			Transparency = seq({ { 0, 0.05 }, { 0.6, 0.2 }, { 1, 1 } }),
+			Transparency = seq({ { 0, 0.3 }, { 0.6, 0.45 }, { 1, 1 } }),
 			Lifetime = NumberRange.new(0.3, 0.45),
 			Speed = NumberRange.new(0.15 * B, 0.3 * B),
 			Rotation = NumberRange.new(-15, 15),
@@ -609,6 +611,42 @@ function Effect.Play(ctx)
 		SpreadAngle = Vector2.new(25, 180),
 		Rotation = NumberRange.new(-90), -- VelocityParallel runs the texture's X along the velocity
 		ZOffset = 2.5,
+	})
+	-- base fill: short soft flames packed along the bottom of the curtain, so the low sides
+	-- between the centre and the edge tongues never show gaps
+	local baseFill = emitter(line, {
+		Texture = ASSETS.FlameBody,
+		FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
+		FlipbookMode = Enum.ParticleFlipbookMode.Loop,
+		FlipbookFramerate = NumberRange.new(14, 18),
+		FlipbookStartRandom = true,
+		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
+		EmissionDirection = Enum.NormalId.Top,
+		Color = colors({ { 0, p.Color }, { 0.6, deep }, { 1, p.EdgeColor } }),
+		LightEmission = 0.55,
+		Brightness = 1,
+		Size = seq({ { 0, 0.09 * B, 0.02 * B }, { 0.5, 0.11 * B }, { 1, 0.1 * B } }),
+		Squash = NumberSequence.new(0.6), -- upright
+		Transparency = seq({ { 0, 0.3 }, { 0.5, 0.4 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.25, 0.35),
+		Speed = NumberRange.new(0.06 * B, 0.12 * B),
+		SpreadAngle = Vector2.new(6, 6),
+		ZOffset = 0.9,
+	})
+	-- core glow (~0.9-3.1 s): a soft yellow oval low in the middle of the flames (~4 x 6
+	-- Scale-1 studs), the bright heart of the curtain and of the column at the V moments
+	local coreGlow = emitter(coreAt, {
+		Texture = ASSETS.LavaGlow,
+		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
+		Color = ColorSequence.new(p.CoreColor),
+		LightEmission = 0.7,
+		Brightness = 0.9,
+		Size = seq({ { 0, 0.21 * B, 0.02 * B }, { 1, 0.23 * B } }),
+		Squash = NumberSequence.new(0.45), -- taller than wide
+		Transparency = seq({ { 0, 0.6 }, { 0.35, 0.35 }, { 0.75, 0.45 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.12, 0.16),
+		Speed = NumberRange.new(0),
+		ZOffset = 1.4,
 	})
 	-- arch core (0.80-0.92 s): an inverted-U glow at the base centre (~4.5 x 8 Scale-1 studs,
 	-- squashed upright)
@@ -726,21 +764,36 @@ function Effect.Play(ctx)
 		ZOffset = 0.4,
 	})
 
-	-- hot line along the whole crack: a thin camera-facing ribbon between the crack's ends.
-	-- The texture has to glow along the beam's length (a horizontal flare); a vertical glow
-	-- like GlowCore only lights the middle of a long ribbon.
-	local lineLeft = attachment(base, CFrame.new(-F * 0.5, 0.12 * s, 0))
-	local lineRight = attachment(base, CFrame.new(F * 0.5, 0.12 * s, 0))
+	-- hot line along the whole crack: a razor-thin untextured yellow core plus a wider faint
+	-- orange glow, both flat ribbons on the ground between the crack's ends
+	-- flat on the ground (FaceCamera off): a fixed beam spreads its width along its
+	-- attachments' Y axis, so Y is turned to lie across the crack
+	local flat = CFrame.Angles(math.pi / 2, 0, 0)
+	local lineLeft = attachment(base, CFrame.new(-F * 0.5, 0.08 * s, 0) * flat)
+	local lineRight = attachment(base, CFrame.new(F * 0.5, 0.08 * s, 0) * flat)
 	local hotLine = beam(lineLeft, lineRight, {
 		Name = "HotLine",
-		Texture = ASSETS.LineFlare,
-		Color = ColorSequence.new(p.Color),
+		FaceCamera = false,
+		Segments = 12, -- Transparency/Color are sampled per segment vertex (1 = ends only)
+		Color = colors({ { 0, p.EdgeColor }, { 0.25, p.CoreColor }, { 0.75, p.CoreColor }, { 1, p.EdgeColor } }),
 		LightEmission = 1,
-		Brightness = 10,
-		Width0 = 1.2 * s,
-		Width1 = 1.2 * s,
+		Brightness = 2,
+		Width0 = 0.3 * s,
+		Width1 = 0.3 * s,
 		Transparency = NumberSequence.new(1),
 		ZOffset = 3,
+	})
+	local hotGlow = beam(lineLeft, lineRight, {
+		Name = "HotGlow",
+		FaceCamera = false,
+		Segments = 12,
+		Color = colors({ { 0, p.EdgeColor }, { 0.3, p.Color }, { 0.7, p.Color }, { 1, p.EdgeColor } }),
+		LightEmission = 1,
+		Brightness = 1.2,
+		Width0 = 0.7 * s,
+		Width1 = 0.7 * s,
+		Transparency = NumberSequence.new(1),
+		ZOffset = 2.9,
 	})
 
 	local light = Instance.new("PointLight")
@@ -773,14 +826,20 @@ function Effect.Play(ctx)
 			ctx.Emit(smoke, 9)
 		end },
 		{ 0.09, function()
-			ctx.Emit(rings, 2)
+			ctx.Emit(rings, 1)
+		end },
+		{ 0.1, function()
+			ctx.Emit(rings, 1)
 		end },
 		{ 0.11, function()
 			ctx.Emit(preFlames, 6)
 			ctx.Emit(smoke, 8)
 		end },
 		{ 0.13, function()
-			ctx.Emit(rings, 2)
+			ctx.Emit(rings, 1)
+		end },
+		{ 0.14, function()
+			ctx.Emit(rings, 1)
 		end },
 		{ 0.15, function()
 			ctx.Emit(smoke, 5)
@@ -827,7 +886,7 @@ function Effect.Play(ctx)
 			ctx.Emit(windTilt, 1)
 			-- now the dark side tongue spot, starting at the curtain's right edge
 			burstBox.Size = Vector3.new(0.08 * B, 0.2 * s, 1 * s)
-			burstBox.CFrame = frame * CFrame.new(0.36 * B, 0.12 * B, 0)
+			burstBox.CFrame = frame * CFrame.new(0.24 * B, 0.12 * B, 0)
 		end },
 		{ burnEnd - 0.06, function()
 			-- the precursor flames come back as the side clumps: taller, at the old edges
@@ -881,13 +940,15 @@ function Effect.Play(ctx)
 		{ dieStreaksL, 0.5, dieRate },
 		{ dieStreaksR, 0.5, dieRate },
 		{ dieCore, 0.35, dieRate },
+		{ baseFill, 70, { { E + 0.02, 0 }, { E + 0.06, 1 }, { burnEnd - 0.05, 1 }, { burnEnd + 0.15, 0 } } },
+		{ coreGlow, 40, { { E + 0.2, 0 }, { E + 0.3, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.15, 0.6 }, { burnEnd + 0.3, 0 } } },
 		{ archGlow, 45, { { E + 0.09, 0 }, { E + 0.11, 1 }, { E + 0.2, 1 }, { E + 0.22, 0 } } },
 		{ baseGlow, 25, { { E, 0 }, { E + 0.005, 1 }, { E + 0.04, 1 }, { E + 0.07, 0 } } },
 		{ flameBody, p.FlameRate * 0.4, bodyDim = true, { { E + 0.02, 0 }, { E + 0.06, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.05, 0 } } },
 		{ darkTongues, p.DarkTongueRate, { { E + 0.3, 0 }, { E + 0.4, 1 }, { burnEnd, 1 }, { burnEnd + 0.2, 0 } } },
 		{ embers, p.EmberRate, { { E, 0 }, { E + 0.1, 1 }, { burnEnd, 1 }, { burnEnd + 0.3, 0.2 }, { fadeEnd - 0.1, 0 } } },
 		{ curls, p.CurlRate, { { E + 0.1, 0 }, { E + 0.15, 1 }, { burnEnd - 0.2, 1 }, { burnEnd, 0 } } },
-		{ ringCurls, p.CurlRate * 0.6, { { E + 0.1, 0 }, { E + 0.15, 1 }, { burnEnd - 0.3, 1 }, { burnEnd, 0 } } },
+		{ ringCurls, p.CurlRate * 0.2, { { E + 0.1, 0 }, { E + 0.15, 1 }, { E + 0.6, 1 }, { E + 0.8, 0 } } },
 		{ flecks, p.FleckRate, { { E + 0.1, 0 }, { E + 0.15, 1 }, { burnEnd - 0.1, 1 }, { burnEnd + 0.1, 0 } } },
 		{ preFlames, 34, clumpBurning },
 	}
@@ -922,7 +983,7 @@ function Effect.Play(ctx)
 		{ burnEnd, p.LightBrightness }, { fadeEnd, 0 } }
 	local lineTrack = { { E + 0.012, 1 }, { E + 0.05, 0 }, { narrowEnd, 0 }, { math.min(fadeEnd + 0.2, crackEnd), 1 } }
 	-- the hot line flares into a wide yellow base glow at the onset
-	local lineWidth = { { E, 1.2 * s }, { E + 0.03, 3.2 * s }, { E + 0.22, 1.2 * s } }
+	local lineWidth = { { E, 0.7 * s }, { E + 0.03, 2.4 * s }, { E + 0.22, 0.7 * s } }
 	-- the dark rift recedes while the hot line burns along it
 	local crackDarkTrack = { { 0.03, 1 }, { 0.09, 0.15 }, { E, 0.15 }, { E + 0.1, 0.55 }, { fadeEnd, 0.4 },
 		{ fadeEnd + math.max(0.5 * p.CrackFadeTime, p.CrackFadeTime - 0.3), 0.3 }, { crackEnd, 1 } }
@@ -960,7 +1021,7 @@ function Effect.Play(ctx)
 				rate *= math.max(0.2, 1 - 0.6 * track(vLean, t) - 0.5 * track(archDim, t))
 			end
 			if channel.vThin then
-				rate *= 1 - 0.7 * track(vLean, t) -- thinner sides, so the bright core reads
+				rate *= 1 - 0.5 * track(vLean, t) -- thinner sides, so the bright core reads
 			end
 			owed[i] += rate * dt
 			local n = math.floor(owed[i])
@@ -971,7 +1032,7 @@ function Effect.Play(ctx)
 					-- next dark tongue on the other edge (moving the box after emitting, so it
 					-- takes effect from the next step)
 					darkSide = -darkSide
-					burstBox.CFrame = frame * CFrame.new(darkSide * track(curtain, t) * B * 0.48, 0.12 * B, 0)
+					burstBox.CFrame = frame * CFrame.new(darkSide * track(curtain, t) * B * 0.32, 0.12 * B, 0)
 				end
 			end
 		end
@@ -1001,10 +1062,10 @@ function Effect.Play(ctx)
 			tonguesRight.Rotation = NumberRange.new(-24 * lean, 5 - 17 * lean)
 			tonguesCentre.Rotation = NumberRange.new(-20 * lean, 20 * lean) -- the core fans out
 			tonguesCentre.Squash = seq({ { 0, 0.3 + 0.6 * lean }, { 1, 0.6 + 0.5 * lean } }) -- narrow at the V
-			-- at the V the sides drop to ~0.5x height and ~0.4x opacity, so the column reads
-			local k, op = 1 - 0.5 * lean, 1 - 0.6 * lean
-			tonguesLeft.Size = seq({ { 0, 0.21 * B * 0.8 * k, 0.065 * B * 0.8 * k }, { 0.5, 0.26 * B * 0.8 * k, 0.075 * B * 0.8 * k },
-				{ 1, 0.24 * B * 0.8 * k, 0.07 * B * 0.8 * k } })
+			-- at the V the sides drop to ~0.7x height and ~0.55x opacity, so the column reads
+			local k, op = 1 - 0.3 * lean, 1 - 0.45 * lean
+			tonguesLeft.Size = seq({ { 0, 0.21 * B * 0.95 * k, 0.065 * B * 0.95 * k }, { 0.5, 0.26 * B * 0.95 * k, 0.075 * B * 0.95 * k },
+				{ 1, 0.24 * B * 0.95 * k, 0.07 * B * 0.95 * k } })
 			tonguesRight.Size = tonguesLeft.Size
 			tonguesLeft.Transparency = seq({ { 0, 1 - 0.9 * op }, { 0.5, 1 - 0.7 * op }, { 0.6, 1 - 0.55 * op }, { 1, 1 } })
 			tonguesRight.Transparency = tonguesLeft.Transparency
@@ -1027,11 +1088,11 @@ function Effect.Play(ctx)
 			dieStreaksR.Lifetime = dieStreaksL.Lifetime
 			dieCore.Lifetime = dieStreaksL.Lifetime
 		end)
-		core.Brightness = 1.4 + 1.4 * lean
+		core.Brightness = 1.4 + 2.4 * lean
 		column.Brightness = 1.1 + 1.2 * lean
-		tonguesLeft.Brightness = 1 - 0.45 * lean
+		tonguesLeft.Brightness = 1 - 0.3 * lean
 		tonguesRight.Brightness = tonguesLeft.Brightness
-		local cs = track(centreSize, t)
+		local cs = track(centreSize, t) * (1 - 0.2 * lean)
 		if cs ~= lastCentreSize then
 			lastCentreSize = cs
 			tonguesCentre.Size = centreSizeAt(cs)
@@ -1039,14 +1100,14 @@ function Effect.Play(ctx)
 
 		-- curtain: the tongue boxes and the veil follow its width
 		local width = track(curtain, t) * B
-		tallLeft.Size = Vector3.new(width / 2, 0.2 * s, 1 * s)
+		tallLeft.Size = Vector3.new(width / 2, 0.2 * s, 0.4 * s)
 		tallRight.Size = tallLeft.Size
 		tallLeft.CFrame = frame * CFrame.new(-width / 4, 0.24 * B, 0)
 		tallRight.CFrame = frame * CFrame.new(width / 4, 0.24 * B, 0)
 		-- at the V the centre band and body pull in to a ~2 Scale-1 stud column
 		local pull = 1 - 0.85 * lean
-		tallCentre.Size = Vector3.new(width * 0.6 * pull, 0.2 * s, 1 * s)
-		bodyBox.Size = Vector3.new(width * 0.55 * pull, 0.2 * s, 1 * s) -- middle only: no straight sides
+		tallCentre.Size = Vector3.new(width * 0.6 * pull, 0.2 * s, 0.4 * s)
+		bodyBox.Size = Vector3.new(width * 0.55 * pull, 0.2 * s, 0.4 * s) -- middle only: no straight sides
 		-- narrower than the tongues and tapered to the top, so the fixed sheets never show
 		-- straight vertical sides
 		local veilWidth = width * 0.65 * track(wallAlpha, t) * (1 - 0.5 * lean)
@@ -1061,7 +1122,7 @@ function Effect.Play(ctx)
 		local swayX = 0.07 * B * sway
 		wallTop.Position = Vector3.new(swayX, 0.2 * s + track(wallHeight, t), 0)
 
-		local columnTopY = 0.2 * s + track(columnHeight, t) * (1 + 0.2 * lean)
+		local columnTopY = 0.2 * s + track(columnHeight, t) * (1 + 0.05 * lean)
 		columnTop.Position = Vector3.new(swayX, columnTopY, 0)
 		streakTop.Position = Vector3.new(swayX * 1.2, math.max(columnTopY, 0.2 * s + track(streakHeight, t)), 0)
 		local cw = track(columnWidth, t) * (1 - 0.6 * lean)
@@ -1074,10 +1135,12 @@ function Effect.Play(ctx)
 		light.Brightness = track(lightTrack, t)
 		local lineAlpha = track(lineTrack, t)
 		changed("lineAlpha", lineAlpha, function()
-			hotLine.Transparency = seq({ { 0, 1 }, { 0.12, lineAlpha }, { 0.88, lineAlpha }, { 1, 1 } })
+			hotLine.Transparency = seq({ { 0, 1 }, { 0.15, lineAlpha }, { 0.85, lineAlpha }, { 1, 1 } })
+			local g = 1 - (1 - lineAlpha) * 0.3 -- the glow at ~30% opacity
+			hotGlow.Transparency = seq({ { 0, 1 }, { 0.15, g }, { 0.85, g }, { 1, 1 } })
 		end)
 		local lw = track(lineWidth, t)
-		hotLine.Width0, hotLine.Width1 = lw, lw
+		hotGlow.Width0, hotGlow.Width1 = lw, lw
 		crackDark.ImageTransparency = track(crackDarkTrack, t)
 		crackLine.ImageTransparency = track(crackLineTrack, t)
 		crackPool.ImageTransparency = track(crackPoolTrack, t)

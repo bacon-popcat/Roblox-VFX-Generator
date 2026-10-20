@@ -389,6 +389,11 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 ## Engine gotchas (verified in Studio)
 
 - `ParticleEmitter.Size` is a **half-width**: `Size = 5` draws a 10x10-stud quad.
+- A `Beam` samples its `Transparency` (and `Color`) only at **segment vertices**. With
+  `Segments = 1` that is just the two ends, so a sequence like `{0:1, 0.15:0, 0.85:0, 1:1}`
+  draws nothing at all. Give beams with mid-length keys enough segments (e.g. 12).
+- `VelocityParallel` particles run the texture's X along the velocity; an upright texture
+  needs `Rotation = -90` to point its tip along the motion.
 - Moving an `Attachment` (or an emitter's part) between `ctx.Emit` calls in the same frame
   does **not** move the spawn point; every burst lands where it was. To burst clusters at
   different spots from one emitter, give each cluster its own loop step (one burst per
