@@ -167,8 +167,8 @@ Effect.Defaults = {
 	CrackFadeTime = 0.7, -- the crack's glow after the flames are gone
 	FlameRate = 100, -- flame tongues / s while burning
 	EmberRate = 10, -- embers / s while burning
-	CurlRate = 8, -- orange curls and ring curls / s
-	FleckRate = 9, -- dark flecks / s
+	CurlRate = 5, -- orange curls and ring curls / s
+	FleckRate = 5, -- dark flecks / s
 	DarkTongueRate = 6, -- dark charcoal tongues / s at the curtain's sides
 	RockCount = 8,
 	LightBrightness = 1.2,
@@ -381,14 +381,12 @@ function Effect.Play(ctx)
 		ZOffset = -1,
 	})
 	local embers = emitter(line, {
-		Texture = ASSETS.Speck,
-		Orientation = Enum.ParticleOrientation.VelocityParallel,
-		Squash = NumberSequence.new(-0.75), -- stretched along the velocity (texture X)
+		Texture = ASSETS.Speck, -- round dots, as in the reference
 		EmissionDirection = Enum.NormalId.Top,
 		Color = colors({ { 0, p.Color }, { 1, p.EdgeColor } }),
 		LightEmission = 1,
 		Brightness = 1.5,
-		Size = seq({ { 0, 0.24 * s, 0.08 * s }, { 0.8, 0.2 * s }, { 1, 0 } }),
+		Size = seq({ { 0, 0.16 * s, 0.05 * s }, { 0.8, 0.13 * s }, { 1, 0 } }),
 		Lifetime = NumberRange.new(0.6, 1.1),
 		Speed = NumberRange.new(6 * s, 16 * s),
 		SpreadAngle = Vector2.new(35, 35),
@@ -479,14 +477,15 @@ function Effect.Play(ctx)
 		Texture = ASSETS.LavaStreak,
 		Orientation = Enum.ParticleOrientation.VelocityParallel,
 		EmissionDirection = Enum.NormalId.Top,
-		Color = colors({ { 0, p.Color:Lerp(p.CoreColor, 0.3) }, { 0.5, p.Color }, { 1, p.EdgeColor:Lerp(p.Color, 0.25) } }),
-		LightEmission = 0.7,
-		Brightness = 1.2,
-		Size = seq({ { 0, 0.27 * B, 0.065 * B }, { 1, 0.27 * B, 0.065 * B } }), -- uneven heights
+		-- orange to red: the reference's die-down bundle is saturated, not yellow-white
+		Color = colors({ { 0, p.Color }, { 0.5, ember }, { 1, p.EdgeColor } }),
+		LightEmission = 0.65,
+		Brightness = 1,
+		Size = seq({ { 0, 0.24 * B, 0.05 * B }, { 1, 0.24 * B, 0.05 * B } }), -- uneven heights
 		Squash = NumberSequence.new(0.7),
 		Transparency = seq({ { 0, 0.1 }, { 0.7, 0.3 }, { 1, 1 } }),
 		Lifetime = NumberRange.new(0.18, 0.24),
-		Speed = NumberRange.new(DIE_DRAG * 0.36 * B),
+		Speed = NumberRange.new(DIE_DRAG * 0.27 * B), -- drag stops it ~0.27 B up
 		Drag = DIE_DRAG,
 		SpreadAngle = Vector2.new(2, 6),
 		Rotation = NumberRange.new(-90), -- VelocityParallel runs the texture's X along the velocity
@@ -497,7 +496,7 @@ function Effect.Play(ctx)
 	-- a dense bright core of wider vertical streaks in the middle of the bundle
 	local dieMid = box(0, 0.05 * B, 0.07 * B)
 	local dieCore = emitter(dieMid, dieProps)
-	dieCore.Color = colors({ { 0, warm }, { 1, ember } })
+	dieCore.Color = colors({ { 0, p.Color:Lerp(p.CoreColor, 0.35) }, { 1, ember } })
 	dieCore.Squash = NumberSequence.new(0.45) -- ~1.5x wider than the side streaks
 	dieCore.SpreadAngle = Vector2.new(1, 2)
 	-- soft flame body filling the middle of the curtain up to ~0.85 of its height
@@ -551,7 +550,7 @@ function Effect.Play(ctx)
 		Color = colors({ { 0, p.CoreColor }, { 0.4, p.Color }, { 1, p.EdgeColor } }),
 		LightEmission = 0.8,
 		Brightness = 1.5,
-		Size = seq({ { 0, 0.8 * s }, { 0.5, 1.6 * s, 0.4 * s }, { 1, 1.4 * s } }),
+		Size = seq({ { 0, 0.5 * s }, { 0.5, 1 * s, 0.3 * s }, { 1, 0.8 * s } }),
 		Lifetime = NumberRange.new(0.4, 0.7),
 		Speed = NumberRange.new(5 * s, 12 * s),
 		SpreadAngle = Vector2.new(50, 50),
@@ -566,7 +565,7 @@ function Effect.Play(ctx)
 		EmissionDirection = Enum.NormalId.Top,
 		Color = ColorSequence.new(p.DarkColor),
 		LightEmission = 0,
-		Size = seq({ { 0, 0.6 * s }, { 0.5, 1.1 * s, 0.3 * s }, { 1, 0.9 * s } }),
+		Size = seq({ { 0, 0.35 * s }, { 0.5, 0.7 * s, 0.2 * s }, { 1, 0.55 * s } }),
 		Lifetime = NumberRange.new(0.35, 0.6),
 		Speed = NumberRange.new(4 * s, 10 * s),
 		SpreadAngle = Vector2.new(30, 30),
@@ -579,7 +578,7 @@ function Effect.Play(ctx)
 	-- on the ground and raised + tilted so some wrap up round the flames. Each arc rises
 	-- ~0.3 B (~11 studs at Scale 2.5) as it spins out; VelocityPerpendicular keeps it flat
 	-- while it moves up.
-	local windHalf = 0.5 * B -- arcs reach ~8 Scale-1 studs out along the fissure
+	local windHalf = 0.38 * B -- arcs reach ~6 Scale-1 studs out along the fissure
 	local function windEmitter(att, sizeScale)
 		return emitter(att, {
 			Texture = ASSETS.Swirl,
@@ -590,7 +589,7 @@ function Effect.Play(ctx)
 			Brightness = 0.7,
 			Size = seq({ { 0, windHalf * 1.25 * sizeScale }, { 0.5, windHalf * 1.55 * sizeScale }, { 1, windHalf * 1.7 * sizeScale } }),
 			Squash = NumberSequence.new(-0.45),
-			Transparency = seq({ { 0, 0.5 }, { 0.55, 0.62 }, { 1, 1 } }),
+			Transparency = seq({ { 0, 0.6 }, { 0.55, 0.72 }, { 1, 1 } }),
 			Lifetime = NumberRange.new(0.42, 0.5),
 			Speed = NumberRange.new(1 * B, 1.2 * B),
 			Drag = 2.5,
@@ -646,10 +645,10 @@ function Effect.Play(ctx)
 	local coreGlow = emitter(coreAt, {
 		Texture = ASSETS.LavaGlow,
 		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
-		Color = ColorSequence.new(p.CoreColor),
-		LightEmission = 0.7,
-		Brightness = 0.9,
-		Size = seq({ { 0, 0.21 * B, 0.02 * B }, { 1, 0.23 * B } }),
+		Color = ColorSequence.new(p.CoreColor:Lerp(p.Color, 0.3)),
+		LightEmission = 0.6,
+		Brightness = 0.6,
+		Size = seq({ { 0, 0.17 * B, 0.02 * B }, { 1, 0.19 * B } }),
 		Squash = NumberSequence.new(0.45), -- taller than wide
 		Transparency = seq({ { 0, 0.6 }, { 0.35, 0.35 }, { 0.75, 0.45 }, { 1, 1 } }),
 		Lifetime = NumberRange.new(0.12, 0.16),
@@ -686,9 +685,9 @@ function Effect.Play(ctx)
 		LightEmission = 0,
 		LightInfluence = 0,
 		Brightness = 1,
-		Size = seq({ { 0, 0.12 * B }, { 1, 0.24 * B } }), -- grows up through the blob
-		Squash = NumberSequence.new(0.5), -- an upright egg
-		Transparency = seq({ { 0, 0.3 }, { 0.3, 0 }, { 0.7, 0.1 }, { 1, 1 } }),
+		Size = seq({ { 0, 0.1 * B }, { 1, 0.2 * B } }), -- grows up through the blob
+		Squash = NumberSequence.new(1.1), -- a tall narrow egg (~2 x 4 Scale-1 studs)
+		Transparency = seq({ { 0, 0.45 }, { 0.3, 0.2 }, { 0.7, 0.3 }, { 1, 1 } }), -- see-through
 		Lifetime = NumberRange.new(0.08, 0.1),
 		Speed = NumberRange.new(0.8 * B, 0.9 * B), -- its centre climbs ~0.08 B
 		SpreadAngle = Vector2.new(2, 2),
@@ -972,8 +971,8 @@ function Effect.Play(ctx)
 	-- (3.2 -> 3.3 -> 3.4 s), plus a bright core of wider streaks in the middle
 	local dieRate = { { burnEnd + 0.1, 0 }, { burnEnd + 0.2, 48 }, { burnEnd + 0.35, 48 }, { burnEnd + 0.55, 34 },
 		{ fadeEnd - 0.05, 26 }, { fadeEnd - 0.03, 0 } }
-	local dieWidth = { { burnEnd + 0.35, 0.28 * B }, { burnEnd + 0.55, 0.21 * B }, { fadeEnd - 0.05, 0.1 * B } }
-	local dieFan = { { burnEnd + 0.25, 7 }, { burnEnd + 0.35, 5 }, { burnEnd + 0.45, 2 }, { burnEnd + 0.55, 0 } } -- each half's tilt
+	local dieWidth = { { burnEnd + 0.35, 0.2 * B }, { burnEnd + 0.55, 0.13 * B }, { fadeEnd - 0.05, 0.06 * B } }
+	local dieFan = { { burnEnd + 0.25, 4 }, { burnEnd + 0.35, 3 }, { burnEnd + 0.45, 1 }, { burnEnd + 0.55, 0 } } -- each half's tilt
 	local dieLife = { { burnEnd + 0.55, 1 }, { fadeEnd - 0.05, 0.6 } }
 	local dieSpread = { { burnEnd + 0.35, 6 }, { burnEnd + 0.55, 0.5 } } -- per-streak scatter (deg)
 	-- the opening burst of tongues rushes up ~2.8x faster (and lives 1/2.8 as long), so the
@@ -1005,11 +1004,13 @@ function Effect.Play(ctx)
 	local hollows = {} -- { time, count }: bursts, since a window this short can fall between frames
 	for n = 0, 5 do
 		local h = E + 0.16 + n * HEART_PERIOD
-		local k = if n == 0 or n == 5 then 1 else 0.6 -- strongest at the onset and the die-down
+		local k = if n == 0 or n == 5 then 1 else 0.4 -- strongest at the onset and the die-down
 		for _, key in { { h - 0.08, 0 }, { h - 0.05, k }, { h + 0.02, k }, { h + 0.05, 0 } } do
 			table.insert(heartBlob, key)
 		end
-		table.insert(hollows, { h, if k == 1 then 2 else 1 })
+		if k == 1 then -- burn pulses have only a soft blob: a hollow there reads as a donut
+			table.insert(hollows, { h, 2 })
+		end
 		if n <= 4 then -- the last teardrop is ~3.03 s; the die-down streaks carry the end
 			for _, key in { { h + 0.1, 0 }, { h + 0.14, k }, { h + 0.26, k }, { h + 0.31, 0 } } do
 				table.insert(heartTear, key)
@@ -1075,7 +1076,9 @@ function Effect.Play(ctx)
 	local swayed = { tonguesLeft, tonguesRight, tonguesCentre, flameBody }
 	local lightTrack = { { E, 0 }, { E + 0.05, p.LightBrightness * 1.5 }, { E + 0.3, p.LightBrightness },
 		{ burnEnd, p.LightBrightness }, { fadeEnd, 0 } }
-	local lineTrack = { { E + 0.012, 1 }, { E + 0.05, 0 }, { narrowEnd, 0 }, { math.min(fadeEnd + 0.2, crackEnd), 1 } }
+	-- the hot line dims from the end of the burn: a faint red line by ~3.3 s
+	local lineTrack = { { E + 0.012, 1 }, { E + 0.05, 0 }, { burnEnd, 0 }, { burnEnd + 0.4, 0.55 },
+		{ math.min(fadeEnd + 0.2, crackEnd), 1 } }
 	-- the hot line flares into a wide yellow base glow at the onset
 	local lineWidth = { { E, 0.7 * s }, { E + 0.03, 2.4 * s }, { E + 0.22, 0.7 * s } }
 	-- the dark rift recedes while the hot line burns along it
@@ -1083,7 +1086,7 @@ function Effect.Play(ctx)
 		{ fadeEnd + math.max(0.5 * p.CrackFadeTime, p.CrackFadeTime - 0.3), 0.3 }, { crackEnd, 1 } }
 	local crackLineTrack = { { 0.3, 1 }, { 0.5, 0.1 }, { E, 0 }, { fadeEnd, 0.15 }, { crackEnd, 1 } }
 	-- the pool is a soft glow stretched along the crack: brightest in the middle
-	local crackPoolTrack = { { 0.3, 1 }, { 0.5, 0.45 }, { E, 0.4 }, { E + 0.2, 0.7 }, { fadeEnd, 0.8 }, { crackEnd, 1 } }
+	local crackPoolTrack = { { 0.3, 1 }, { 0.5, 0.45 }, { E, 0.4 }, { E + 0.2, 0.5 }, { fadeEnd, 0.65 }, { crackEnd, 1 } }
 	local crackBrightTrack = { { 0.3, 1 }, { 0.6, 2.6 }, { E + 0.1, 3.2 }, { fadeEnd, 2 }, { crackEnd, 0.8 } }
 
 	-- assign a derived property only when its input changes (no per-frame allocations)
@@ -1234,8 +1237,11 @@ function Effect.Play(ctx)
 		local lineAlpha = track(lineTrack, t)
 		changed("lineAlpha", lineAlpha, function()
 			-- bright through the middle ~half, fading out toward both ends
-			hotLine.Transparency = seq({ { 0, 1 }, { 0.25, lineAlpha }, { 0.75, lineAlpha }, { 1, 1 } })
-			local g = 1 - (1 - lineAlpha) * 0.3 -- the glow at ~30% opacity
+			-- brightest under the flames, tapering out along the crack
+			local o = 1 - lineAlpha
+			hotLine.Transparency = seq({ { 0, 1 }, { 0.2, 1 - 0.35 * o }, { 0.4, 1 - 0.85 * o }, { 0.5, lineAlpha },
+				{ 0.6, 1 - 0.85 * o }, { 0.8, 1 - 0.35 * o }, { 1, 1 } })
+			local g = 1 - o * 0.3 -- the glow at ~30% opacity
 			hotGlow.Transparency = seq({ { 0, 1 }, { 0.3, g }, { 0.7, g }, { 1, 1 } })
 		end)
 		local lw = track(lineWidth, t)
