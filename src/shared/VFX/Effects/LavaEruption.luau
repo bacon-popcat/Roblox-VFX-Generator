@@ -256,7 +256,10 @@ function Effect.Play(ctx)
 	-- lumpy lava in the middle of the crack (the rift texture, bright orange) and a soft red
 	-- pool round it; the hot line beam below covers the whole crack once it erupts
 	local lineGui, crackLine = crackLayer("CrackLine", 4 * s, F * 0.36, ASSETS.Rift, p.Color, 0.02)
-	local poolGui, crackPool = crackLayer("CrackPool", 8 * s, F * 0.55, ASSETS.SoftGlow, p.EdgeColor, 0.01)
+	local poolGui, crackPool = crackLayer("CrackPool", 18 * s, F * 1.2, ASSETS.LavaHollow, p.Color, 0.01)
+	-- a lit pool on the ground round the crack. lava_hollow2 is opaque only in its middle ~22% and
+	-- clear past ~62%, so the layer is ~2.5x the lit area (glow ~8 x 20 Scale-1 studs); lava_glow
+	-- lights an even thinner centre. Brightness follows crackBrightTrack.
 
 	------------------------------------------------------------------ precursor emitters
 	local streakOrange = emitter(burstBox, {
@@ -530,15 +533,15 @@ function Effect.Play(ctx)
 			FlipbookStartRandom = true,
 			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
 			EmissionDirection = Enum.NormalId.Top,
-			Color = ColorSequence.new(p.DarkColor:Lerp(p.EdgeColor, 0.3)),
+			Color = ColorSequence.new(p.DarkColor:Lerp(p.EdgeColor, 0.4)),
 			LightEmission = 0,
 			LightInfluence = 0, -- the effect's light would brighten them back to orange
 			Size = seq({ { 0, 0.12 * B }, { 0.5, 0.16 * B }, { 1, 0.14 * B } }),
-			Squash = NumberSequence.new(0.9), -- tall narrow streaks (~1.5 x 4 Scale-1 studs)
-			Transparency = seq({ { 0, 0.3 }, { 0.6, 0.45 }, { 1, 1 } }),
+			Squash = NumberSequence.new(0.7), -- tall licks (~1.5 x 4 Scale-1 studs)
+			Transparency = seq({ { 0, 0.4 }, { 0.6, 0.55 }, { 1, 1 } }),
 			Lifetime = NumberRange.new(0.3, 0.45),
 			Speed = NumberRange.new(0.15 * B, 0.3 * B),
-			Rotation = NumberRange.new(-15, 15),
+			Rotation = NumberRange.new(-28, 28), -- curl outward, not straight up
 			Drag = 1.5,
 			ZOffset = 1.5,
 		})
@@ -591,7 +594,7 @@ function Effect.Play(ctx)
 			Brightness = 0.7,
 			Size = seq({ { 0, windHalf * 1.25 * sizeScale }, { 0.5, windHalf * 1.55 * sizeScale }, { 1, windHalf * 1.7 * sizeScale } }),
 			Squash = NumberSequence.new(-0.45),
-			Transparency = seq({ { 0, 0.6 }, { 0.55, 0.72 }, { 1, 1 } }),
+			Transparency = seq({ { 0, 0.7 }, { 0.55, 0.8 }, { 1, 1 } }),
 			Lifetime = NumberRange.new(0.42, 0.5),
 			Speed = NumberRange.new(1 * B, 1.2 * B),
 			Drag = 2.5,
@@ -973,8 +976,8 @@ function Effect.Play(ctx)
 	-- (3.2 -> 3.3 -> 3.4 s), plus a bright core of wider streaks in the middle
 	local dieRate = { { burnEnd + 0.1, 0 }, { burnEnd + 0.2, 48 }, { burnEnd + 0.35, 48 }, { burnEnd + 0.55, 34 },
 		{ fadeEnd - 0.05, 26 }, { fadeEnd - 0.03, 0 } }
-	local dieWidth = { { burnEnd + 0.35, 0.18 * B }, { burnEnd + 0.55, 0.11 * B }, { fadeEnd - 0.05, 0.045 * B } }
-	local dieFan = { { burnEnd + 0.25, 4 }, { burnEnd + 0.35, 3 }, { burnEnd + 0.45, 1 }, { burnEnd + 0.55, 0 } } -- each half's tilt
+	local dieWidth = { { burnEnd + 0.35, 0.22 * B }, { burnEnd + 0.55, 0.14 * B }, { fadeEnd - 0.05, 0.05 * B } }
+	local dieFan = { { burnEnd + 0.25, 6 }, { burnEnd + 0.35, 4 }, { burnEnd + 0.45, 2 }, { burnEnd + 0.55, 0 } } -- each half's tilt
 	local dieLife = { { burnEnd + 0.55, 1 }, { fadeEnd - 0.05, 0.6 } }
 	local dieSpread = { { burnEnd + 0.35, 6 }, { burnEnd + 0.55, 0.5 } } -- per-streak scatter (deg)
 	-- the opening burst of tongues rushes up ~2.8x faster (and lives 1/2.8 as long), so the
@@ -1088,7 +1091,7 @@ function Effect.Play(ctx)
 		{ fadeEnd + math.max(0.5 * p.CrackFadeTime, p.CrackFadeTime - 0.3), 0.3 }, { crackEnd, 1 } }
 	local crackLineTrack = { { 0.3, 1 }, { 0.5, 0.1 }, { E, 0 }, { fadeEnd, 0.15 }, { crackEnd, 1 } }
 	-- the pool is a soft glow stretched along the crack: brightest in the middle
-	local crackPoolTrack = { { 0.3, 1 }, { 0.5, 0.45 }, { E, 0.35 }, { E + 0.2, 0.4 }, { fadeEnd, 0.6 }, { crackEnd, 1 } }
+	local crackPoolTrack = { { 0.3, 1 }, { 0.5, 0.6 }, { E, 0.15 }, { E + 0.2, 0.2 }, { burnEnd, 0.25 }, { fadeEnd, 0.5 }, { crackEnd, 1 } }
 	local crackBrightTrack = { { 0.3, 1 }, { 0.6, 2.6 }, { E + 0.1, 3.2 }, { fadeEnd, 2 }, { crackEnd, 0.8 } }
 
 	-- assign a derived property only when its input changes (no per-frame allocations)
@@ -1252,7 +1255,7 @@ function Effect.Play(ctx)
 		crackLine.ImageTransparency = track(crackLineTrack, t)
 		crackPool.ImageTransparency = track(crackPoolTrack, t)
 		lineGui.Brightness = track(crackBrightTrack, t)
-		poolGui.Brightness = track(crackBrightTrack, t) * 0.7
+		poolGui.Brightness = track(crackBrightTrack, t) * 0.55
 	end
 end
 
