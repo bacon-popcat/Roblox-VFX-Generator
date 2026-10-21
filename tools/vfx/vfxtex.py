@@ -331,6 +331,133 @@ def draw_flipbook(name, frame, grid=4, loop=False, fps=None, mode="alpha", paddi
     return path
 
 
+def render_flipbook(name, grid=4, mode="alpha", start=None, end=None, loop=False, padding=4):
+    """Render the Blender scene's animation through its camera into one 1024 x 1024 flipbook sheet.
+
+    Only inside Blender. Use it when a 3D look is the point: a simulation, a lit volume, shaded
+    debris, a realistic fireball. grid is 2, 4 or 8. Frames from start to end (the scene's own
+    by default) are sampled evenly to fill every cell, because Roblox plays every cell; a
+    shorter animation holds some frames for two cells. mode "alpha" renders on a transparent
+    film (smoke, dust, LightEmission 0); "additive" renders on black (fire, energy, glows,
+    LightEmission 1). Each frame is rendered padding pixels inside its cell. loop says the last
+    frame leads back into the first. Eevee or Workbench render a 64-frame sheet in seconds,
+    Cycles can take minutes. Colour uses the Standard view transform, so glows stay bright.
+    Frame the camera (orthographic is simplest) so the subject stays in view on every frame.
+    Writes the same files as draw_flipbook, with the frames and per-frame render times in the note.
+    """
+    import time
+    import bpy
+
+    _check_name(name)
+    if grid not in _FLIPBOOK_GRIDS:
+        raise ValueError(f"grid must be 2, 4 or 8 (Roblox's Grid2x2, Grid4x4 and Grid8x8), got {grid!r}")
+    if mode not in ("alpha", "additive"):
+        raise ValueError(f'mode must be "alpha" (transparent film, LightEmission 0) or "additive" (black background, LightEmission 1), got {mode!r}')
+    cell = _FLIPBOOK_SIDE // grid
+    if not isinstance(padding, int) or padding < 0 or padding > cell // 8:
+        raise ValueError(f"padding must be a whole number of pixels from 0 to {cell // 8} for a {grid} x {grid} grid, got {padding!r}")
+    scene = bpy.context.scene
+    if scene.camera is None:
+        raise ValueError("the scene has no camera; add one and set scene.camera, framed so the whole effect stays in view")
+    start = scene.frame_start if start is None else int(start)
+    end = scene.frame_end if end is None else int(end)
+    if end <= start:
+        raise ValueError(f"end ({end}) must be after start ({start})")
+    cells = grid * grid
+    span = end - start + (0 if loop else 1)
+    if span < cells:
+        print(f"vfxtex.render_flipbook: frames {start} to {end} give {span} distinct frames for {cells} cells, so some "
+              f"frames are held for two cells; a longer animation or a smaller grid avoids the holds", flush=True)
+    if loop:
+        frames = [start + round((end - start) * i / cells) for i in range(cells)]
+    else:
+        frames = [start + round((end - start) * i / (cells - 1)) for i in range(cells)]
+
+    render = scene.render
+    view = scene.view_settings
+    saved = {
+        "resolution_x": render.resolution_x, "resolution_y": render.resolution_y,
+        "resolution_percentage": render.resolution_percentage, "film_transparent": render.film_transparent,
+        "filepath": render.filepath, "file_format": render.image_settings.file_format,
+        "color_mode": render.image_settings.color_mode, "view_transform": view.view_transform,
+        "look": view.look, "world": scene.world, "frame": scene.frame_current,
+    }
+    inner = cell - 2 * padding
+    frames_dir = _output(name, ".frames")
+    os.makedirs(frames_dir, exist_ok=True)
+    seconds = []
+    sheet = numpy.zeros((_FLIPBOOK_SIDE, _FLIPBOOK_SIDE, 4), dtype=numpy.uint8)
+    if mode == "additive":
+        sheet[:, :, 3] = 255
+    black = None
+    try:
+        render.resolution_x = render.resolution_y = inner
+        render.resolution_percentage = 100
+        render.image_settings.file_format = "PNG"
+        view.view_transform = "Standard"
+        view.look = "None"
+        if mode == "alpha":
+            render.film_transparent = True
+            render.image_settings.color_mode = "RGBA"
+        else:
+            render.film_transparent = False
+            render.image_settings.color_mode = "RGB"
+            black = bpy.data.worlds.new("VfxFlipbookBlack")
+            black.color = (0.0, 0.0, 0.0)
+            if black.node_tree is not None:
+                for node in black.node_tree.nodes:
+                    if node.type == "BACKGROUND":
+                        node.inputs["Color"].default_value = (0.0, 0.0, 0.0, 1.0)
+                        node.inputs["Strength"].default_value = 0.0
+            scene.world = black
+        for index, frame in enumerate(frames):
+            scene.frame_set(frame)
+            path = os.path.join(frames_dir, f"{index:02d}.png")
+            render.filepath = path
+            began = time.perf_counter()
+            bpy.ops.render.render(write_still=True)
+            seconds.append(round(time.perf_counter() - began, 3))
+            image = bpy.data.images.load(path, check_existing=False)
+            try:
+                width, height = image.size
+                if (width, height) != (inner, inner):
+                    raise RuntimeError(f"frame {frame} rendered at {width} x {height}, not {inner} x {inner}")
+                pixels = numpy.empty(width * height * 4, dtype=numpy.float32)
+                image.pixels.foreach_get(pixels)
+            finally:
+                bpy.data.images.remove(image)
+            # Blender keeps rows bottom first; the sheet is written top first.
+            frame_rgba = numpy.flipud((numpy.clip(pixels, 0.0, 1.0) * 255.0 + 0.5).astype(numpy.uint8).reshape(height, width, 4))
+            if mode == "additive":
+                frame_rgba[:, :, 3] = 255
+            row, column = divmod(index, grid)
+            top, left = row * cell + padding, column * cell + padding
+            sheet[top:top + inner, left:left + inner] = frame_rgba
+    finally:
+        render.resolution_x, render.resolution_y = saved["resolution_x"], saved["resolution_y"]
+        render.resolution_percentage = saved["resolution_percentage"]
+        render.film_transparent = saved["film_transparent"]
+        render.filepath = saved["filepath"]
+        render.image_settings.file_format = saved["file_format"]
+        render.image_settings.color_mode = saved["color_mode"]
+        view.view_transform, view.look = saved["view_transform"], saved["look"]
+        scene.world = saved["world"]
+        if black is not None:
+            bpy.data.worlds.remove(black)
+        scene.frame_set(saved["frame"])
+
+    fps = render.fps / render.fps_base
+    played = frames[-1] - frames[0] + (frames[1] - frames[0] if loop else 0)
+    path = _output(name, ".flipbook.png")
+    _write_png(path, sheet)
+    _write_preview(_output(name, ".preview.png"), sheet, half=True)
+    with open(_output(name, ".flipbook.json"), "w", encoding="utf-8") as handle:
+        json.dump({"name": name, "grid": grid, "mode": mode, "padding": padding, "loop": bool(loop),
+                   "fps": round(cells / (played / fps), 3) if played > 0 else None,
+                   "frames": frames, "engine": render.engine, "renderSeconds": seconds}, handle)
+    return path
+
+
 def draw_texture(name, image, size=512, mode="alpha"):
     """Draw one texture and write it as <name>.png, plus <name>.preview.png over a dark ground. image is an array, or a function image(size) returning one: alpha, (alpha, value) or RGB / RGBA, as for draw_flipbook. mode "alpha" keeps transparency; "additive" bakes it onto black. Returns the path."""
     _check_name(name)

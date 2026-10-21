@@ -435,7 +435,10 @@ function MeshFactory.Publish(mesh, name, generatorName, params, creator)
 	end
 	local assetId = idOrError
 
-	local template = AssetService:CreateMeshPartAsync(Content.fromAssetId(assetId))
+	-- Precise: with Automatic, thin curved cards (crescents) turn into straight-sided wedges at range
+	local template = AssetService:CreateMeshPartAsync(Content.fromAssetId(assetId), {
+		RenderFidelity = Enum.RenderFidelity.Precise,
+	})
 	template.Name = name
 	template.Anchored = true
 	template.CanCollide = false
