@@ -1,8 +1,9 @@
 # Explosions, fire and smoke
 
 Read with `design.md` for any explosion, fireball, blast, burning or smoke. It fills in the
-explosion and impact entries in `recipes.md`; the stylized `FireballExplosion` and
-`LavaEruption` recipes there are built examples and Oscar's corrections win over this file.
+explosion and impact entries in `recipes.md`, and wins where they or Oscar's corrections
+disagree (`SKILL.md`, Precedence); `FireballExplosion` and `LavaEruption` are built examples
+made before it.
 
 Adapted from Roqer's VFX skill (https://github.com/S4US/Roqer, `roblox-animation-vfx`
 reference `vfx-explosions.md`, AGPL-3.0-or-later). *(measured)* marks numbers from 5,010
@@ -146,8 +147,8 @@ burnOut.Transparency = NumberSequence.new({
 | Texture | soft or mottled 72%; cel puffs peak at Transparency 0.53 |
 | Lifetime | median 1.0 s (0.56-1.39); 3-7 s only for a slam's last cloud |
 
-Our `SKILL.md` principle "matter uses LightEmission 0 and some LightInfluence" is one choice;
-most studied smoke is self-lit (`LightInfluence` 0). Scene-lit smoke goes dark in shade.
+Make smoke self-lit (`LightInfluence` 0), as most studied smoke is: scene-lit smoke goes dark
+in shade.
 
 **A dark Colour is not dark smoke.** At `LightInfluence` 0, Brightness multiplies Colour:
 studied smoke of `#3f3f3f` at Brightness 16 and 5 renders white and light grey, and a fire

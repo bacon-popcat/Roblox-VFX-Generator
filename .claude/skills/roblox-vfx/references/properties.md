@@ -10,7 +10,7 @@
 | Size / Transparency | NumberSequence. Pop then shrink; fade in last 30-50%. Give Size keys an envelope (`NumberSequenceKeypoint.new(t, v, envelope)`, about a third of the peak) so particles differ in size. Transparency keys above 1 end a particle early; negative values don't make a soft texture solid. |
 | Color | ColorSequence. Use 2-3 keypoints for value contrast. |
 | LightEmission | 1 = additive glow (thin highlights, small glows; washes out over a bright sky). 0 = solid colour (most saturated studied layers sit at 0.3 or less). Negative (-1 to -3) = saturated and solid with a dark rim. Black renders as ink at 0, a faint veil at 0.55, invisible at 1. |
-| LightInfluence | 0 = ignores scene lighting (energy). 0.5-1 for matter. |
+| LightInfluence | 0 = ignores scene lighting: energy and most smoke (self-lit smoke keeps its grey in shade). 0.5-1 only when matter must sit in the scene's light. |
 | Brightness | Multiplies Color. Read the place's Bloom first: studied hot layers run 15 (median) to 50+, sharp shapes ~4, soft glows 1-6 (often <1), smoke ~1.6 self-lit. A dark Color at high Brightness is not dark. |
 | Drag | Half-life of speed in seconds. High (5-16) makes bursts snap out then hang: Speed 45-75 at Drag 16, 25-60 at Drag 6. |
 | Acceleration | Gravity for debris (y -30 to -80), rise for smoke (y 2-6). |
@@ -36,7 +36,7 @@ Attachment0/1, Lifetime (0.1-0.3 for weapons), WidthScale (taper to 0), MinLengt
 FaceCamera, Texture, LightEmission, Transparency, Color.
 Always textured (an untextured trail is a flat tube); weapon trails in pairs: a thin hot core
 (0.04-0.15 s, Brightness 10-30) and a soft wisp (0.15-0.4 s, LightEmission 0.55-0.75).
-Lifetime is real time (`structure.md` gotchas).
+Lifetime is real time: set it to `authored / ctx.TimeScale` (`structure.md` gotchas).
 
 ## Highlight
 FillColor, FillTransparency, OutlineColor, OutlineTransparency, DepthMode.

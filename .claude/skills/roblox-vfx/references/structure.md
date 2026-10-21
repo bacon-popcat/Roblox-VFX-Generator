@@ -431,16 +431,19 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 
 ## Layering and timing (summary; details in the skill docs)
 
-- 3-5 layers: core flash, primary shape, secondary particles, residue.
-  Category breakdowns: `references/recipes.md`.
-- Fast in (peak at 0.03-0.1s), slow out (fade 3-6x longer). Expansion easing: `Quad` or
-  `Exponential` Out (`Enum.EasingStyle.Expo` does not exist).
+- Many single-sprite layers (40-60 in a studied hit), stacked and timed in place; the
+  impact skeleton and category breakdowns are in `references/recipes.md`, the numbers in
+  `references/design.md`.
+- The flash at 0 (0.03-0.15 s), every other layer at +0.03 s or later in 0.025-0.05 s steps;
+  intensity only falls after that. Expansion easing: `Quad` or `Exponential` Out
+  (`Enum.EasingStyle.Expo` does not exist).
 - Typical durations: slash 0.2-0.4s, impact 0.3-0.6s, movement 0.3-0.5s, ground slam
   0.6-1.2s, buff 0.6-1.2s, explosion 0.8-1.5s.
 - Sequence layers with `ctx.Wait`. For a parallel timeline use
   `task.spawn(function() ctx.Wait(t) ... end)`, never `task.delay` (real time). `Play`
   should return around the last layer's peak; `Linger` covers whatever is still fading.
-- Energy: `LightEmission = 1`, `LightInfluence = 0`, Neon. Matter: `LightEmission = 0`.
+- Colour on solid layers (`LightEmission` 0.3 or less, Brightness 5-55); additive only for
+  thin highlights and small glows; `LightInfluence = 0` on energy and most smoke.
 - Budget, colors, and look: `SKILL.md` "Budget" and `references/style-guide.md` (still unfilled).
 
 ## Engine gotchas (verified in Studio)
@@ -475,7 +478,8 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 - Slash flipbooks with dark pixels (e.g. "Medium Glowing Dark Slash") need
   `LightEmission` 0 or 1; values in between render the dark pixels black.
 - Additive (`LightEmission = 1`) bright green with `Brightness` > 1 clips to mint/white on
-  light ground. Keep `Brightness` ~1 and put a dark normal-blend layer behind it.
+  light ground: carry the green on a solid layer (`LightEmission` 0.3 or less) at higher
+  Brightness and keep additive for thin highlights (`references/design.md` section 4).
 - Camera-facing particles near the ground get cut by it (hard straight edge). Raise them
   or shrink them; for flames, spawn ~0.5x their half-size above the ground. Used on purpose, a camera-facing disc centred on the ground reads as a
   dome (see `MagnetPull`).
@@ -503,24 +507,29 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
   then `ctx.Wait(1/60)` before moving again (see the shed streaks in `WindSpinSlash`).
 - Library meshes are `SpecialMesh` FileMeshes: size with `SpecialMesh.Scale` (in native
   mesh units; get native size once via `AssetService:CreateMeshPartAsync(id).MeshSize`).
-- `MeshPart.TextureID` ignores `Part.Color` (the texture's RGB shows as-is), and its alpha
-  only cuts out holes once the part's `Transparency` is > 0 (0.02 is enough); at 0 the
-  transparent pixels show the texture's RGB. So bake shell colours into the texture, keep
-  a separate Neon body inside for an animated colour, and swap `TextureID` for stages
-  (ash/dissolve frames).
+- `MeshPart.TextureID` ignores `Part.Color` (the texture's RGB shows as-is). Don't fade or
+  cut a mesh with its texture's alpha (Roqer: the colour covers the whole surface): animate
+  the part's `Transparency`, or put a Decal on a part with `Transparency = 1`
+  (`references/meshes.md`, "Mesh effects"). `FireballExplosion` swaps `TextureID` through
+  dissolve frames with `Transparency` just above 0, which showed holes there; new effects
+  should not rely on it.
 - Neon renders colours lighter and yellower: `(255, 145, 35)` reads lemon. Push orange to
   roughly `(255, 110, 25)`. Dark Neon colours read much brighter than their RGB.
-- `ForceField` material ignores `TextureID` and gives only a hairline rim (it also hides
-  what's inside at `Transparency` 0). For a fresnel rim on a ball, use a camera-facing
-  `thick ring 2` particle sized ~1.3x the radius with `ZOffset` = radius, so it draws at
-  the front surface.
+- `ForceField` material with a texture gives a shimmering, edge-lit shell whose animation
+  speed can't be controlled: a shield or an aura, not a timed wipe (Roqer). It hides what's
+  inside at `Transparency` 0. For a timed fresnel rim on a ball, use a camera-facing
+  `thick ring 2` particle sized ~1.3x the radius with `ZOffset` = radius.
 - Changing an emitter's `Color` / `Size` / `Transparency` applies to particles already
   alive, so one long-lived particle can be animated per frame. `LockedToPart` particles
   follow their attachment when it moves.
-- `Trail.Lifetime` is real time, so trails are wrong in slow-mo and fade during a VFXScrub
-  freeze. For projectile trails, use a Beam from the launch point to the head, bent into
-  the flight parabola: `CurveSize0 = |v0| * t / 3`, `CurveSize1 = -|v(t)| * t / 3`, with
-  both attachments' X axis along their velocity (verified).
+- `Trail.Lifetime` is real time. Use textured Trails for ribbons (`references/motion.md`)
+  and set `trail.Lifetime = authored / ctx.TimeScale` so they keep their length in slow-mo
+  (Roqer's emit module does the same). A held trail loses its segments during a VFXScrub
+  freeze, so capture trail layers while the effect still plays at a very low speed (scrub at
+  ~0.04x and capture just before the freeze time) instead of frozen. A Beam bent into the
+  flight parabola (`CurveSize0 = |v0| * t / 3`, `CurveSize1 = -|v(t)| * t / 3`, both
+  attachments' X axis along their velocity; verified) is the alternative when a ribbon must
+  span the whole flight.
 - `Glass` on a dark part renders nearly invisible (it refracts the background). Use
   SmoothPlastic or Neon for dark solid shapes.
 - Particles emitted inside an opaque mesh are hidden by it: spawn them above or in front.
@@ -560,10 +569,10 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
   mesh's own texture instead, or draw the band as a camera-facing arc particle in front
   (`BandArc` on the gas dome).
 
-### Learned by Roqer (verified in Studio there, not yet here)
+### From Roqer (verified in Studio there)
 
-From https://github.com/S4US/Roqer (AGPL-3.0-or-later). Details in the files named; move a
-line up into the list above once it is checked in this project.
+From https://github.com/S4US/Roqer (AGPL-3.0-or-later); details in the files named. These
+apply like the gotchas above, and win where one of them disagrees.
 - `VelocityPerpendicular` at `Speed` 0 doesn't show at all; give it a tiny Speed (`design.md` 5).
 - `VelocityParallel`: `Rotation` -90 puts the image's top first along the motion, 90 its
   bottom, 0 lays it across the motion; it follows the particle's own velocity (`design.md` 5).
@@ -677,29 +686,16 @@ tools/vfx/clip.mjs help`). Every time it prints or labels is effect seconds (rea
    ours S right, labelled with effect times; at most 8 moments a sheet). Compare when each layer
    starts, peaks and fades, its size against the frame, its colours and its shape: proportions,
    not position.
-   **The goal is that any timestamp looks almost the same as the reference**, not just a few
-   key frames: capture ours at the same increments as the reference (10 ms for detailed or
-   fast effects, see step 1; scrub at 0.05x for t < 0.3 s, since Studio Edit mode can stall
-   ~0.3 s mid-effect and overshoot the freeze time at 0.1x), and when the reference comes from more
-   than one camera angle, match a camera to each and compare every angle at the same times.
-   A layer that looks right from the front can be flat, thin or misplaced from the side.
-3. Grade each round with **agy** (Antigravity CLI, Gemini), not a Claude subagent. Run
-   `.claude/skills/roblox-vfx/scripts/agy_grade.sh <sheet dir> [NNNN ...]` as a background
-   Bash command: it calls `agy.exe` directly on one sheet JPEG at a time (retry once) and
-   writes `agy_NNNN.txt` next to it. Don't grade through the `agy-bridge` MCP: an image grade
-   takes ~1-2 min (agy logs in again on every call, ~40 s even for a trivial prompt) and the
-   app's MCP hop gives up at ~60 s, so about half the calls fail with "Request timed out".
-   It grades with Gemini 4 Argon (High) (`gemini-4-argon-high`); set `AGY_MODEL` to another
-   id or name from `agy models` to change it. A wrong name prints the model list instead of a
-   grade, which the script reports as a missing score.
-   Set `AGY_QUESTION` to replace the default (lava) question. It should say: the
-   reference is ground truth, grade **only against it**, what the sheet layout is
-   (timestamps, which column is REF, which row is which angle, grid spacing), what is out of
-   scope, and ask for a 0-10 score per timestamp and angle, concrete differences (shape,
-   size in studs, colour, missing or extra layers, detail), and the top fixes in order.
-   Treat its stud sizes as estimates and its hex colours as
-   guesses, and check each fix against the sheet yourself before applying it. Apply, re-capture,
-   repeat until it says the remaining gaps are noise (usually 3-4 rounds).
+   Use 4-6 moments at the clip's own key times (start, peak, half, gone, from the
+   measurements), aimed the way the clip frames the effect (side, front or above). Scrub at
+   0.05x for t < 0.3 s, since Studio Edit mode can stall ~0.3 s mid-effect and overshoot the
+   freeze time at 0.1x. When the reference comes from more than one camera angle, match a
+   camera to each: a layer that looks right from the front can be flat, thin or misplaced
+   from the side.
+3. **Compare at most twice.** Each round is a rebuild plus a capture, and the reference can't
+   be copied exactly. A grader subagent that compares **only against the reference** can
+   judge each round (state anything intentionally out of scope). After the second round, fix
+   what the pairs show most clearly, then report what still differs.
 4. Finish with a read-only file-integrity subagent: contract, rules grep, Linger maths,
    budget counts, docs accuracy.
 5. Before every capture, check the Studio module's Source hash matches the disk file (Rojo
@@ -716,7 +712,8 @@ tools/vfx/clip.mjs help`). Every time it prints or labels is effect seconds (rea
 
 ## New effect checklist
 
-- [ ] Classified, matching recipe read, closest file in `examples/` used as the base.
+- [ ] Classified, matching recipe and `references/design.md` (plus topic files) read; the
+      contract's shape taken from the template / `examples/`.
 - [ ] `src/shared/VFX/Effects/<Name>.luau` created on disk; PascalCase name describes the look.
 - [ ] Header comment: Studio path, one-line look, layer list.
 - [ ] Every library id in `ASSETS` with a `-- <Folder>/<CardName>` comment (and flipbook grid).

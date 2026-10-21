@@ -29,6 +29,15 @@ Full structure, naming, asset, sync, engine-gotcha and testing conventions:
 `references/structure.md`. Read it before writing or changing any effect; its rules and
 checklist are part of this skill.
 
+**Precedence.** Where the Roqer-derived references (`design.md`, `explosions.md`,
+`motion.md`, `camera-world.md`, `drawing-textures.md`, `review.md`, the "Impact skeleton" in
+`recipes.md`, and the "Mesh effects" section of `meshes.md`) disagree with anything else in
+this skill (other recipes, Oscar's corrections, engine gotchas, budgets, `style-guide.md`),
+follow Roqer's guidance. The effect contract and rules in `structure.md` (ctx, Defaults,
+`ctx.Folder`, no `task.wait`) are how our code runs, not design guidance, and still apply:
+when Roqer's guidance needs something they forbid, extend `VFXPlayer`/`ctx` first, as Roqer
+says to extend its own emit module.
+
 Effects run on the client. Effects may require `MeshParticles`; they must never
 require `MeshFactory` or `VFXScrub` (edit-time tools), nor `ForgeBridge` or ForgeVFX
 (play Forge templates with `ctx.Forge`).
@@ -43,19 +52,22 @@ require `MeshFactory` or `VFXScrub` (edit-time tools), nor `ForgeBridge` or Forg
    `references/explosions.md` (fire, smoke, blasts), `references/motion.md` (projectiles,
    slashes, beams, trails, auras, orbs), `references/camera-world.md` (camera, screen,
    lights, craters).
-2. **Read `references/style-guide.md`** and follow it over your own taste.
-3. **Pick textures** from `references/textures.md`. Reuse before inventing. If nothing
-   fits, make one ("Making new textures" there): draw flipbooks, crisp shapes and light
-   with numpy (`tools/vfx/vfxtex.py`, `references/drawing-textures.md`); Codex's built-in
-   image tool by default for other images, ComfyUI if Codex's result isn't good enough or
-   the image is very complex. Check drawn sheets with `tools/vfx/flipbook.mjs`.
+2. **Read `references/style-guide.md`** for the game's look (Roqer's guidance wins where
+   they disagree; see Precedence).
+3. **Textures:** most effects should draw their own (`references/drawing-textures.md`):
+   flipbooks, crisp shapes and light with numpy (`tools/vfx/vfxtex.py`), checked with
+   `tools/vfx/flipbook.mjs`. Use a library texture (`references/textures.md`) when one
+   already matches the effect's style; Google Gemini through Composio (Pro model for
+   detail) or ComfyUI for painted images numpy can't draw. Built-in `rbxasset://` textures
+   are stand-ins for blocking out only.
 4. **Meshes:** if the effect needs a mesh shape (slash arc, shockwave, spikes,
    shards, rocks), follow `references/meshes.md` before writing the effect.
    **Forge:** if the effect is authored in VFX Forge, or needs Forge mesh VFX, bezier
    projectiles, lightning or ground shockwaves, play those layers from a Forge template
    with `ctx.Forge` ("VFX Forge layers" in `references/structure.md`). Otherwise stay in Luau.
 5. **Write the module** using the contract and the template in `references/structure.md`.
-   Base it on the closest file in `examples/`.
+   Take the design from the references, not from other effects' modules; use `examples/`
+   only for the contract's shape (ASSETS, Defaults, Linger, ctx timing).
 6. **Expose everything tunable** in `Defaults` (colors, scale, counts, timings).
    Only use attribute-safe types: number, boolean, string, Color3, Vector3.
 7. **Check the budget** (below) and run the "New effect checklist" in
@@ -122,26 +134,26 @@ Rules:
   (`references/design.md`).
 - **Palette first.** About five colours, nothing outside them; saturated energy,
   desaturated matter, a complementary accent on ~10% of layers at most.
-- **Layer it.** Good effects have 3-5 layer roles: a bright core flash, a primary shape
-  (ring, slash, burst), secondary particles (sparks, debris), and residue (smoke,
-  embers, fading glow). Studied artists build each role from several single-sprite
-  emitters (40-60 in a hit). One emitter alone always looks cheap.
+- **Many layers, one sprite each.** A studied hit has 40-60 distinct layers, mostly single
+  sprites stacked and timed in place: flash, impact stars with black and white twins, black
+  backing, streaks, ring, fire body, smoke, embers, light (`references/recipes.md`, "Impact
+  skeleton"). One emitter alone always looks cheap.
 - **Intensity only goes down.** Fire once, let layers die at different times; nothing gets
   brighter again. A finisher's mass still grows for 0.25-1.35 s after its flash, carried by
   body flipbooks (crescents, tongues, puffs), not sparks.
-- **Fast in, slow out.** The peak should arrive in 0.03-0.1s. Fading takes 3-6x longer.
-  Use `Quad`/`Exponential` Out easing for expansion.
+- **Fast in, slow out.** The flash fires at 0 and lasts 0.03-0.15 s; every other layer
+  follows at +0.03 s or later, in 0.025-0.05 s steps. Use `Quad`/`Exponential` Out easing for
+  expansion.
 - **Value contrast.** Near-white core, saturated mid, darker edges. A single flat
   color reads as weak. Darks come from black backing, black twins and dark gradient tails;
   white is a thin shape (ring, flare, crescent), never a filled blob.
 - **Size curves pop then shrink.** Particles usually start at full size or grow
   quickly, then shrink to 0. Avoid constant size.
-- **Energy vs. matter.** Energy (magic, light, fire) uses `LightInfluence = 0`, or Neon for
-  meshes; glows and thin highlights are additive (`LightEmission = 1`), but colour that must
-  hold in daylight sits on solid layers (`LightEmission` 0.3 or less) at higher Brightness,
-  or an additive effect washes out to pastel over a bright sky. Matter (smoke, dust, rocks)
-  uses `LightEmission = 0`; scene-lit (`LightInfluence` > 0) sits in the scene, self-lit
-  (`LightInfluence` 0, most studied smoke) keeps its grey in shade.
+- **Solid colour, additive highlights.** Colour sits on solid layers (`LightEmission` 0.3
+  or less, or negative for a dark rim) at Brightness 5-55; additive (`LightEmission = 1`) is
+  for thin highlights and small glows, or an effect washes out to pastel over a bright sky.
+  `LightInfluence = 0` on energy and on most smoke (self-lit smoke keeps its grey in shade).
+  Read the place's Bloom before choosing Brightness.
 - **Meshes for shapes, particles for softness.** Use meshes for crisp silhouettes
   (slashes, rings, shards, rocks) and texture particles for anything soft or
   numerous (smoke, sparks, glow).
@@ -153,15 +165,16 @@ Rules:
 Sized for detailed, layered effects. Spend it where it reads; a busy effect is not
 automatically a better one.
 
-- Texture particles: burst effects under ~400 per play. Channelled effects (a few
-  seconds, e.g. `MagnetPull`) under ~200/second. Looping auras (on screen indefinitely)
-  under ~80/second.
+- Texture particles: a few hundred per effect is fine; studied hits stay there by emitting
+  one or a few sprites per layer. The engine guide caps emission near 400 a second (100 on
+  mobile). Looping auras (on screen indefinitely) much leaner.
 - Mesh particles: under ~60 per play and ~40 alive at once; they are full parts
   simulated on the client, far more expensive than texture particles.
-- Instances created per play (emitters, attachments, anchor parts, beams, trails,
-  lights; not counting particles, tweens or MeshParticles parts): under ~50.
+- Emitters: studied hits use 40-60 emitters for a moment that lasts a second; every emitter
+  is a draw call, so keep always-on effects much leaner. Share attachments between them.
 - Meshes: under ~1000 triangles each.
-- Lights: at most 2 PointLights per effect, Range 20 or less.
+- Lights: one PointLight per hue, flashed then faded (Range may grow to 35-40 while its
+  Brightness falls; keep it short enough to mark the spot, `references/camera-world.md`).
 - Effects that can play for many players at once (replicated abilities) should
   expose their counts/rates in `Defaults` so they can be overridden lower.
 - Effects that fire constantly (muzzle flashes, footsteps) should be pooled rather than

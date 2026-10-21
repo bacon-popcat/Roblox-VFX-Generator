@@ -1,8 +1,9 @@
 # Textures
 
-Prefer these. Add new rows as textures are uploaded (name | id | use). What a good texture
-looks like (drawn matter vs light, value, frames that break apart) and how to draw your own:
-`drawing-textures.md`.
+Most effects should draw their own textures (`drawing-textures.md`): what a good texture
+looks like (drawn matter vs light, value, frames that break apart) and how to draw, check and
+upload one. Use the textures below when one already matches the effect's style. Add new rows
+as textures are uploaded (name | id | use).
 
 | Name | Id | Use |
 |---|---|---|
