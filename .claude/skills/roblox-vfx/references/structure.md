@@ -21,6 +21,10 @@ VFX/                                  (repo root)
 ├── CLAUDE.md                         project instructions (points here)
 ├── .claude/skills/roblox-vfx/        skill: SKILL.md, references/*.md (this file:
 │                                     references/structure.md), examples/*.luau
+├── tools/vfx/                        dev-machine tools (Node/Python, AGPL from Roqer): clip.mjs
+│                                     (reference clips, compare, colour check), flipbook.mjs,
+│                                     vfxtex.py + examples.py (drawn textures); see its README
+├── assets/textures/                  drawn texture sources (<Name>.py) and their PNGs
 └── src/
     ├── shared/VFX/
     │   ├── VFXPlayer.luau            plays effects by name, builds ctx
@@ -87,7 +91,12 @@ VFXPlayer.Play("SlashImpact", hitCFrame, { Color = Color3.fromRGB(120, 200, 255)
 thread. Errors are caught and warned (`VFXPlayer: effect '<name>' errored`). When `Play`
 returns, it waits `Linger` (effect time) and destroys `ctx.Folder`. `VFXPlayer.TimeScale`
 is read once per play; `VFXPlayer.Clear()` removes everything. Call it from the client
-only. Server-triggered effects need a RemoteEvent (none exists yet).
+only. Server-triggered effects need a RemoteEvent (the Wind Sword's `Slash` is the one
+example). The server decides that something happened and fires the effect's name and a
+CFrame; each client plays it. Prefer an `UnreliableRemoteEvent` for pure presentation: it
+drops payloads over 1000 bytes, so send names and numbers, never instances. Never let damage
+or rewards wait on an effect. To time an effect to an animation, play it from the track's
+`GetMarkerReachedSignal("<Marker>")` on the hit keyframe rather than a fixed delay.
 
 **Instance overrides.** Overrides can carry instances (e.g. the sword part), which can't
 be `Defaults` (attributes): `VFXPlayer.Play("WindBladeTrail", root.CFrame, { Weapon = blade })`.
@@ -536,6 +545,29 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
   mesh's own texture instead, or draw the band as a camera-facing arc particle in front
   (`BandArc` on the gas dome).
 
+### Learned by Roqer (verified in Studio there, not yet here)
+
+From https://github.com/S4US/Roqer (AGPL-3.0-or-later). Details in the files named; move a
+line up into the list above once it is checked in this project.
+- `VelocityPerpendicular` at `Speed` 0 doesn't show at all; give it a tiny Speed (`design.md` 5).
+- `VelocityParallel`: `Rotation` -90 puts the image's top first along the motion, 90 its
+  bottom, 0 lays it across the motion; it follows the particle's own velocity (`design.md` 5).
+- Transparency keys above 1 end a particle before its lifetime; negative Transparency doesn't
+  make a soft texture solid (`design.md` 7).
+- Black at `LightEmission` 0 is ink, at 0.55 a faint veil, at 1 invisible (`design.md` 3).
+- Twins of a lopsided sprite line up only with one fixed `Rotation` and a shared `RotSpeed`
+  (`design.md` 3).
+- A Decal's `Color3` above 1 is overbright and blooms (`design.md` 4).
+- `FlipbookIncompatible` says "must be 1024 by 1024" even for a 1024 sheet that plays
+  (`drawing-textures.md`).
+- An untextured Trail reads as a flat tube; a Trail's image top is at its head and its left
+  edge at `Attachment0` (`motion.md`).
+- `RenderFidelity = Automatic` turns a thin crescent into a wedge at distance (`meshes.md`).
+- A camera shake applied as `camera.CFrame *= offset` each frame accumulates; undo it before
+  the camera scripts run (`camera-world.md`).
+- Newer avatars' shoulders are `AnimationConstraint`s, which `Motor6D` code skips silently
+  (`camera-world.md`).
+
 ## Rules
 
 1. Parent only under `ctx.Folder` (directly or via `ctx.Anchor()`). Forge layers are the one
@@ -570,6 +602,9 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
    stop and press Play again.
 5. Check at 1x for feel, at 0.1x for layer order and pops, and from ~40 studs for
    readability. Output must show no `VFXPlayer: effect ... errored` or `VFXHarness` warnings.
+6. Judge the captures with the questions in `references/review.md` (two views: close, and
+   from the player's camera), and run the colour check on them:
+   `node tools/vfx/clip.mjs tone --dir <captures> --empty <capture past the end>`.
 
 ### Frame-by-frame screenshots (VFXScrub, Edit mode)
 
@@ -588,19 +623,45 @@ with ffmpeg at the same times (t = 0 at the slash's first frame).
 
 ### Matching a reference video (workflow)
 
-1. Extract frames with ffmpeg: 2-4 fps overview sheets first, then cropped sheets of one
-   cycle, then full-res crops of key frames. A 0.25x slow-motion recording is far easier
-   to read than 1x; measure real timing from the 1x one.
+`tools/vfx/clip.mjs` does the frame work (needs Node and ffmpeg on PATH; `node
+tools/vfx/clip.mjs help`). Every time it prints or labels is effect seconds (real game time).
+
+1. Read the clip: `node tools/vfx/clip.mjs read <video> --from <s> --to <s> [--speed 0.25]`
+   (`--speed` for a slowed recording; default output `.vfx-clips/<name>/`). It stores up to
+   300 frames, prints measurements and writes `overview.png` (16 frames over where the clip
+   changes) and, when the overview steps over the start, `closeup.png`. The measurements:
+   - **Timing:** "starts" is when the first layer emits; "peaks" when the flash or core is
+     brightest; "falls to half by" places the main layer's fade; "gone by" is the latest any
+     layer may still show (its delay plus its lifetime).
+   - **Brightness:** a peak near white across the frame is a flash core (short life,
+     `LightEmission` 1, high Brightness); a small rise is a glow.
+   - **Size:** the share of the frame, and how much it grows from start to largest, is a ratio
+     for a `Size` sequence, not studs: the clip's camera is not Studio's.
+   - **Colours by phase:** `ColorSequence` keypoints in order (build-up, peak, fade). Fading
+     pixels are mixed with the background, so take the hue and lift its brightness rather than
+     copying a muddy value.
+   - **A moving camera** is reported as such; read the timing from the frame labels instead.
+   Compression, bloom and the background shift every number: check each against the frames.
+   Before building, name the layers the frames show in the order they appear (anticipation,
+   flash or core, main body, secondaries, smoke and fade), each with the times its labels show.
+   Then look closer at fast stretches one at a time:
+   `node tools/vfx/clip.mjs span <clip dir> --from 0 --to 0.2 --count 16` (`--crop full` to see
+   the ground or the caster around the effect).
+   A 0.25x slow-motion recording is far easier to read than 1x; measure real timing from the
+   1x one.
    **Highly detailed or fast effects (explosions, slashes, flashes, impacts, anything whose
    onset is under ~0.5 s) are analysed every 10 ms of real time**, start to finish. A 1x
-   60 fps video only has a frame every ~16.7 ms, so use the slow-motion recording (at 0.25x
-   and 60 fps, 10 ms real = every 2.4 frames: take every 2nd-3rd frame, or resample with
-   `ffmpeg -vf "setpts=...,fps=..."` to an exact 10 ms step) and label every frame with its
-   real-time offset. Slower effects can use ~25-50 ms through the onset and ~100 ms
-   through steady phases and the fade.
+   60 fps video only has a frame every ~16.7 ms, so use the slow-motion recording: `clip.mjs
+   read --speed 0.25` on it stores every frame (at 60 fps, 4.2 ms of real time each; at most
+   300 frames, so read the onset as its own short `--from/--to` stretch) and labels each with
+   its real-time offset, and `span --count 16` over 0.15 s gives ~10 ms steps. Slower effects
+   can use ~25-50 ms through the onset and ~100 ms through steady phases and the fade.
 2. Build the effect, then capture the same moments with VFXScrub and a fixed camera at
-   the reference's elevation, and paste them side by side (reference left, ours right,
-   labelled with real-time offsets).
+   the reference's elevation, save them named by effect time (`0.10.png`) and put them side
+   by side with `node tools/vfx/clip.mjs compare <clip dir> --captures <folder>` (clip R left,
+   ours S right, labelled with effect times; at most 8 moments a sheet). Compare when each layer
+   starts, peaks and fades, its size against the frame, its colours and its shape: proportions,
+   not position.
    **The goal is that any timestamp looks almost the same as the reference**, not just a few
    key frames: capture ours at the same increments as the reference (10 ms for detailed or
    fast effects, see step 1; scrub at 0.05x for t < 0.3 s, since Studio Edit mode can stall
@@ -629,7 +690,12 @@ with ffmpeg at the same times (t = 0 at the slash's first frame).
 5. Before every capture, check the Studio module's Source hash matches the disk file (Rojo
    can be disconnected or two-way sync can revert edits). A new texture can render blank on
    first use: preload it or re-run the scrub.
-6. Write down what you learned: new textures in `references/textures.md`, verified engine
+6. Say what you approximated. Roblox has no custom shaders, so distortion, heat haze,
+   refraction, an engine's bloom strength and textures you cannot see in the frames can only
+   be approximated, and particle counts can't be read from frames. Say which parts are
+   approximations; don't claim it matches. If the result looks clearly faster or slower than
+   the clip and the clip's speed wasn't given, ask.
+7. Write down what you learned: new textures in `references/textures.md`, verified engine
    behaviour in "Engine gotchas", a recipe for a new effect category in
    `references/recipes.md`.
 
@@ -648,9 +714,19 @@ with ffmpeg at the same times (t = 0 at the slash's first frame).
       without yielding, with a warning if missing; `Linger` covers the Forge layers' end.
 - [ ] Within budget.
 - [ ] Tested in the harness at 1x and 0.1x; tuned Defaults pasted back.
+- [ ] Captures judged with `references/review.md` from the close and the player's view; colour
+      check run (`clip.mjs tone`).
+- [ ] Drawn flipbooks pass `tools/vfx/flipbook.mjs` (no problems; notes weighed).
 - [ ] Reusable new textures added to `references/textures.md`.
 
 ## Open issues (2026-10-12; delete each line when fixed)
+
+- `ctx` has no camera/screen helper (FOV, blur, impact frames, shake), so effects can't use
+  `references/camera-world.md` without breaking rule 1. Add one to `VFXPlayer` (and mirror it
+  in `VFXScrub`) when the first effect needs it.
+- `tools/vfx` (2026-10-21) was tested on synthetic clips and sheets in a Linux container, not
+  yet on Oscar's Windows PC; `vfxtex.render_flipbook` and MeshFactory `Surface`/`Swirl`/`Dome`
+  have not run in Blender/Studio yet.
 
 - `references/style-guide.md` is an unfilled template.
 - `core.autocrlf=true` rewrites files to CRLF on checkout; consider a `.gitattributes`

@@ -1,12 +1,18 @@
 # Textures
 
-Prefer these. Add new rows as textures are uploaded (name | id | use).
+Prefer these. Add new rows as textures are uploaded (name | id | use). What a good texture
+looks like (drawn matter vs light, value, frames that break apart) and how to draw your own:
+`drawing-textures.md`.
 
 | Name | Id | Use |
 |---|---|---|
-| sparkles | rbxasset://textures/particles/sparkles_main.dds | Sparks, glints |
-| smoke | rbxasset://textures/particles/smoke_main.dds | Smoke, dust |
-| fire | rbxasset://textures/particles/fire_main.dds | Flames |
+| sparkles | rbxasset://textures/particles/sparkles_main.dds | Built-in four-point star: sparks, glints |
+| smoke | rbxasset://textures/particles/smoke_main.dds | Built-in grey cloudy puff (single image: blocking out only) |
+| fire | rbxasset://textures/particles/fire_main.dds | Built-in wispy flames (single image: blocking out only) |
+| implosion glow | rbxasset://textures/particles/explosion01_implosion_main.dds | Built-in soft white round glow |
+| shockwave | rbxasset://textures/particles/explosion01_shockwave_main.dds | Built-in soft ring |
+| core puff | rbxasset://textures/particles/explosion01_core_main.dds | Built-in orange fiery puff (single image: never an explosion's body) |
+| forcefield vortex | rbxasset://textures/particles/forcefield_vortex_main.dds | Built-in thin ring with dots |
 | Medium Glowing Dark Slash | rbxassetid://107491452097107 | 4x4 flipbook, multi-strand slash sweep; additive (LightEmission 1) |
 | Wide Dark Slash | rbxassetid://104673447334638 | 4x4 flipbook, dark wide crescent; normal blend under additive slashes |
 | Glowing Slash | rbxassetid://13580352351 | 4x4 flipbook, crisp bright crescent (hot highlight) |
@@ -68,26 +74,31 @@ matching the MeshFactory UV layout.
 
 ## Making new textures
 
-When nothing in the library fits, generate one (white RGB, shape in alpha; tint with
-`Color`). Pick the generator by how hard the image is:
+When nothing in the library fits, make one (white RGB, shape in alpha; tint with
+`Color`). Pick the tool by what the image is:
 
-| Image | Generator |
+| Image | Tool |
 |---|---|
-| Default: any new texture or image (user's choice) | **Codex's built-in `image_gen` tool**, run with `codex exec` (see below). Uses the user's ChatGPT subscription, no API credits |
-| Codex's result isn't good enough after a couple of tries, or very complex (exact flipbook grids, consistent frames across a sheet, tileable or img2img work) | ComfyUI (local, via comfy-mcp; call `server_info` first) |
+| Flipbooks (frames that grow and break apart on an exact grid), crisp drawn shapes (claws, crescents, puffs, splinters, cracks, impact stars) and light (glows, glints, flares, rings, lens streaks) | Draw it with numpy: `tools/vfx/vfxtex.py` (`drawing-textures.md`). Exact grids, padding and frame-to-frame change, checked by `tools/vfx/flipbook.mjs` |
+| Default for any other single texture or image (user's choice) | **Codex's built-in `image_gen` tool**, run with `codex exec` (see below). Uses the user's ChatGPT subscription, no API credits |
+| Codex's result isn't good enough after a couple of tries, painterly sheets numpy can't draw, or tileable / img2img work | ComfyUI (local, via comfy-mcp; call `server_info` first) |
+| A 3D look: a simulation, a lit volume, shaded debris | Render it in Blender with `vfxtex.render_flipbook` (`drawing-textures.md`) |
 
 Codex: run in the background from a new scratch folder `$D`, with the API key hidden so it
 stays on the subscription:
 
 ```bash
-cd "$D" && env -u OPENAI_API_KEY codex exec --skip-git-repo-check -s workspace-write -C "$D" \
-  "Use your built-in image_gen tool (not the CLI fallback, not code that draws) to make one PNG: <prompt>. Copy the result into this folder as <name>.png. Work only in this folder. Reply with the saved path and the dimensions."
+cd "$D" && env -u OPENAI_API_KEY codex exec --skip-git-repo-check -s workspace-write -C "$D"   "Use your built-in image_gen tool (not the CLI fallback, not code that draws) to make one PNG: <prompt>. Copy the result into this folder as <name>.png. Work only in this folder. Reply with the saved path and the dimensions."
 ```
 
 It takes ~1 min and saves ~1254x1254 (size and image model can't be chosen; Codex also keeps
 a copy in `~/.codex/generated_images/`). It can also give a real transparent background
 with a smooth alpha fade if asked. Don't use Codex's `image_gen.py` CLI fallback: it bills the
-OpenAI API account, not the subscription.
+OpenAI API account, not the subscription. To pass a reference image, put `-i <file>` after
+the prompt (before it, `-i` swallows the prompt).
+
+For a drawn texture, steps 1-2 below are replaced by `vfxtex` (it writes white RGB with the
+shape in alpha, at the size you ask for) and `flipbook.mjs`; continue at step 3.
 
 1. Generate the image. Prompt for a **single isolated shape, pure white on a pure black
    background, no text, no frame**, and say the layout you need (centred, square, tall
@@ -101,7 +112,8 @@ OpenAI API account, not the subscription.
 3. Serve that folder over HTTP (`python -m http.server 8765 --bind 127.0.0.1`, in the
    background); `upload_image` only takes http URLs. Upload `http://127.0.0.1:8765/<file>`.
 4. Verify by reading pixels back: `AssetService:CreateEditableImageAsync(Content.fromAssetId(id))`.
-5. Add a row to the table above, noting which generator made it.
+5. Add a row to the table above, noting which tool made it (for a drawing, its script in
+   `assets/textures/`).
 
 Beam and Trail textures: X spans the beam's width, Y runs along its length and tiles,
 so draw them tall (e.g. 128 x 512) with the streak running vertically. A wide texture
