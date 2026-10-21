@@ -584,6 +584,9 @@ with ffmpeg at the same times (t = 0 at the slash's first frame).
    writes `agy_NNNN.txt` next to it. Don't grade through the `agy-bridge` MCP: an image grade
    takes ~1-2 min (agy logs in again on every call, ~40 s even for a trivial prompt) and the
    app's MCP hop gives up at ~60 s, so about half the calls fail with "Request timed out".
+   It grades with Gemini 4 Argon (High) (`gemini-4-argon-high`); set `AGY_MODEL` to another
+   id or name from `agy models` to change it. A wrong name prints the model list instead of a
+   grade, which the script reports as a missing score.
    Set `AGY_QUESTION` to replace the default (lava) question. It should say: the
    reference is ground truth, grade **only against it**, what the sheet layout is
    (timestamps, which column is REF, which row is which angle, grid spacing), what is out of
