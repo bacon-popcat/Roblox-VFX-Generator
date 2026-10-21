@@ -209,7 +209,8 @@ running a time-sorted event list. Play returns at ~3.25 s; smoke is gone by ~4.5
    then two strands that shoot up in a V, loop and dive into the target.
 2. 1.10 s: spiky white ball at the target, chromatic ground ring + wind dome at the caster;
    1.30 s black void frame (2 frames); 1.33 s prismatic launch (white mass + tall chromatic
-   rays) and the dash: swirl head in black smoke, tunnel rings, a rainbow ground streak that
+   rays) and the dash: a drilling head (three flat ribbons rolling 180 degrees round the
+   dash axis while they narrow, `motion.md`) in black smoke, tunnel rings, a rainbow ground streak that
    fades to a thin orange twin line. Dark shell, bokeh and chromatic shards at the caster.
 3. `ImpactTime` 1.85 s: jagged V-wing flash (custom `cs_impact_flash`, white over red/blue
    copies for the fringe), screen wash and magenta/teal edge vignette (camera-locked
@@ -217,9 +218,10 @@ running a time-sorted event list. Play returns at ~3.25 s; smoke is gone by ~4.5
    crystal spike fans, rainbow spikes, glitch ribbons, leaves, rocks, smoke, wind rings.
 4. `FinaleTime` 3.0 s: 4-point cross that shrinks to a dot; arched smoke hooks
    (`cs_smoke_hook`) and floor smoke linger.
-Budget: a deliberate overrun to match the reference, like `LavaEruption`: ~135 instances
+Budget: a deliberate overrun to match the reference, like `LavaEruption`: ~140 instances
 (4 wires x `WireSegments` 3 x core + ink beams, ~63 emitters) and ~420 burst particles plus
-rate channels. Lower `WireSegments`, `SmudgeRate`, `SmokeRate` and `SpikeRate` for crowds;
+rate channels. Lower `WireSegments`, `SmudgeRate`, `SmokeRate`, `SpikeRate`, `SparkCount`, `SpeckCount` and
+`BokehCount` for crowds;
 `Vignette` should be on only for the caster's own client.
 Grading note (2026-10-21): with the default per-frame agy prompt, the reference graded
 against its own second playback scored 6/10, so absolute agy scores on this effect are

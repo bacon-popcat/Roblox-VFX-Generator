@@ -6,7 +6,8 @@
 -- rise around it, crystal spikes with rainbow tips, glitch ribbons, horizontal cross-flares,
 -- leaves and debris, a 4-point cross finale and a crown of arched smoke plumes.
 -- Layers: wires (core beams, ink smudge, sparkle heads), caster sparks/void/starburst/
--- rays/crystals/bokeh/dark shell/chromatic shards, dash head (spiral + black smoke),
+-- rays/crystals/bokeh/dark shell/chromatic shards, dash head (three rolling drill ribbons
+-- + black smoke),
 -- tunnel rings, rainbow ground streak, impact flash (white + red/cyan copies for the
 -- fringe), pillar beams, dark ground shockwave, halo rings, crystal spikes, chromatic
 -- blobs, glitch ribbons, flares, cross finale, smoke disc, arched plumes, leaves, rocks,
@@ -43,7 +44,6 @@ local ASSETS = {
 	ChromRing = "rbxassetid://109324703201714", -- StaticVFXTextures/Chromatic Smoke Circle
 	GlitchLine = "rbxassetid://84324997861606", -- FlipbookTextures/Chromatic Glitching Line Slash (Grid4x4)
 	WispSphere = "rbxassetid://115949955697406", -- FlipbookTextures/Wispy Sphere 4x4 (Grid4x4)
-	Swirl = "rbxassetid://17612139917", -- FlipbookTextures/Whole swirl (Grid4x4): strands circling a point
 	DarkDisc = "rbxassetid://107972524433656", -- StaticVFXTextures/Blurry Black Hole (soft dark disc)
 	NeonRing = "rbxassetid://15268062056", -- StaticVFXTextures/thick ring 3 (crisp inner edge, soft glow)
 	BandRing = "rbxassetid://15058135927", -- StaticVFXTextures/thick ring 2 (soft medium band)
@@ -259,6 +259,9 @@ Effect.Defaults = {
 	WireWidth = 0.3, -- core width (x caster scale); the ink smudge is 7x wider
 	WireSegments = 3, -- beam segments per wire (fewer = cheaper, angular loops)
 	SmudgeRate = 70, -- smoke smudge puffs / s per wire tip while it travels
+	SparkCount = 16, -- caster spark bursts (the later bursts are fractions of it)
+	SpeckCount = 16, -- black shrapnel at the impact (the pre-hits use fractions of it)
+	BokehCount = 10, -- white dots flying out inside the caster's shell
 	SpikeRate = 45, -- sets the crystal spikes per 0.07 s step (SpikeRate * 0.07, split over two fans)
 	SmokeRate = 60, -- ground smoke puffs / s while the pillar burns
 	LeafCount = 14,
@@ -501,7 +504,7 @@ function Effect.Play(ctx)
 		Speed = NumberRange.new(25, 42),
 		Drag = 6,
 		Lifetime = NumberRange.new(0.1, 0.22),
-		Size = seq({ { 0, 0.5 * sc }, { 1, 0.1 * sc } }),
+		Size = seq({ { 0, 0.5 * sc, 0.17 * sc }, { 1, 0.1 * sc, 0.03 * sc } }),
 		Transparency = seq({ { 0, 0 }, { 0.7, 0.2 }, { 1, 1 } }),
 		Brightness = 2,
 	})
@@ -587,7 +590,7 @@ function Effect.Play(ctx)
 		Speed = NumberRange.new(8, 14),
 		Drag = 10,
 		Lifetime = NumberRange.new(0.12, 0.2),
-		Size = seq({ { 0, 2.5 * sc }, { 0.3, 4.2 * sc }, { 1, 3.2 * sc } }),
+		Size = seq({ { 0, 2.5 * sc, 0.8 * sc }, { 0.3, 4.2 * sc, 1.4 * sc }, { 1, 3.2 * sc, 1 * sc } }),
 		Squash = NumberSequence.new(-0.3),
 		Transparency = seq({ { 0, 0 }, { 0.7, 0.1 }, { 1, 1 } }),
 		Brightness = 2,
@@ -611,7 +614,7 @@ function Effect.Play(ctx)
 		SpreadAngle = Vector2.new(180, 180),
 		Drag = 4,
 		Lifetime = NumberRange.new(0.3, 0.5),
-		Size = seq({ { 0, 0.5 * sc }, { 1, 0.25 * sc } }),
+		Size = seq({ { 0, 0.5 * sc, 0.17 * sc }, { 1, 0.25 * sc, 0.08 * sc } }),
 		Transparency = seq({ { 0, 0 }, { 0.7, 0.2 }, { 1, 1 } }),
 		Brightness = 3,
 	})
@@ -671,7 +674,7 @@ function Effect.Play(ctx)
 		Speed = NumberRange.new(1, 3),
 		SpreadAngle = Vector2.new(180, 180),
 		Lifetime = NumberRange.new(0.2, 0.35),
-		Size = seq({ { 0, 0.8 * sc }, { 0.3, 1.4 * sc }, { 1, 1 * sc } }),
+		Size = seq({ { 0, 0.8 * sc, 0.25 * sc }, { 0.3, 1.4 * sc, 0.45 * sc }, { 1, 1 * sc, 0.3 * sc } }),
 		Transparency = seq({ { 0, 0.2 }, { 0.7, 0.3 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-120, 120),
@@ -736,24 +739,31 @@ function Effect.Play(ctx)
 	})
 
 	------------------------------------------------------------------ dash
-	local headAt = attachment(base, CFrame.fromMatrix(caster + UP * 2.5, right, dashDir))
-	local headSwirl = emitter(headAt, { -- white spiral wind cone at the head
-		Texture = ASSETS.Swirl,
-		FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
-		FlipbookMode = Enum.ParticleFlipbookMode.Loop,
-		FlipbookFramerate = NumberRange.new(30),
-		FlipbookStartRandom = true,
-		Rate = 110,
-		Enabled = false,
-		Speed = NumberRange.new(0),
-		Lifetime = NumberRange.new(0.08, 0.14),
-		Size = seq({ { 0, 3.5 * sc }, { 1, 2.6 * sc } }),
-		Transparency = seq({ { 0, 0 }, { 1, 1 } }),
-		Rotation = NumberRange.new(0, 360),
-		Brightness = 3,
-		ZOffset = 1.5,
-		TimeScale = ctx.TimeScale,
-	})
+	local headAt = attachment(base, CFrame.fromMatrix(caster + UP * 2.5 * sc, right, dashDir))
+	-- drilling head (motion.md "a drilling dash"): three flat ribbons fanned round the dash
+	-- axis that roll 180 degrees while they narrow; each has its own scroll so they never line up
+	local drill = {}
+	for i = 1, 3 do
+		local tail = attachment(base, CFrame.new(caster))
+		local tip = attachment(base, CFrame.new(caster))
+		drill[i] = {
+			Tail = tail,
+			Tip = tip,
+			Beam = beam(tail, tip, {
+				Texture = ASSETS.PillarLines,
+				TextureMode = Enum.TextureMode.Wrap,
+				TextureLength = (2 + i) * sc,
+				TextureSpeed = 3 + 3 * i,
+				FaceCamera = false,
+				Segments = 2,
+				Color = ColorSequence.new(p.Color),
+				Brightness = 3,
+				ZOffset = 1.5,
+				Transparency = seq({ { 0, 1 }, { 0.35, 0.35 }, { 1, 0 } }), -- clear at the tail
+				Enabled = false,
+			}),
+		}
+	end
 	local headSmoke = emitter(headAt, { -- black smoke cylinder it bores through
 		Texture = ASSETS.Smoke,
 		Color = ColorSequence.new(ink),
@@ -846,8 +856,8 @@ function Effect.Play(ctx)
 	local pillarDark = beam(pillarTop, pillarBottom, {
 		Texture = ASSETS.PillarDark,
 		TextureMode = Enum.TextureMode.Wrap,
-		TextureLength = 20,
-		TextureSpeed = 4,
+		TextureLength = 31,
+		TextureSpeed = 7,
 		Color = ColorSequence.new(ink),
 		LightEmission = 0,
 		Width0 = 0,
@@ -926,7 +936,7 @@ function Effect.Play(ctx)
 			Speed = NumberRange.new(0.5, 2),
 			SpreadAngle = Vector2.new(180, 180),
 			Lifetime = NumberRange.new(0.15, 0.32),
-			Size = seq({ { 0, 1.5 * s }, { 0.15, 5 * s }, { 0.7, 4.5 * s }, { 1, 0 } }),
+			Size = seq({ { 0, 1.5 * s, 0.5 * s }, { 0.15, 5 * s, 1.6 * s }, { 0.7, 4.5 * s, 1.5 * s }, { 1, 0 } }),
 			Transparency = seq({ { 0, 0.2 }, { 0.7, 0.35 }, { 1, 1 } }),
 			Rotation = lean,
 			Brightness = 1.2,
@@ -1039,7 +1049,7 @@ function Effect.Play(ctx)
 		Speed = NumberRange.new(1, 3),
 		EmissionDirection = Enum.NormalId.Top,
 		Lifetime = NumberRange.new(1, 1.4),
-		Size = seq({ { 0, 3 * s }, { 1, 6 * s } }),
+		Size = seq({ { 0, 3 * s, 1 * s }, { 1, 6 * s, 2 * s } }),
 		Squash = NumberSequence.new(-0.5), -- flat, hugging the floor
 		Transparency = seq({ { 0, 1 }, { 0.15, 0.72 }, { 0.6, 0.8 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
@@ -1107,7 +1117,7 @@ function Effect.Play(ctx)
 		Speed = NumberRange.new(10 * s, 16 * s),
 		Drag = 4,
 		Lifetime = NumberRange.new(0.5, 0.7),
-		Size = seq({ { 0, 2.5 * s }, { 1, 4.5 * s } }),
+		Size = seq({ { 0, 2.5 * s, 0.8 * s }, { 1, 4.5 * s, 1.5 * s } }),
 		Transparency = seq({ { 0, 0.15 }, { 0.6, 0.35 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-30, 30),
@@ -1142,7 +1152,7 @@ function Effect.Play(ctx)
 		EmissionDirection = Enum.NormalId.Top,
 		Drag = 2,
 		Lifetime = NumberRange.new(0.3, 0.6),
-		Size = seq({ { 0, 0.5 * s }, { 1, 0 } }),
+		Size = seq({ { 0, 0.5 * s, 0.17 * s }, { 1, 0 } }),
 		Rotation = NumberRange.new(0, 90),
 		Brightness = 3,
 	})
@@ -1203,7 +1213,7 @@ function Effect.Play(ctx)
 	end
 
 	-- opening sparks, salvo 2 sparks
-	burst(0, sparks, 16)
+	burst(0, sparks, p.SparkCount)
 	at(0.01, function() -- a faint wind shell and a couple of rainbow glints at the caster
 		dome.Size = seq({ { 0, 2 * sc }, { 1, 4.5 * sc } })
 		dome.Transparency = seq({ { 0, 0.55 }, { 1, 1 } })
@@ -1214,9 +1224,9 @@ function Effect.Play(ctx)
 	burst(0.5, shards, 2)
 	burst(0, specks, 10)
 	burst(0.05, void, 1)
-	burst(0.45, sparks, 10)
+	burst(0.45, sparks, math.ceil(p.SparkCount * 0.6))
 	for i = 0, 3 do -- glitter spraying off the caster while the low streak runs
-		burst(0.2 + i * 0.08, bokeh, 2)
+		burst(0.2 + i * 0.08, bokeh, math.ceil(p.BokehCount * 0.2))
 	end
 	burst(0.5, targetShatter, 1)
 	-- salvo 1 hits the target
@@ -1225,7 +1235,7 @@ function Effect.Play(ctx)
 		ctx.Emit(targetGlow, 1)
 		ctx.Emit(targetShatter, 2)
 	end)
-	burst(0.66, targetSpecks, 10)
+	burst(0.66, targetSpecks, math.ceil(p.SpeckCount * 0.6))
 	burst(0.7, inkCore, 4)
 	burst(0.85, inkCore, 3)
 	-- convergence flash at the target, chromatic ring + wind dome at the caster
@@ -1249,7 +1259,7 @@ function Effect.Play(ctx)
 	end)
 	at(tCharge + 0.1, function()
 		ctx.Emit(targetShatter, 8)
-		ctx.Emit(targetSpecks, 10)
+		ctx.Emit(targetSpecks, math.ceil(p.SpeckCount * 0.6))
 		ctx.Emit(inkCore, 3)
 		ctx.Emit(groundStar, 1)
 		ctx.Emit(flecks, 8)
@@ -1274,7 +1284,7 @@ function Effect.Play(ctx)
 		blades.EmissionDirection = Enum.NormalId.Bottom
 		blades.SpreadAngle = Vector2.new(25, 25)
 		ctx.Emit(blades, 8)
-		ctx.Emit(sparks, 12)
+		ctx.Emit(sparks, math.ceil(p.SparkCount * 0.75))
 	end)
 	at(tLaunch + 0.05, function() -- crystal cluster round the smoke sphere
 		blades.EmissionDirection = Enum.NormalId.Top
@@ -1282,7 +1292,7 @@ function Effect.Play(ctx)
 		ctx.Emit(blades, 11)
 		ctx.Emit(casterSmoke, 8)
 	end)
-	burst(tLaunch + 0.1, bokeh, 10)
+	burst(tLaunch + 0.1, bokeh, p.BokehCount)
 	burst(tLaunch + 0.1, shell, 1)
 	burst(tLaunch + 0.12, shellArcs, 3)
 	for i = 0, 3 do
@@ -1319,7 +1329,7 @@ function Effect.Play(ctx)
 		ctx.Emit(leaves, p.LeafCount)
 		ctx.Emit(rocks, p.RockCount)
 		ctx.Emit(puffs, 8)
-		ctx.Emit(targetSpecks, 16) -- black shrapnel
+		ctx.Emit(targetSpecks, p.SpeckCount) -- black shrapnel
 		ctx.Emit(sparkles, 14)
 	end)
 	at(tImpact + 0.15, function()
@@ -1423,11 +1433,25 @@ function Effect.Play(ctx)
 		local dashT = (clock - tLaunch) / (tImpact - tLaunch)
 		if dashT >= 0 and dashT <= 1 then
 			local along = dashT ^ 0.9 -- near-constant ~70 studs/s, halfway at ~1.6 s
-			headAt.WorldCFrame = CFrame.fromMatrix(caster:Lerp(target, along) + UP * 2.5, right, dashDir)
-			headSwirl.Enabled = true
+			local head = caster:Lerp(target, along) + UP * 2.5 * sc
+			headAt.WorldCFrame = CFrame.fromMatrix(head, right, dashDir)
+			local roll = math.pi * dashT
+			local width = 6 * sc * (1 - 0.8 * dashT)
+			for i, ribbon in drill do
+				-- X along the dash, Y (the beam's width) pointing out from the axis
+				local angle = roll + (i - 1) * 2 * math.pi / 3
+				local out = right * math.cos(angle) + UP * math.sin(angle)
+				ribbon.Tail.WorldCFrame = CFrame.fromMatrix(head - dashDir * 7 * sc, dashDir, out)
+				ribbon.Tip.WorldCFrame = CFrame.fromMatrix(head, dashDir, out)
+				ribbon.Beam.Width0 = width
+				ribbon.Beam.Width1 = width * 0.15
+				ribbon.Beam.Enabled = true
+			end
 			headSmoke.Enabled = true
 		else
-			headSwirl.Enabled = false
+			for _, ribbon in drill do
+				ribbon.Beam.Enabled = false
+			end
 			headSmoke.Enabled = false
 		end
 		-- rainbow ground streak: wide twin rails, then a thin orange line
