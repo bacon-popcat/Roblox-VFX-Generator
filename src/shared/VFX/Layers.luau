@@ -14,11 +14,11 @@
 --   local black = Layers.Black(star)          -- same emitter, black, a step in front
 --   Layers.Timeline(ctx, { { 0, function() ... end }, { 0.03, function() ctx.Emit(star, 3) ... end } })
 --
--- Spec tables take the property names of the instance. Sequences, ranges, Vector2 and
--- enum names are converted: Size/Transparency/Squash/WidthScale -> NumberSequence;
--- Color -> ColorSequence; Lifetime/Speed/Rotation/RotSpeed/FlipbookFramerate ->
--- NumberRange; SpreadAngle (number or {x, y}) -> Vector2; enum properties take the item
--- name ("VelocityParallel"). Extra keys:
+-- Spec tables take the property names of the instance. Values are converted to the type
+-- the property holds: a number or { { time, value, envelope? } } -> NumberSequence; a
+-- Color3 or { { time, Color3 } } -> ColorSequence; a number or { min, max } ->
+-- NumberRange; a number or { x, y } -> Vector2; an enum item's name ("VelocityParallel")
+-- -> the EnumItem. Extra keys:
 --   Flat = true       lie in the attachment's XZ plane (VelocityPerpendicular, Top,
 --                     no spread, Speed 0.01 unless given)
 --   Texture = entry   a Textures entry sets the flipbook layout from its Grid (OneShot
@@ -27,8 +27,6 @@
 
 local Layers = {}
 
-local SEQUENCES = { Size = true, Transparency = true, Squash = true, WidthScale = true }
-local RANGES = { Lifetime = true, Speed = true, Rotation = true, RotSpeed = true, FlipbookFramerate = true }
 local ENUMS = {
 	Orientation = Enum.ParticleOrientation,
 	EmissionDirection = Enum.NormalId,
@@ -88,15 +86,21 @@ function Layers.Range(value)
 	return NumberRange.new(value[1], value[2])
 end
 
-local function convert(key, value)
-	if SEQUENCES[key] then
+-- Converts `value` to the type the property already holds (so Size is a NumberSequence on
+-- an emitter and a Vector3 on a part).
+local function convert(instance, key, value)
+	local current = typeof(instance[key])
+	if current == "NumberSequence" then
 		return Layers.Seq(value)
-	elseif RANGES[key] then
+	elseif current == "ColorSequence" then
+		return Layers.Colors(value)
+	elseif current == "NumberRange" then
 		return Layers.Range(value)
-	elseif key == "SpreadAngle" and typeof(value) ~= "Vector2" then
+	elseif current == "Vector2" and typeof(value) ~= "Vector2" then
 		return if type(value) == "number" then Vector2.new(value, value) else Vector2.new(value[1], value[2])
-	elseif ENUMS[key] and type(value) == "string" then
-		return ENUMS[key][value]
+	elseif type(value) == "string" and current == "EnumItem" then
+		local enum = if key == "Shape" and instance:IsA("BasePart") then Enum.PartType else ENUMS[key]
+		return enum[value]
 	end
 	return value
 end
@@ -123,11 +127,8 @@ function Layers.Apply(instance, spec)
 					instance.FlipbookMode = Enum.ParticleFlipbookMode.OneShot
 				end
 			end
-		elseif key == "Color" then
-			-- emitters, beams and trails take a ColorSequence; parts and lights a Color3
-			instance.Color = if typeof(instance.Color) == "ColorSequence" then Layers.Colors(value) else value
 		else
-			instance[key] = convert(key, value)
+			instance[key] = convert(instance, key, value)
 		end
 	end
 	return instance
@@ -249,8 +250,9 @@ function Layers.Light(parent, spec)
 end
 
 -- Flashes a light and fades it while its Range grows: Brightness b -> 0 and Range
--- r0 -> r1 over `time` effect seconds.
+-- r0 -> r1 over `time` effect seconds (Range is capped at Roblox's 60).
 function Layers.Pop(ctx, light, brightness, range0, range1, time)
+	range0, range1 = math.min(range0, 60), math.min(range1, 60)
 	light.Brightness = brightness
 	light.Range = range0
 	ctx.Tween(light, time, { Brightness = 0, Range = range1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)

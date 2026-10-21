@@ -1,8 +1,13 @@
 -- ModuleScript: ReplicatedStorage/Shared/VFX/Effects/WindBladeTrail
 -- Wind wrapping a sword during the windup of WindSpinSlash. Layers: wavy
 -- grass-like strands (Beams) rooted on the blade that fan out past the tip and
--- whip behind it as it moves, a few dark strands woven in, a soft glow along the
--- edge, a short motion trail, and lime specks shed from the tip.
+-- whip behind it as it moves, dark strands woven in (their black twins), a thin glow
+-- along the edge, a weapon-trail pair (a thin hot core and a wide soft wisp, both
+-- textured), and lime specks shed from the tip.
+--
+-- Trail lifetimes are real time, so they are divided by ctx.TimeScale: the trails keep
+-- their length in slow motion. In a VFXScrub freeze a trail still loses its segments;
+-- judge it while the effect plays slowly.
 --
 -- Weapon: pass the blade part as a runtime override (not a Default, since
 -- instances can't be attributes):
@@ -23,7 +28,8 @@ local RunService = game:GetService("RunService")
 local ASSETS = {
 	Strands = "rbxassetid://91858314987113", -- StaticVFXTextures/grass1Other (three curved blades)
 	Needle = "rbxassetid://10614304526", -- StaticVFXTextures/Sideways Spec 41 (thin needle)
-	TrailStreaks = "rbxassetid://13280046773", -- MigratedBeams/BeamSoftBlurredStreaks
+	TrailStreaks = "rbxassetid://13280046773", -- MigratedBeams/BeamSoftBlurredStreaks (soft streaks: the wisp)
+	TrailCore = "rbxassetid://10614304526", -- StaticVFXTextures/Sideways Spec 41 (thin needle: the hot core)
 	Sparkle = "rbxassetid://16444981264", -- StaticVFXTextures/Star153
 }
 
@@ -160,11 +166,13 @@ Effect.Defaults = {
 	StrandLag = 0.04, -- seconds the strand tips trail the blade
 	WaveAmount = 0.6, -- studs of side-to-side whip
 	FadeTime = 0.12, -- seconds the strands take to vanish after Duration
-	TrailLifetime = 0.12,
+	TrailLifetime = 0.1, -- the thin hot core trail (0.04-0.15 studied)
+	WispLifetime = 0.3, -- the wide soft wisp trail (0.15-0.4 studied)
+	WispReach = 1.2, -- studs the wisp reaches past the tip
 	SpeckInterval = 0.04, -- seconds between specks shed from the tip
 }
 
-Effect.Linger = 0.8
+Effect.Linger = 0.8 -- specks (0.45 s) and the wisp trail fading out
 
 -- Returns the blade part (the given Weapon or the stand-in katana).
 function Effect.Play(ctx)
@@ -187,9 +195,11 @@ function Effect.Play(ctx)
 		return a
 	end
 
-	-- Blade ends: the motion trail and the specks use these
+	-- Blade ends: the trails and the specks use these; the wisp spans a little wider
 	local baseAttachment = attachment()
 	local tipAttachment = attachment()
+	local wispBase = attachment()
+	local wispTip = attachment()
 
 	-- Strand roots: two points along the blade, shared by the strands
 	local roots = { attachment(), attachment() }
@@ -248,21 +258,39 @@ function Effect.Play(ctx)
 	glow.Transparency = seq({ { 0, 0.2 }, { 1, 0.6 } })
 	glow.Parent = anchor
 
-	-- Motion trail along the edge
+	-- Weapon trails in a pair: a thin hot core and a wide soft wisp, both textured and
+	-- tapering to nothing (lifetimes divided by TimeScale: Trail lifetimes are real time)
+	local timeScale = math.max(ctx.TimeScale, 1e-3)
 	local trail = Instance.new("Trail")
 	trail.Attachment0 = baseAttachment
 	trail.Attachment1 = tipAttachment
-	trail.Texture = ASSETS.TrailStreaks
+	trail.Texture = ASSETS.TrailCore
 	trail.TextureMode = Enum.TextureMode.Stretch
-	trail.Lifetime = p.TrailLifetime
+	trail.Lifetime = p.TrailLifetime / timeScale
 	trail.MinLength = 0.05
 	trail.FaceCamera = false
-	trail.LightEmission = 1
+	trail.LightEmission = 0
 	trail.LightInfluence = 0
-	trail.Color = colors({ { 0, p.CoreColor }, { 0.4, p.Color }, { 1, p.Color } })
-	trail.Transparency = seq({ { 0, 0.25 }, { 1, 1 } })
-	trail.WidthScale = seq({ { 0, 1 }, { 1, 0.3 } })
+	trail.Brightness = 12
+	trail.Color = colors({ { 0, p.CoreColor }, { 1, p.Color } })
+	trail.Transparency = seq({ { 0, 0 }, { 1, 1 } })
+	trail.WidthScale = seq({ { 0, 0.5 }, { 1, 0 } })
 	trail.Parent = anchor
+	local wisp = Instance.new("Trail")
+	wisp.Attachment0 = wispBase
+	wisp.Attachment1 = wispTip
+	wisp.Texture = ASSETS.TrailStreaks
+	wisp.TextureMode = Enum.TextureMode.Stretch
+	wisp.Lifetime = p.WispLifetime / timeScale
+	wisp.MinLength = 0.05
+	wisp.FaceCamera = false
+	wisp.LightEmission = 0.65
+	wisp.LightInfluence = 0
+	wisp.Brightness = 1.5
+	wisp.Color = colors({ { 0, p.Color }, { 1, p.BaseColor } })
+	wisp.Transparency = seq({ { 0, 0.35 }, { 1, 1 } })
+	wisp.WidthScale = seq({ { 0, 1 }, { 1, 0 } })
+	wisp.Parent = anchor
 
 	-- Lime specks shed from the tip
 	local specks = Instance.new("ParticleEmitter")
@@ -292,6 +320,7 @@ function Effect.Play(ctx)
 		if elapsed > duration + fadeTime then
 			connection:Disconnect()
 			trail.Enabled = false
+			wisp.Enabled = false
 			glow.Enabled = false
 			for _, strand in strands do
 				strand.Beam.Enabled = false
@@ -317,6 +346,8 @@ function Effect.Play(ctx)
 
 		baseAttachment.WorldPosition = basePos
 		tipAttachment.WorldPosition = tipPos
+		wispBase.WorldPosition = basePos + axis * length * 0.2
+		wispTip.WorldPosition = tipPos + axis * p.WispReach * s
 		for i, root in roots do
 			root.WorldCFrame = CFrame.fromMatrix(basePos + axis * length * ROOT_ALONG[i], across, axis)
 		end

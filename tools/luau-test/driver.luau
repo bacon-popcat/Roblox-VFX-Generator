@@ -210,6 +210,9 @@ for _, case in EFFECTS do
 			if (r.meshCut or 0) > 0 then
 				print(("     WARN %d mesh particles still moving when the folder is destroyed: raise Linger"):format(r.meshCut))
 			end
+			if r.lightRange > 60 then
+				print(("     WARN a PointLight's Range reached %s; Roblox caps it at 60"):format(fmt(r.lightRange)))
+			end
 			if #r.leftover > 0 then
 				print("     WARN left outside ctx.Folder: " .. table.concat(r.leftover, ", "))
 			end
