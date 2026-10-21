@@ -2,6 +2,8 @@
 
 Timings are in effect seconds. Layers are listed in draw-priority order.
 "Mesh:" notes name the MeshFactory generator to use (see `meshes.md`).
+The studied numbers behind these (palette, value, brightness, timing) are in `design.md`;
+fire and smoke in `explosions.md`; projectiles, slashes, beams and auras in `motion.md`.
 
 **Recreating a reference: Oscar's corrections so far** (apply these by default; they came
 from playtest screenshots, not from the reference video):
@@ -17,6 +19,34 @@ from playtest screenshots, not from the reference video):
 - Fire walls sway side to side while they burn.
 - Wind and swirl arcs should rise as they spin out, not sit flat on the ground, and stay
   subtle (start ~0.4 transparent).
+
+## Impact skeleton (studied)
+From Roqer's measurements of published effects (https://github.com/S4US/Roqer, `vfx-craft.md`,
+AGPL-3.0-or-later). A floor, not a target: fill each role with your own texture and colour,
+add or drop roles as the idea needs. R = the effect's radius in studs; times from the hit.
+Each layer is usually its own single-sprite burst (`ctx.Emit(emitter, 1-6)`), timed with
+`ctx.Wait`.
+
+| Time | Role | Make |
+| --- | --- | --- |
+| -0.15 s | Anticipation | A glow that shrinks from 1.5R to 0 over 0.1-0.15 s, spinning fast (`RotSpeed` -700 to -500) |
+| 0 | Flash | A soft ball or four-point flare growing 0 to 2.5R, Lifetime 0.06-0.1, Brightness 10, `ZOffset` in front |
+| +0.03 s | Impact stars | A 4x4 sheet that bursts open (`drawing-textures.md`), Lifetime 0.075-0.15, 2-6 particles, as the three-value stack: colour (`ZOffset` z, `LightEmission` -1, Brightness 5), its black twin (same size, life and count, z to z + 0.25) and a small white copy (z + 1, Brightness ~60) |
+| +0.03 s | Black backing | A soft black blob behind (`ZOffset` -1), 2-4R, Transparency 0.35 → 1 |
+| +0.05 s | Streaks | `VelocityParallel` with `Squash` 3 → 1, Speed 60-200, Drag 8-12, size with an envelope, a few black twins |
+| +0.05 s | Ring | A flat `VelocityPerpendicular` ring (Speed ~0.01, `EmissionDirection` Top, attachment level with the ground) growing to 2-3R over 0.2-0.4 s, Transparency 0 → 1.3 |
+| +0.03 s | Fire body | For fire: 2-4 fire-burst flipbook layers, never one image scaling (`explosions.md`) |
+| +0.05 s | Smoke | The same burst living 1.5-3 times as long: self-lit mid-grey sheets (or tinted by the fire), half transparent at their most solid, slowed, gone by about 1.5 s for a hit |
+| +0.05 s | Embers | Dots at `LightEmission` 1, Speed 10-120, Drag 10, Lifetime 0.75-2 |
+| 0 | Light | A PointLight at Brightness 7-16, Range 7-15, fading over 0.5 s |
+
+**Wind and smoke** around an impact:
+- **Wind:** 3-6 nearly transparent grey arcs and rings: crescent and radial-streak textures,
+  flat (`VelocityPerpendicular`), growing to 25-35 studs by 60% of life, Transparency from
+  0.45-0.85 to above 1, `LightEmission` 1, `RotSpeed` ±15-20, `ZOffset` 0.5, over the smoke.
+- **Smoke:** self-lit puffs in warm and grey pairs.
+- **A ground skirt:** a flat copy of the smoke, squashed.
+- **Black grit:** a few dark dust particles.
 
 ## Impact (melee hit, punch, slash contact)
 Duration 0.3-0.6.
@@ -80,21 +110,25 @@ See `src/shared/VFX/Effects/MagnetPull.luau`. Driven by a per-frame loop for `Du
    ring texture can't show rotation.
 
 ## Projectile (fireball, energy bolt)
-Persistent while flying, plus an impact on hit.
+Persistent while flying, plus an impact on hit. Studied heads, ribbons, paths and volleys:
+`motion.md`. Trails run on real time; for ribbons that must work in slow-mo use a Beam
+(`structure.md` gotchas).
 1. Core: small bright sphere or glow particle, `LockedToPart = true`.
 2. Trail: Trail with WidthScale tapering to 0, Lifetime 0.15-0.3.
 3. Shed particles: Rate 30-60, small, inherit some velocity (`VelocityInheritance` 0.2-0.4).
 4. On hit: play an Impact effect at the hit point.
 
 ## Aura (buff, charge-up, status)
-Looping until stopped.
+Looping until stopped. The cross-fade stack, size ladder and orb skeleton: `motion.md`.
 1. Base glow: Highlight or ground disc, low alpha, slow pulse (tween loop 0.8-1.5s).
 2. Rising particles: Rate 10-25, upward Acceleration, long Lifetime (1-2).
 3. Accent: occasional bright sparks, Rate 3-8.
 Keep total under budget; auras are on screen for a long time. Avoid mesh particles here.
 
 ## Explosion
-Duration 0.8-1.5.
+Duration 0.8-1.5. Studied anatomy (flash, boiling fire body, burn-out, smoke) and the
+layer numbers: `explosions.md`. A finisher should keep growing in mass for 0.25-1.35 s after
+the flash while its brightness falls (`design.md` section 6).
 1. Flash: very bright, very short (0.05-0.1s).
 2. Fireball: large particles, quick growth then shrink, orange -> red -> dark.
 3. Shockwave: expanding ground ring or flared wall. Mesh: Ring or Tube.
