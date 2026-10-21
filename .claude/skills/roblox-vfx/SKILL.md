@@ -100,6 +100,7 @@ return Effect
 | `ctx.Emit(emitter, n)` | Burst particles. Always use this, not `:Emit()`, so slow-mo works. |
 | `ctx.Tween(inst, t, props, style?, dir?)` | Tween in effect time. |
 | `ctx.Wait(t)` | Wait in effect time; returns the effect time that actually passed (add that to per-frame loop clocks). Never use `task.wait` directly. |
+| `ctx.Shake(magnitude, duration, options?)` | Shake the local camera (degrees, effect seconds; rotation only, distance-gated, never drifts). Magnitudes: `references/camera-world.md`. |
 | `ctx.Forge(template, cf?, options?)` | Play a VFX Forge template from `Shared.VFX.ForgeAssets` as a layer (retimed for slow-mo; `options.Scale` / `options.Color`). Non-blocking, returns Forge's env. Only when the effect needs Forge: see "VFX Forge layers" in `references/structure.md`. |
 
 For many mesh pieces (debris, shards), use
@@ -198,7 +199,20 @@ automatically a better one.
   `flipbook.mjs`, `vfxtex.py`, `examples.py`. AGPL-3.0, ported from Roqer
   (https://github.com/S4US/Roqer), whose VFX skill the design/explosions/motion/
   camera-world/drawing-textures/review references are adapted from.
-- `examples/`: approved effects. Match their structure and quality.
+- `examples/`: approved effects. Match their structure and quality. The larger approved
+  effects live in `src/shared/VFX/Effects/` (not copied here, so they never go stale); read the
+  closest one before writing a similar effect:
+  - `ChromaticStrike.luau`: ranged strike rebuilt from a reference. Spline projectiles with
+    star heads and layered beam trails, a dash with a spinning head, a camera-locked screen
+    vignette, `ctx.Shake`, a long burn driven by a time-sorted event list, custom textures.
+  - `LavaEruption.luau`: fissure eruption; per-frame channel rates, upright beam sheets,
+    SurfaceGui crack decals, pulsing layers measured on 60 fps strips.
+  - `FireballExplosion.luau`: cartoon explosion; textured SmoothSphere balls that cool and
+    dissolve through texture frames, a gas dome from stacked particles, comet beams.
+  - `MagnetPull.luau`: channelled suction; inward Sphere emitters, implosion pulses, a dark
+    core with a Neon ball, MeshParticles shards.
+  - `WindSpinSlash.luau` / `WindBladeTrail.luau` / `WindSpinSlashCombo.luau`: a spin slash from
+    phased flipbook layers, a weapon trail, and a composite effect calling child effects.
   - `SlashImpact.luau`: particles + neon flash + light (no meshes).
   - `GroundSlam.luau`: mesh shockwave, MeshParticles rock debris, dust, light,
     template fallbacks.

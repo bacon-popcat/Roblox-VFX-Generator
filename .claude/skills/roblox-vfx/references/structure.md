@@ -53,6 +53,7 @@ VFX/                                  (repo root)
 | `src/shared/VFX/MeshFactory.luau` | `ReplicatedStorage.Shared.VFX.MeshFactory` | ModuleScript |
 | `src/shared/VFX/VFXScrub.luau` | `ReplicatedStorage.Shared.VFX.VFXScrub` | ModuleScript |
 | `src/shared/VFX/VFXCamera.luau` | `ReplicatedStorage.Shared.VFX.VFXCamera` | ModuleScript |
+| `src/shared/VFX/VFXShake.luau` | `ReplicatedStorage.Shared.VFX.VFXShake` | ModuleScript (camera shake behind `ctx.Shake`) |
 | `src/shared/VFX/ForgeBridge.luau` | `ReplicatedStorage.Shared.VFX.ForgeBridge` | ModuleScript |
 | `src/shared/VFX/ForgeAssets/<Name>.rbxmx` | `ReplicatedStorage.Shared.VFX.ForgeAssets.<Name>` | Model (Forge template) |
 | `src/shared/Packages/ForgeVFX.lua` | `ReplicatedStorage.Shared.Packages.ForgeVFX` | ModuleScript (Wally link to the ForgeVFX package) |
@@ -198,31 +199,42 @@ overrun of the ~50 guideline to match the reference); burst particles ~194.
 
 ### Chromatic strike
 
-`ChromaticStrike`: a white, prismatic ranged strike, rebuilt from a reference video (two
-camera angles; the reference's blue variant was not copied). `ctx.CFrame` is the target;
-the caster stands `CasterDistance` (32) studs along its LookVector, or pass the runtime-only
-override `Caster` (a BasePart). `Scale` (2.5) sizes the target eruption; caster bursts,
-wires and the dash use 0.56x of it. Plain Luau, one per-frame loop (`ctx.Wait(1/240)`)
-running a time-sorted event list. Play returns at ~3.25 s; smoke is gone by ~4.5 s.
-1. 0-1.1 s: four ink-and-light wires (beam segments bent along Catmull-Rom splines, a white
-   kinked core over a dark smoke ribbon): a low smoky streak, a high arch over the left,
-   then two strands that shoot up in a V, loop and dive into the target.
+`ChromaticStrike`: a white, prismatic ranged strike, rebuilt from reference videos (1x from
+two angles, then 0.25x from far and from behind the caster; the reference's blue variant was
+not copied). `ctx.CFrame` is the target; the caster stands `CasterDistance` (32) studs along
+its LookVector, or pass the runtime-only override `Caster` (a BasePart). `Scale` (2.5) sizes
+the target eruption; caster bursts, projectiles and the dash use 0.56x of it. Plain Luau, one
+per-frame loop (`ctx.Wait(1/240)`) running a time-sorted event list. Play returns at ~3.95 s;
+smoke is gone by ~5.2 s.
+1. 0.14-1.25 s: three white projectiles (WIRES). Each is a locked 4-point star head over a
+   trail of beam segments bent along a Catmull-Rom spline (twisted white core, soft white haze
+   `cs_soft_trail`, dark smoke edge) that stays drawn from the caster until it fades. A low
+   smoky streak with a chromatic head, a steep arch over the left, then (0.6 s) one that shoots
+   very high, loops over itself and dives in.
 2. 1.10 s: spiky white ball at the target, chromatic ground ring + wind dome at the caster;
    1.30 s black void frame (2 frames); 1.33 s prismatic launch (white mass + tall chromatic
-   rays) and the dash: a drilling head (three flat ribbons rolling 180 degrees round the
-   dash axis while they narrow, `motion.md`) in black smoke, tunnel rings, a rainbow ground streak that
-   fades to a thin orange twin line. Dark shell, bokeh and chromatic shards at the caster.
-3. `ImpactTime` 1.85 s: jagged V-wing flash (custom `cs_impact_flash`, white over red/blue
-   copies for the fringe), screen wash and magenta/teal edge vignette (camera-locked
-   particles), light pillar, dark shockwave, base ring, rising thin halos (`cs_halo_thin`),
-   crystal spike fans, rainbow spikes, glitch ribbons, leaves, rocks, smoke, wind rings.
-4. `FinaleTime` 3.0 s: 4-point cross that shrinks to a dot; arched smoke hooks
-   (`cs_smoke_hook`) and floor smoke linger.
-Budget: a deliberate overrun to match the reference, like `LavaEruption`: ~140 instances
-(4 wires x `WireSegments` 3 x core + ink beams, ~63 emitters) and ~420 burst particles plus
-rate channels. Lower `WireSegments`, `SmudgeRate`, `SmokeRate`, `SpikeRate`, `SparkCount`, `SpeckCount` and
-`BokehCount` for crowds;
-`Vignette` should be on only for the caster's own client.
+   rays) and the dash: it rushes ~78% of the way, then grinds in. Its head is white crescent
+   strokes spinning flat across the path, a drilling ring of three rolling ribbons
+   (`motion.md`), chromatic flares, black smoke and a soft white streak back to the caster;
+   tunnel rings and a rainbow ground streak that fades to a thin orange twin line. Dark
+   shell, bokeh and chromatic shards at the caster.
+3. `ImpactTime` 1.85 s: white-hot core star, jagged V-wing flash (custom `cs_impact_flash`,
+   white over red/blue copies for the fringe), blast streaks, a ground flash ring, screen wash
+   and magenta/teal edge vignette (camera-locked particles), light pillar, dark shockwave,
+   base ring. The burn runs to `FinaleTime` (3.7 s): rising thin halos (`cs_halo_thin`),
+   crystal spike fans with three surges, rainbow spikes, black-edged RGB glitch bolts
+   (`cs_rgb_bolt`), 4-point star flashes every ~0.06 s plus five big cross stars, blade
+   flares, rising motes, leaves, rocks, puffs, smoke, wind rings.
+4. `FinaleTime`: a 4-point cross that shrinks to a dot with a ground flash and a blast;
+   arched smoke hooks (`cs_smoke_hook`) and floor smoke linger.
+Camera shake (`ctx.Shake`, `Shake`/`ShakeScale`): 2.2 deg at the launch, 11 deg on the impact
+(~6 deg peak measured once it adds up with distance falloff), a 1.8 deg rumble through the
+burn, 5.5 deg on the finale.
+Budget: a deliberate overrun to match the reference (the user raised it): ~200 instances
+(3 projectiles x `WireSegments` 4 x core + haze + ink beams, ~75 emitters) and ~650 burst
+particles plus rate channels. Lower `WireSegments`, `SmudgeRate`, `SmokeRate`, `SpikeRate`,
+`SparkCount`, `SpeckCount`, `BokehCount`, `StreakCount`, `PuffCount` and `MoteRate` for
+crowds; `Vignette` and `Shake` should be on only for the caster's own client.
 Grading note (2026-10-21): with the default per-frame agy prompt, the reference graded
 against its own second playback scored 6/10, so absolute agy scores on this effect are
 capped well below 10; compare against that baseline.
@@ -349,6 +361,7 @@ requires every effect at startup, and one bad module stops it.
 | `ctx.Emit(emitter, n)` | | Burst `n` particles; sets `emitter.TimeScale`. Use instead of `:Emit()`. |
 | `ctx.Tween(inst, t, props, style?, dir?)` | -> Tween | Tween in effect time. Default `Quad` / `Out`. |
 | `ctx.Wait(t)` | -> number | Yield in effect time. Returns the effect time that actually passed (often more than `t`: a 1/60 wait usually takes 1-2 frames). Per-frame loops should add the return value, not `t`, to their clock. |
+| `ctx.Shake(magnitude, duration, options?)` | | Shake the local camera: rotation only, `magnitude` in degrees, `duration` in effect seconds, distance-gated (`options.Range`, default 250 studs from `options.Position` or the effect). `options`: `Roughness`, `FadeIn`. Implemented by `VFXShake` (undo before the camera scripts, apply after, so it never drifts); `VFXPlayer.Clear` stops it, `VFXScrub` skips it. Pass a `Shake = false` override for effects replicated from other players. |
 | `ctx.Forge(template, cf?, options?)` | -> env | Play a VFX Forge template as a layer at `cf` (default `ctx.CFrame`), retimed to `ctx.TimeScale`. Non-blocking; `env.Finished:await()` waits for it. `options`: `{ Scale = n, Color = Color3, ColorMode = "multiply" or "replace" }`. See "VFX Forge layers". |
 
 `MeshParticles.Burst(ctx, template, count, config)`: non-blocking mesh debris; config in
@@ -723,9 +736,8 @@ tools/vfx/clip.mjs help`). Every time it prints or labels is effect seconds (rea
 
 ## Open issues (2026-10-12; delete each line when fixed)
 
-- `ctx` has no camera/screen helper (FOV, blur, impact frames, shake), so effects can't use
-  `references/camera-world.md` without breaking rule 1. Add one to `VFXPlayer` (and mirror it
-  in `VFXScrub`) when the first effect needs it.
+- `ctx` has no FOV, blur or impact-frame helper yet (camera shake exists: `ctx.Shake`). Add
+  one to `VFXPlayer` (and mirror it in `VFXScrub`) when the first effect needs it.
 - `tools/vfx` (2026-10-21) was tested on synthetic clips and sheets in a Linux container, not
   yet on Oscar's Windows PC; `vfxtex.render_flipbook` and MeshFactory `Surface`/`Swirl`/`Dome`
   have not run in Blender/Studio yet.
