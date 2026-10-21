@@ -134,7 +134,7 @@ Uploaded textures (white RGB, shape in alpha; drawn with PIL in Python unless no
 | lava_hollow2 | rbxassetid://104220462120494 | Soft egg with a wavy flame-licked rim and wide falloff (128x128). A dark unlit particle in front of a bright glow cuts a soft hollow. lava_glow's alpha is a steep cone, so it only reads big when added; it can't darken. |
 | cs_impact_flash | rbxassetid://106031250604546 | Jagged V-wing flash mass, wider than tall (512, Codex image_gen). ChromaticStrike impact and launch; red/blue copies behind = chromatic fringe. |
 | cs_smoke_hook | rbxassetid://134858289383590 | Smoky arched hook stroke, 1:2 tall (256x512, Codex image_gen). Lingering arched smoke plumes (Squash ~0.6-1). |
-| cs_soft_trail | rbxassetid://116841202841015 | Soft fibrous trail strip, Gaussian across, seamless along (128x512, drawn in Python). Beam texture (Wrap) for smoky projectile trails; library streaks tile with hard ends. |
+| cs_soft_trail | rbxassetid://85104342894286 | Soft fibrous trail strip, Gaussian across, uniform along (segment joints never show) (128x512, drawn in Python). Beam texture (Wrap) for smoky projectile trails; library streaks tile with hard ends. |
 | cs_rgb_bolt | rbxassetid://100904020799857 | Black-edged RGB-split zigzag bolt, colour baked, transparent (512, Codex image_gen). Glitch bolts at LightEmission 0. |
 | cs_halo_thin | rbxassetid://118128517935651 | Crisp thin ring at 0.86 of the half-width with a tight glow (512, drawn in Python). Halo rings that must stay thin. |
 

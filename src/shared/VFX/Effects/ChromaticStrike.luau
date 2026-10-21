@@ -7,7 +7,8 @@
 -- leaves and debris, a 4-point cross finale and a crown of arched smoke plumes.
 -- Layers: projectiles (star heads; core, haze and smoke-edge beam trails), caster sparks/void/starburst/
 -- rays/crystals/bokeh/dark shell/chromatic shards, dash head (spinning crescent strokes, three
--- rolling drill ribbons, chromatic flares, black smoke, white streak),
+-- a white fireball of curled
+-- strokes, hooked strands, chromatic flares, a black smoke tail, white streak),
 -- tunnel rings, rainbow ground streak, impact flash (white + red/cyan copies for the
 -- fringe), pillar beams, dark ground shockwave, halo rings, crystal spikes, chromatic
 -- blobs, glitch ribbons, flares, cross finale, smoke disc, arched plumes, leaves, rocks,
@@ -41,7 +42,7 @@ local ASSETS = {
 	ChromLine = "rbxassetid://15989904878", -- StaticVFXTextures/Chromatic Line (vertical rainbow spike)
 	ChromWisp = "rbxassetid://107522305986216", -- StaticVFXTextures/Chromatic Wisp (white blob, rainbow sides)
 	ChromWisp2 = "rbxassetid://124024586710210", -- StaticVFXTextures/Chromatic Wisp 2
-	SoftTrail = "rbxassetid://116841202841015", -- cs_soft_trail (custom): soft fibrous trail strip, seamless along its length (Python)
+	SoftTrail = "rbxassetid://85104342894286", -- cs_soft_trail (custom): soft fibrous trail strip, uniform along its length so segment joints never show (Python)
 	RgbBolt = "rbxassetid://100904020799857", -- cs_rgb_bolt (custom): black-edged RGB-split zigzag bolt, colour baked (Codex image_gen)
 	LineFlare = "rbxassetid://103854278038347", -- StaticVFXTextures/Blurry Horizontal Flare (thin white line)
 	ChromRing = "rbxassetid://109324703201714", -- StaticVFXTextures/Chromatic Smoke Circle
@@ -60,6 +61,7 @@ local ASSETS = {
 	WireBeam = "rbxassetid://134298856602125", -- MigratedBeams/BeamThinJaggedStreak (wavy white line)
 	RainbowStreak = "rbxassetid://134095631127258", -- MigratedBeams/BeamChromaticStreak (twin rainbow rails)
 	DashSwirl = "rbxassetid://17388445727", -- StaticVFXTextures/Crescent32 (layered crescent strokes)
+	WindCrescent = "rbxassetid://18838828771", -- StaticVFXTextures/Wind Crescent 1 (thin crescent)
 	DashStreak = "rbxassetid://13280046773", -- MigratedBeams/BeamSoftBlurredStreaks (soft streaky trail)
 	PillarCore = "rbxassetid://7135001284", -- MigratedBeams/BeamStretchedGlowColumn
 	PillarLines = "rbxassetid://6091329339", -- MigratedBeams/BeamGlowingStreakLines
@@ -196,41 +198,61 @@ end
 
 -- Projectile paths: { along (0 caster .. 1 target), height, side (+ = caster's right) }; heights
 -- and sides are studs at the default Scale. Measured on two 0.25x recordings (far and behind
--- the caster): three white projectiles, each a bright star head trailing a twisted white
--- smoke ribbon edged with dark smoke. A low one skims straight at the target with a
--- chromatic head, a second rises steeply and arches over to dive in, a third (fired later)
--- shoots up very high, loops back over itself and dives in. Every trail stays drawn from the
--- caster until FadeAt, then fades while its tail pulls in.
+-- the caster, cross-checked with Gemini): three white sky projectiles and two low streaks,
+-- one streak per caster burst. Each is a bright star head trailing a twisted white smoke
+-- ribbon edged with dark smoke; the trail stays drawn from the caster until FadeAt, then fades
+-- while its tail pulls in.
 local WIRES = {
-	{ -- 1: low streak at chest height, chromatic head
+	{ -- low streak 1 (first burst): chest height, chromatic head
 		Launch = 0.14,
 		Travel = 0.42,
 		Soft = true, -- a smoky white streak rather than a kinked rope
 		FadeAt = 0.95,
 		Fade = 0.18,
-		Width = 6,
+		Width = 3,
 		Points = { { 0, 3, 0 }, { 0.15, 3.5, 0.8 }, { 0.35, 2.8, -0.6 }, { 0.6, 3.4, 0.6 }, { 0.82, 3, -0.3 }, { 1, 3, 0 } },
 	},
-	{ -- 2: steep rise, a high arch over the left, dives into the target
-		Launch = 0.16,
-		Travel = 0.45,
-		FadeAt = 0.9,
+	{ -- sky 1: wide overhand loop; up the left, over the top, down the right, hooks in
+		Launch = 0.13,
+		Travel = 0.56,
+		FadeAt = 0.95,
 		Fade = 0.22,
 		Width = 1.2,
 		Points = {
-			{ 0, 3, 0 }, { 0.02, 9, -1 }, { 0.08, 14.5, -2.5 }, { 0.25, 17.5, -3 }, { 0.5, 15.8, -1.5 },
-			{ 0.75, 12, 0 }, { 0.92, 7, 0.3 }, { 1, 4, 0 },
+			{ 0, 3, 0 }, { 0.02, 10, -2 }, { 0.08, 18, -4 }, { 0.2, 23, -3 }, { 0.4, 22, 2 },
+			{ 0.6, 18, 7 }, { 0.8, 10, 5 }, { 0.95, 6, 1 }, { 1, 4, 0 },
 		},
 	},
-	{ -- 3: fired later; shoots up very high, loops back over itself, dives into the target
-		Launch = 0.6,
-		Travel = 0.46,
-		FadeAt = 1.08,
-		Fade = 0.16,
+	{ -- sky 2 (second burst): fast, up the left to ~15 studs, a sharp hook, dives across
+		Launch = 0.5,
+		Travel = 0.31,
+		FadeAt = 1.02,
+		Fade = 0.18,
 		Width = 1.2,
 		Points = {
-			{ 0, 3, 0 }, { 0.02, 11.5, -1 }, { 0.05, 19.2, -2 }, { 0.1, 22.5, -3 }, { 0.2, 21.4, -6 }, { 0.22, 17.4, -3 },
-			{ 0.15, 15.6, 1 }, { 0.25, 19.2, 4 }, { 0.45, 20, 2 }, { 0.7, 16.6, 0 }, { 0.9, 11.5, 0 }, { 1, 4, 0 },
+			{ 0, 3, 0 }, { 0.03, 9, -4 }, { 0.08, 14, -6 }, { 0.12, 15.5, -6.5 }, { 0.4, 11, -2 },
+			{ 0.75, 6, 0 }, { 1, 4, 0 },
+		},
+	},
+	{ -- low streak 2 (second burst)
+		Launch = 0.52,
+		Travel = 0.36,
+		Soft = true,
+		FadeAt = 1.05,
+		Fade = 0.15,
+		Width = 2.5,
+		Points = { { 0, 2.8, 0 }, { 0.2, 3.3, -0.7 }, { 0.45, 2.7, 0.5 }, { 0.7, 3.2, -0.4 }, { 1, 3, 0 } },
+	},
+	{ -- sky 3: the tallest; up the right to ~27 studs (star glint at the apex), S-dives in
+		Launch = 0.58,
+		Travel = 0.5,
+		FadeAt = 1.1,
+		Fade = 0.16,
+		Width = 1.2,
+		Glint = 0.81, -- effect time of the big star flash at its apex
+		Points = {
+			{ 0, 3, 0 }, { 0.02, 12, 3 }, { 0.06, 22, 3.5 }, { 0.12, 27, 3 }, { 0.25, 24, 6 },
+			{ 0.45, 18, 4 }, { 0.6, 14, -2 }, { 0.8, 10, -1 }, { 1, 4, 0 },
 		},
 	},
 }
@@ -251,8 +273,8 @@ Effect.Defaults = {
 	CasterDistance = 32, -- studs from the target to the caster (without a `Caster` override)
 	ImpactTime = 1.85, -- effect time of the giant impact flash (dash lands)
 	FinaleTime = 3.7, -- the pillar collapses into the 4-point cross (a long burn: ~1.85 s)
-	WireWidth = 0.3, -- core width (x caster scale); the ink smudge is 7x wider
-	WireSegments = 4, -- beam segments per wire (fewer = cheaper, angular loops)
+	WireWidth = 0.18, -- trail core width (x caster scale); haze and dark edge are a few times wider
+	WireSegments = 6, -- beam segments per looping sky trail x 3 beams (fewer = cheaper, angular loops); low streaks use 1
 	SmudgeRate = 70, -- smoke smudge puffs / s per wire tip while it travels
 	SparkCount = 16, -- caster spark bursts (the later bursts are fractions of it)
 	SpeckCount = 16, -- black shrapnel at the impact (the pre-hits use fractions of it)
@@ -333,7 +355,7 @@ function Effect.Play(ctx)
 	local impactAt = attachment(base, CFrame.new(target + UP * 5 * s)) -- impact flash centre
 	local groundAt = attachment(base, CFrame.new(target + UP * 0.25))
 	local ringLowAt = attachment(base, CFrame.new(target + UP * 1.7 * s))
-	local ringHighAt = attachment(base, CFrame.new(target + UP * 8 * s))
+	local ringHighAt = attachment(base, CFrame.new(target + UP * 5.4 * s)) -- mid halo ~13.5 studs, rises to ~22
 	local flareAt = attachment(base, CFrame.new(target + UP * 5.5 * s)) -- moved per flare
 	local crossAt = attachment(base, CFrame.new(target + UP * 7.6 * s))
 
@@ -361,9 +383,11 @@ function Effect.Play(ctx)
 	-- Each projectile trail is WireSegments cubic beam segments from its tail to its tip
 	-- along a spline, drawn three times: a bright twisted core, a soft white smoke haze around
 	-- it and a wider dark smoke edge behind. The head is a locked bright star.
-	local segments = math.max(1, math.floor(p.WireSegments))
+	local skySegments = math.max(1, math.floor(p.WireSegments))
 	local wireSlots = {}
 	for slot, wireDef in WIRES do
+		-- a nearly straight low streak is one cubic beam: joints show as rungs on a straight trail
+		local segments = wireDef.Soft and 1 or skySegments
 		local atts = {}
 		for i = 1, segments + 1 do
 			atts[i] = attachment(base, CFrame.new(caster))
@@ -376,7 +400,7 @@ function Effect.Play(ctx)
 			Width0 = p.WireWidth * wireDef.Width * sc,
 			Width1 = p.WireWidth * wireDef.Width * sc,
 			Color = ColorSequence.new(p.Color),
-			Brightness = wireDef.Soft and 1.4 or 3,
+			Brightness = wireDef.Soft and 0.8 or 3,
 			ZOffset = 0.5,
 			Enabled = false,
 		}
@@ -388,18 +412,19 @@ function Effect.Play(ctx)
 			Width0 = p.WireWidth * (1.5 + 1.3 * wireDef.Width) * sc,
 			Width1 = p.WireWidth * (1.5 + 1.3 * wireDef.Width) * sc,
 			Color = ColorSequence.new(p.Color),
-			LightEmission = 0.6,
-			Brightness = 1.6,
+			-- near-normal blend: additive haze doubles up where two segments overlap at a joint
+			LightEmission = 0.1,
+			Brightness = 1.3,
 			ZOffset = 0.2,
 			Enabled = false,
 		}
 		local inkProps = {
-			Texture = ASSETS.Smoke,
+			Texture = ASSETS.SoftTrail,
 			TextureMode = Enum.TextureMode.Wrap,
-			TextureLength = 3 * sc,
+			TextureLength = 4 * sc,
 			TextureSpeed = 0.6,
-			Width0 = p.WireWidth * (3.5 + 1.8 * wireDef.Width) * sc,
-			Width1 = p.WireWidth * (3.5 + 1.8 * wireDef.Width) * sc,
+			Width0 = p.WireWidth * (2.2 + 1.1 * wireDef.Width) * sc,
+			Width1 = p.WireWidth * (2.2 + 1.1 * wireDef.Width) * sc,
 			Color = ColorSequence.new(ink),
 			LightEmission = 0,
 			ZOffset = -0.3,
@@ -426,7 +451,7 @@ function Effect.Play(ctx)
 			Enabled = false,
 			Speed = NumberRange.new(0),
 			Lifetime = NumberRange.new(0.06, 0.09),
-			Size = seq({ { 0, 2 * sc }, { 1, 1.6 * sc } }),
+			Size = seq({ { 0, 0.75 * sc }, { 1, 0.6 * sc } }), -- ~2 studs across
 			Transparency = seq({ { 0, 0 }, { 0.6, 0.2 }, { 1, 1 } }),
 			Rotation = NumberRange.new(-8, 8),
 			Brightness = 6,
@@ -440,7 +465,7 @@ function Effect.Play(ctx)
 			Enabled = false,
 			Speed = NumberRange.new(0),
 			Lifetime = NumberRange.new(0.08, 0.12),
-			Size = NumberSequence.new(wireDef.Soft and 1.4 * sc or 0.9 * sc),
+			Size = NumberSequence.new(wireDef.Soft and 0.9 * sc or 0.55 * sc),
 			Transparency = seq({ { 0, 0.1 }, { 1, 1 } }),
 			Rotation = NumberRange.new(0, 360),
 			Brightness = 3,
@@ -469,6 +494,7 @@ function Effect.Play(ctx)
 			inks[i] = beam(atts[i], atts[i + 1], inkProps)
 		end
 		wireSlots[slot] = {
+			Segments = segments,
 			Atts = atts,
 			Cores = cores,
 			Hazes = hazes,
@@ -526,6 +552,7 @@ function Effect.Play(ctx)
 		end
 		-- place the attachments along the visible stretch, X along the path, and bend each
 		-- segment into the spline (cubic Hermite: curve size = path speed * step / 3)
+		local segments = slot.Segments
 		local step = (tipS - tailS) / segments
 		local speeds = {}
 		for i, att in slot.Atts do
@@ -537,17 +564,39 @@ function Effect.Play(ctx)
 			speeds[i] = tangent.Magnitude / (hi - lo)
 		end
 		-- the core thins out up high and toward the tail, like a brush stroke
-		local coreT = seq({ { 0, math.clamp(0.45 + 0.55 * fadeK, 0, 1) }, { 1, fadeK } })
+		-- the white core and haze fade first, leaving a thin dark ink line that erodes last
+		local whiteK = math.clamp((t - wire.FadeAt + 0.25) / 0.22, 0, 1)
+		-- transparency ramps along the whole trail (tail -> head), split across the segments
+		local function ramp(tail, head, k)
+			local a = math.clamp(tail + (1 - tail) * k, 0, 1)
+			local b = math.clamp(head + (1 - head) * k, 0, 1)
+			return function(i)
+				local u0, u1 = (i - 1) / segments, i / segments
+				local t0, t1 = a + (b - a) * u0, a + (b - a) * u1
+				-- ends slightly softer: where two segments overlap at a bend this keeps the joint
+				-- from flaring into a bright band, without leaving gaps on straight trails
+				local function half(t)
+					return 1 - (1 - t) * 0.8
+				end
+				return seq({
+					{ 0, i == 1 and t0 or half(t0) },
+					{ 0.08, t0 + (t1 - t0) * 0.08 },
+					{ 0.92, t0 + (t1 - t0) * 0.92 },
+					{ 1, i == segments and t1 or half(t1) },
+				})
+			end
+		end
+		local coreT = ramp(0.45, 0, whiteK)
 		local inkT = NumberSequence.new(math.clamp(0.3 + 0.7 * fadeK, 0, 1))
-		local hazeT = seq({ { 0, math.clamp(0.75 + 0.25 * fadeK, 0, 1) }, { 1, math.clamp(0.4 + 0.6 * fadeK, 0, 1) } })
+		local hazeT = ramp(0.75, 0.4, whiteK)
 		for i = 1, segments do
 			for _, b in { slot.Cores[i], slot.Hazes[i], slot.Inks[i] } do
 				b.CurveSize0 = speeds[i] * step / 3
 				b.CurveSize1 = -speeds[i + 1] * step / 3
 			end
-			slot.Cores[i].Transparency = coreT
+			slot.Cores[i].Transparency = coreT(i)
 			slot.Inks[i].Transparency = inkT
-			slot.Hazes[i].Transparency = hazeT
+			slot.Hazes[i].Transparency = hazeT(i)
 		end
 		showWire(slot, true)
 		local traveling = tipS < 0.999
@@ -778,6 +827,17 @@ function Effect.Play(ctx)
 		Brightness = 2,
 		ZOffset = 1.5,
 	})
+	local targetGlints = emitter(targetPart, { -- star glints twinkling round the ink ball before the dash lands
+		Texture = ASSETS.Star,
+		Shape = Enum.ParticleEmitterShape.Box,
+		Speed = NumberRange.new(0.2, 1),
+		SpreadAngle = Vector2.new(180, 180),
+		Lifetime = NumberRange.new(0.08, 0.16),
+		Size = seq({ { 0, 0.3 * sc, 0.1 * sc }, { 0.4, 0.9 * sc, 0.3 * sc }, { 1, 0 } }),
+		Rotation = NumberRange.new(-10, 10),
+		Brightness = 6,
+		ZOffset = 4.5,
+	})
 	local targetSpecks = emitter(targetAt, {
 		Texture = ASSETS.Speck,
 		Color = ColorSequence.new(ink),
@@ -803,50 +863,53 @@ function Effect.Play(ctx)
 	})
 
 	------------------------------------------------------------------ dash
-	local headAt = attachment(base, CFrame.fromMatrix(caster + UP * 2.5 * sc, right, dashDir))
-	-- drilling head (motion.md "a drilling dash"): three flat ribbons fanned round the dash
-	-- axis that roll 180 degrees while they narrow; each has its own scroll so they never line up
-	local drill = {}
-	for i = 1, 3 do
-		local tail = attachment(base, CFrame.new(caster))
-		local tip = attachment(base, CFrame.new(caster))
-		drill[i] = {
-			Tail = tail,
-			Tip = tip,
-			Beam = beam(tail, tip, {
-				Texture = ASSETS.PillarLines,
-				TextureMode = Enum.TextureMode.Wrap,
-				TextureLength = (2 + i) * sc,
-				TextureSpeed = 3 + 3 * i,
-				FaceCamera = false,
-				Segments = 2,
-				Color = ColorSequence.new(p.Color),
-				Brightness = 3,
-				ZOffset = 1.5,
-				Transparency = seq({ { 0, 1 }, { 0.35, 0.35 }, { 1, 0 } }), -- clear at the tail
-				Enabled = false,
-			}),
-		}
-	end
-	-- the head itself: white crescent strokes spinning flat across the dash (a turbine of
-	-- white swirl seen from the side), a glow, chromatic flares peeling off, and a soft white
-	-- streak trailing back toward the caster
-	local swirlAt = attachment(base, CFrame.fromMatrix(caster, right, dashDir))
-	local headSwirl = emitter(swirlAt, {
+	local headAt = attachment(base, CFrame.fromMatrix(caster + UP * 2.5 * sc, right, -dashDir))
+	-- the head: a white fireball of curled strokes spinning round a hot core, hooked white
+	-- strands peeling back off it, chromatic flares, a black smoke tail left behind it and a
+	-- soft white streak back toward the caster (measured on the 0.25x recordings)
+	local headBall = emitter(headAt, {
 		Texture = ASSETS.DashSwirl,
-		Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
-		EmissionDirection = Enum.NormalId.Top,
 		LockedToPart = true,
+		Rate = 110,
+		Enabled = false,
+		Speed = NumberRange.new(0),
+		Lifetime = NumberRange.new(0.06, 0.1),
+		Size = seq({ { 0, 1.1 * sc, 0.25 * sc }, { 0.5, 1.6 * sc, 0.3 * sc }, { 1, 1.3 * sc } }),
+		Transparency = seq({ { 0, 0 }, { 0.6, 0.15 }, { 1, 1 } }),
+		Rotation = NumberRange.new(0, 360),
+		RotSpeed = NumberRange.new(-1400, -900),
+		Brightness = 4,
+		ZOffset = 1.6,
+		TimeScale = ctx.TimeScale,
+	})
+	local headCore = emitter(headAt, {
+		Texture = ASSETS.Glow,
+		LockedToPart = true,
+		Rate = 40,
+		Enabled = false,
+		Speed = NumberRange.new(0),
+		Lifetime = NumberRange.new(0.06),
+		Size = NumberSequence.new(1.2 * sc),
+		Transparency = seq({ { 0, 0.1 }, { 1, 1 } }),
+		Brightness = 5,
+		ZOffset = 1.4,
+		TimeScale = ctx.TimeScale,
+	})
+	-- EmissionDirection Top = the attachment's +Y, which headAt points back at the caster
+	local headStrands = emitter(headAt, {
+		Texture = ASSETS.WindCrescent,
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		EmissionDirection = Enum.NormalId.Top,
+		SpreadAngle = Vector2.new(30, 30),
 		Rate = 70,
 		Enabled = false,
-		Speed = NumberRange.new(0.01),
-		Lifetime = NumberRange.new(0.1, 0.16),
-		Size = seq({ { 0, 1.5 * sc, 0.4 * sc }, { 0.4, 3 * sc, 0.6 * sc }, { 1, 2.4 * sc } }),
-		Transparency = seq({ { 0, 0 }, { 0.6, 0.2 }, { 1, 1 } }),
-		Rotation = NumberRange.new(0, 360),
-		RotSpeed = NumberRange.new(900, 1300),
-		Brightness = 4,
-		ZOffset = 1.5,
+		Speed = NumberRange.new(6 * sc, 12 * sc),
+		Lifetime = NumberRange.new(0.08, 0.14),
+		Size = seq({ { 0, 1.4 * sc, 0.4 * sc }, { 1, 2 * sc } }),
+		Transparency = seq({ { 0, 0.05 }, { 0.6, 0.3 }, { 1, 1 } }),
+		Rotation = NumberRange.new(-110, -70),
+		Brightness = 3,
+		ZOffset = 1.2,
 		TimeScale = ctx.TimeScale,
 	})
 	local headFlares = emitter(headAt, {
@@ -882,13 +945,13 @@ function Effect.Play(ctx)
 		Texture = ASSETS.Smoke,
 		Color = ColorSequence.new(ink),
 		LightEmission = 0,
-		Rate = 90,
+		Rate = 120,
 		Enabled = false,
-		Speed = NumberRange.new(1, 3),
+		Speed = NumberRange.new(0.5, 1.5),
 		SpreadAngle = Vector2.new(180, 180),
-		Lifetime = NumberRange.new(0.15, 0.3),
-		Size = seq({ { 0, 1.6 * sc }, { 1, 2.6 * sc } }),
-		Transparency = seq({ { 0, 0.25 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.12, 0.25), -- left behind the fast head: a tail ~8-12 studs long
+		Size = seq({ { 0, 1 * sc }, { 0.3, 1.8 * sc }, { 1, 2.2 * sc } }),
+		Transparency = seq({ { 0, 0.2 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		TimeScale = ctx.TimeScale,
 	})
@@ -932,9 +995,9 @@ function Effect.Play(ctx)
 			ZOffset = 4,
 		})
 	end
-	local flashRed = flashEmitter(p.FringeRed, 16.5 * s, 1.3)
-	local flashBlue = flashEmitter(p.FringeBlue, 16 * s, 1.3)
-	local flashWhite = flashEmitter(p.Color, 15.3 * s, 2)
+	local flashRed = flashEmitter(p.FringeRed, 11.6 * s, 0.7)
+	local flashBlue = flashEmitter(p.FringeBlue, 11.3 * s, 0.7)
+	local flashWhite = flashEmitter(p.Color, 10.8 * s, 2)
 	-- the wider, fainter V flare 0.1 s later: its own emitters (Size changes resize live particles)
 	local wingBlue = flashEmitter(p.FringeBlue, 9.5 * s, 1.3)
 	local wingWhite = flashEmitter(p.Color, 9 * s, 2)
@@ -1256,6 +1319,32 @@ function Effect.Play(ctx)
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-30, 30),
 	})
+	local rainbowRays = emitter(groundAt, { -- long rainbow lens-flare streaks shooting out low
+		Texture = ASSETS.ChromLine,
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		EmissionDirection = Enum.NormalId.Top,
+		SpreadAngle = Vector2.new(80, 80),
+		Speed = NumberRange.new(35 * s, 55 * s),
+		Drag = 10,
+		Lifetime = NumberRange.new(0.12, 0.2),
+		Size = seq({ { 0, 1.2 * s }, { 1, 0.6 * s } }),
+		Squash = NumberSequence.new(-1.2), -- long along the flight
+		Rotation = NumberRange.new(-90),
+		Transparency = seq({ { 0, 0 }, { 0.7, 0.2 }, { 1, 1 } }),
+		Brightness = 3,
+		ZOffset = 2,
+	})
+	local inkClaws = emitter(impactAt, { -- black ink claw slashes framing the crown
+		Texture = ASSETS.DashSwirl,
+		Color = ColorSequence.new(ink),
+		LightEmission = 0,
+		Speed = NumberRange.new(0),
+		Lifetime = NumberRange.new(0.18, 0.26),
+		Size = sizeRange(3 * s, 4.5 * s),
+		Rotation = NumberRange.new(100, 200),
+		Transparency = seq({ { 0, 0.1 }, { 0.7, 0.2 }, { 1, 1 } }),
+		ZOffset = 5,
+	})
 	local impactRays = emitter(impactAt, { -- broad soft light rays fanning out of the flash
 		Texture = ASSETS.SunRays,
 		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
@@ -1406,7 +1495,19 @@ function Effect.Play(ctx)
 	burst(0.5, shards, 2)
 	burst(0, specks, 10)
 	burst(0.05, void, 1)
-	burst(0.58, sparks, math.ceil(p.SparkCount * 0.6))
+	burst(0.5, sparks, math.ceil(p.SparkCount * 0.6))
+	for _, time in { 0.12, 0.52 } do -- V-shaped wings of white streaky cones as each salvo fires
+		at(time, function()
+			blades.EmissionDirection = Enum.NormalId.Top
+			blades.SpreadAngle = Vector2.new(45, 45)
+			ctx.Emit(blades, 2)
+			ctx.Emit(casterSmoke, 2)
+		end)
+	end
+	burst(0.46, bokeh, 14) -- a cloud of white diamond sparkles before the second salvo
+	for time = 1.18, 1.82, 0.05 do -- glints twinkle round the target until the dash drills in
+		burst(time, targetGlints, 3)
+	end
 	for i = 0, 3 do -- glitter spraying off the caster while the low streak runs
 		burst(0.2 + i * 0.08, bokeh, math.ceil(p.BokehCount * 0.2))
 	end
@@ -1549,6 +1650,21 @@ function Effect.Play(ctx)
 		local time = tImpact + 0.15 + i * (burnLen - 0.3) / 13
 		burst(time, glitch, i % 3 == 0 and 2 or 1)
 	end
+	for i, wire in WIRES do -- a big star flash at a projectile's apex
+		if wire.Glint then
+			at(wire.Glint, function()
+				local tip = wireSlots[i].Atts[#wireSlots[i].Atts]
+				flareAt.WorldCFrame = CFrame.new(tip.WorldPosition)
+				bigStar.Size = seq({ { 0, 1 * sc }, { 0.25, 5 * sc }, { 1, 0 } })
+				ctx.Emit(bigStar, 1)
+			end)
+		end
+	end
+	for _, dt in { 0.3, 0.5, 0.9, 1.35 } do
+		burst(tImpact + dt, rainbowRays, 4)
+	end
+	burst(tImpact + 0.13, inkClaws, 3)
+	burst(tImpact + 0.55, inkClaws, 2)
 	local starT = tImpact + 0.05
 	while starT < tFinale - 0.05 do -- star flashes every ~0.06 s, more early
 		burst(starT, starFlash, starT < tImpact + 0.6 and 3 or 2)
@@ -1556,6 +1672,7 @@ function Effect.Play(ctx)
 	end
 	for i, frac in { 0.05, 0.28, 0.5, 0.72, 0.9 } do -- big cross stars
 		at(tImpact + frac * burnLen, function()
+			bigStar.Size = seq({ { 0, 2 * s }, { 0.25, 9 * s }, { 1, 0 } })
 			flareAt.WorldCFrame = CFrame.new(target + UP * (4 + i) * s + right * ((i % 2) * 2 - 1) * 2 * s)
 			ctx.Emit(bigStar, 1)
 		end)
@@ -1662,40 +1779,24 @@ function Effect.Play(ctx)
 		local dashT = (clock - tLaunch) / (tImpact - tLaunch)
 		if dashT >= 0 and dashT <= 1 then
 			-- rushes most of the way (~0.78 of the path by 45% of the dash), then grinds in
-			local rush = math.min(dashT / 0.45, 1)
-			local along = 0.78 * (1 - (1 - rush) ^ 2) + 0.22 * math.max(dashT - 0.45, 0) / 0.55
+			-- ease out: ~80 studs/s for the first half of the path, ~48 for the rest
+			local along = 1 - (1 - dashT) ^ 1.5
 			local head = caster:Lerp(target, along) + UP * 2.5 * sc
-			headAt.WorldCFrame = CFrame.fromMatrix(head, right, dashDir)
-			local roll = math.pi * dashT
-			local width = 6 * sc * (1 - 0.8 * dashT)
-			for i, ribbon in drill do
-				-- X along the dash, Y (the beam's width) pointing out from the axis
-				local angle = roll + (i - 1) * 2 * math.pi / 3
-				local out = right * math.cos(angle) + UP * math.sin(angle)
-				ribbon.Tail.WorldCFrame = CFrame.fromMatrix(head - dashDir * 7 * sc, dashDir, out)
-				ribbon.Tip.WorldCFrame = CFrame.fromMatrix(head, dashDir, out)
-				ribbon.Beam.Width0 = width
-				ribbon.Beam.Width1 = width * 0.15
-				ribbon.Beam.Enabled = true
-			end
-			swirlAt.WorldCFrame = CFrame.fromMatrix(head, right, dashDir)
+			headAt.WorldCFrame = CFrame.fromMatrix(head, right, -dashDir)
 			streakHead.WorldCFrame = CFrame.new(head)
 			streakTail.WorldCFrame = CFrame.new(caster + UP * 2 * sc)
-			local streakW = 3.5 * sc * (1 - 0.5 * dashT)
+			local streakW = 1.6 * sc * (1 - 0.4 * dashT)
 			dashStreak.Width0 = streakW
 			dashStreak.Width1 = streakW * 0.3
 			dashStreak.Enabled = true
-			headSwirl.Enabled = true
-			headFlares.Enabled = true
-			headSmoke.Enabled = true
+			for _, e in { headBall, headCore, headStrands, headFlares, headSmoke } do
+				e.Enabled = true
+			end
 		else
 			dashStreak.Enabled = false
-			headSwirl.Enabled = false
-			headFlares.Enabled = false
-			for _, ribbon in drill do
-				ribbon.Beam.Enabled = false
+			for _, e in { headBall, headCore, headStrands, headFlares, headSmoke } do
+				e.Enabled = false
 			end
-			headSmoke.Enabled = false
 		end
 		-- rainbow ground streak: wide twin rails, then a thin orange line
 		local railW = track({
