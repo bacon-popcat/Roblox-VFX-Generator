@@ -187,6 +187,35 @@ One per-frame loop (`ctx.Wait(1/240)`) drives the bursts (one per step), channel
 emitter box widths, beam widths, the light and the crack. Instances: ~56 (a deliberate
 overrun of the ~50 guideline to match the reference); burst particles ~194.
 
+### Chromatic strike
+
+`ChromaticStrike`: a white, prismatic ranged strike, rebuilt from a reference video (two
+camera angles; the reference's blue variant was not copied). `ctx.CFrame` is the target;
+the caster stands `CasterDistance` (32) studs along its LookVector, or pass the runtime-only
+override `Caster` (a BasePart). `Scale` (2.5) sizes the target eruption; caster bursts,
+wires and the dash use 0.56x of it. Plain Luau, one per-frame loop (`ctx.Wait(1/240)`)
+running a time-sorted event list. Play returns at ~3.25 s; smoke is gone by ~4.5 s.
+1. 0-1.1 s: four ink-and-light wires (beam segments bent along Catmull-Rom splines, a white
+   kinked core over a dark smoke ribbon): a low smoky streak, a high arch over the left,
+   then two strands that shoot up in a V, loop and dive into the target.
+2. 1.10 s: spiky white ball at the target, chromatic ground ring + wind dome at the caster;
+   1.30 s black void frame (2 frames); 1.33 s prismatic launch (white mass + tall chromatic
+   rays) and the dash: swirl head in black smoke, tunnel rings, a rainbow ground streak that
+   fades to a thin orange twin line. Dark shell, bokeh and chromatic shards at the caster.
+3. `ImpactTime` 1.85 s: jagged V-wing flash (custom `cs_impact_flash`, white over red/blue
+   copies for the fringe), screen wash and magenta/teal edge vignette (camera-locked
+   particles), light pillar, dark shockwave, base ring, rising thin halos (`cs_halo_thin`),
+   crystal spike fans, rainbow spikes, glitch ribbons, leaves, rocks, smoke, wind rings.
+4. `FinaleTime` 3.0 s: 4-point cross that shrinks to a dot; arched smoke hooks
+   (`cs_smoke_hook`) and floor smoke linger.
+Budget: a deliberate overrun to match the reference, like `LavaEruption`: ~135 instances
+(4 wires x `WireSegments` 3 x core + ink beams, ~63 emitters) and ~420 burst particles plus
+rate channels. Lower `WireSegments`, `SmudgeRate`, `SmokeRate` and `SpikeRate` for crowds;
+`Vignette` should be on only for the caster's own client.
+Grading note (2026-10-21): with the default per-frame agy prompt, the reference graded
+against its own second playback scored 6/10, so absolute agy scores on this effect are
+capped well below 10; compare against that baseline.
+
 ## VFX Forge layers
 
 [ForgeVFX](https://github.com/zilibobi/forge-vfx) is the emit module of the VFX Forge
