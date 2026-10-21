@@ -9,3 +9,7 @@ sourcemap.json
 .vscode/
 # Blender auto-backups
 *.blend1
+
+# Reference clips stored by tools/vfx/clip.mjs
+.vfx-clips/
+__pycache__/

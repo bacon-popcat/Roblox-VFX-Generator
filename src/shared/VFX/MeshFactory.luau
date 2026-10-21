@@ -311,6 +311,74 @@ function MeshFactory.Generators.Sphere(p)
 	return build(positions, uvs, tris, { orientOutward = true })
 end
 
+-- Any open sheet you can describe as a function: point(u, v) returns the Vector3 of each
+-- grid corner for u, v in 0..1, and that corner's UV is (u, v). Columns x Rows quads,
+-- double-sided. Triangles that collapse (corners meeting at a pole or a tip) are skipped.
+-- Use it for shapes no generator covers: a torn shockwave (vary the radius with u), a
+-- forked lightning card, petals, a wobbling wave. Not in Generators (a function can't be
+-- saved as Params): publish the result with MF.Publish(mesh, name, "Surface", { Note = "..." }).
+-- (Shape helpers after Roqer's vfx_surface/vfx_swirl/vfx_shell, https://github.com/S4US/Roqer, AGPL-3.0.)
+function MeshFactory.Surface(point, columns, rows)
+	columns = columns or 32
+	rows = rows or 1
+	local positions, uvs, tris = {}, {}, {}
+	local function index(c, r)
+		return c * (rows + 1) + r + 1
+	end
+	for c = 0, columns do
+		for r = 0, rows do
+			local u, v = c / columns, r / rows
+			table.insert(positions, point(u, v))
+			table.insert(uvs, Vector2.new(u, v))
+		end
+	end
+	local function addTri(i, j, k)
+		local a, b, c = positions[i], positions[j], positions[k]
+		if (b - a):Cross(c - a).Magnitude > 1e-8 then
+			table.insert(tris, { i, j, k })
+		end
+	end
+	for c = 0, columns - 1 do
+		for r = 0, rows - 1 do
+			local a, b = index(c, r), index(c + 1, r)
+			local d, e = index(c, r + 1), index(c + 1, r + 1)
+			addTri(a, b, e)
+			addTri(a, e, d)
+		end
+	end
+	return build(positions, uvs, tris, { doubleSided = true })
+end
+
+-- Ribbon spiralling up around Y: a tornado, an aura, a charge-up. It turns Turns times while
+-- rising from 0 to Height, its radius going from Radius to TopRadius, and the ribbon is Width
+-- tall. U runs along the ribbon from the bottom end, V across it from its lower edge.
+-- Radius, TopRadius, Height, Width, Turns, Segments
+function MeshFactory.Generators.Swirl(p)
+	p = p or {}
+	local radius = p.Radius or 2
+	local top = p.TopRadius or radius
+	local height = p.Height or 4
+	local width = p.Width or 0.6
+	local turns = p.Turns or 1.5
+	return MeshFactory.Surface(function(u, v)
+		local angle = TAU * turns * u
+		local r = radius + (top - radius) * u
+		return Vector3.new(math.cos(angle) * r, height * u + width * (v - 0.5), math.sin(angle) * r)
+	end, p.Segments or 96, 1)
+end
+
+-- Open half sphere standing on the ground (Y = 0): a barrier, a blast bubble, a shield.
+-- U runs around, V from the ground up to the top. Radius, Segments, Rings
+function MeshFactory.Generators.Dome(p)
+	p = p or {}
+	local radius = p.Radius or 1
+	return MeshFactory.Surface(function(u, v)
+		local polar = (math.pi / 2) * (1 - v)
+		local ring = radius * math.sin(polar)
+		return Vector3.new(math.cos(TAU * u) * ring, radius * math.cos(polar), math.sin(TAU * u) * ring)
+	end, p.Segments or 32, p.Rings or 8)
+end
+
 --------------------------------------------------------------------------------
 -- Preview and publish
 --------------------------------------------------------------------------------
