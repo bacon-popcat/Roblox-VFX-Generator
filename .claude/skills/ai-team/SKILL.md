@@ -14,7 +14,7 @@ Do not bring in other AI CLIs, or give agy other roles.
 | Who | Role | Gets |
 |---|---|---|
 | Claude | Lead: plans, writes effects (via `roblox-vfx`), drives Studio, grades visuals, applies changes | Everything |
-| Codex | Code reviewer / second coder | Diffs, file paths, bug descriptions |
+| Codex | Code reviewer / second coder; generates new textures (`roblox-vfx` `references/textures.md`) | Diffs, file paths, bug descriptions, image prompts |
 | agy | Reference grader | Side-by-side comparison sheets, grading prompt |
 
 ## Hard rules

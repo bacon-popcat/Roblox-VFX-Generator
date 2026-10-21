@@ -73,14 +73,28 @@ When nothing in the library fits, generate one (white RGB, shape in alpha; tint 
 
 | Image | Generator |
 |---|---|
-| Default: any new texture or image | Google Gemini through Composio: `GEMINI_GENERATE_IMAGE` via `COMPOSIO_MULTI_EXECUTE_TOOL` (find it with `COMPOSIO_SEARCH_TOOLS`) on the default model |
-| Detailed, or the default model's result isn't good enough | Same tool with `model: "gemini-3-pro-image-preview"` (Nano Banana Pro; supports `image_size` 2K/4K and other aspect ratios) |
-| Very complex (exact flipbook grids, consistent frames across a sheet, tileable or img2img work, or Gemini Pro keeps missing) | ComfyUI (local, via comfy-mcp; call `server_info` first) |
+| Default: any new texture or image (user's choice) | **Codex's built-in `image_gen` tool**, run with `codex exec` (see below). Uses the user's ChatGPT subscription, no API credits |
+| Codex's result isn't good enough after a couple of tries | Google Gemini through Composio: `GEMINI_GENERATE_IMAGE` via `COMPOSIO_MULTI_EXECUTE_TOOL` (find it with `COMPOSIO_SEARCH_TOOLS`), `model: "gemini-3-pro-image-preview"` for detail |
+| Very complex (exact flipbook grids, consistent frames across a sheet, tileable or img2img work) | ComfyUI (local, via comfy-mcp; call `server_info` first) |
+
+Codex: run in the background from a new scratch folder `$D`, with the API key hidden so it
+stays on the subscription:
+
+```bash
+cd "$D" && env -u OPENAI_API_KEY codex exec --skip-git-repo-check -s workspace-write -C "$D" \
+  "Use your built-in image_gen tool (not the CLI fallback, not code that draws) to make one PNG: <prompt>. Copy the result into this folder as <name>.png. Work only in this folder. Reply with the saved path and the dimensions."
+```
+
+It takes ~1 min and saves ~1254x1254 (size and image model can't be chosen; Codex also keeps
+a copy in `~/.codex/generated_images/`). It can also give a real transparent background
+with a smooth alpha fade if asked. Don't use Codex's `image_gen.py` CLI fallback: it bills the
+OpenAI API account, not the subscription.
 
 1. Generate the image. Prompt for a **single isolated shape, pure white on a pure black
    background, no text, no frame**, and say the layout you need (centred, square, tall
-   streak for a beam, NxN grid of cells for a flipbook). Save the result (the response's
-   `data.image.s3url` is short-lived, so download it right away) to the scratchpad.
+   streak for a beam, NxN grid of cells for a flipbook). Save the result to the scratchpad
+   (with Gemini, the response's `data.image.s3url` is short-lived, so download it right away).
+   Look at it before converting.
 2. Convert it to white RGB with the shape in alpha (alpha = brightness, RGB = 255) and
    resize to a power of two. Do this with numpy inside Blender
    (`mcp__Blender__execute_blender_code`; Blender's Python has numpy, system Python does
@@ -98,7 +112,7 @@ shows up as stripes across the beam.
 `VelocityParallel` particles run the texture's **X** along the velocity, so an upright
 (tall) texture needs `Rotation = -90` to point its tip along the motion.
 
-Uploaded textures (drawn with PIL in Python, white RGB, shape in alpha):
+Uploaded textures (white RGB, shape in alpha; drawn with PIL in Python unless noted):
 
 | Name | Id | Use |
 |---|---|---|
