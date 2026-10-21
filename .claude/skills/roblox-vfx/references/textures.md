@@ -69,6 +69,17 @@ as textures are uploaded (name | id | use).
 | Basic Flame Wisp | rbxassetid://16504098653 | 4x4 flipbook, small curly flame; orange = side curls, near-black = dark flecks |
 | dark fire spec | rbxassetid://77001323190674 | 4x4 flipbook (128 cells on a 512 sheet): hollow wiggly rings; orange = ring curls flung from fire |
 | Blurry Horizontal Flare | rbxassetid://103854278038347 | Thin horizontal flare line; camera-facing at the ground = a hot line along a fissure or a flat flash |
+| ImpactStar (drawn) | `Textures.ImpactStar` | 4x4: shards burst from a heart and empty into a ring by ~75%; impact stars (colour/black/white stack). `assets/textures/impact.py` |
+| Splinters (drawn) | `Textures.Splinters` | 4x4: uneven tapered splinters flung out, erased from the centre; grit, chips |
+| ClawSlash (drawn) | `Textures.ClawSlash` | 4x4: fat crescent stroke that sweeps on and breaks off; a claw/slash stroke |
+| Glint (drawn) | `Textures.Glint` | Four equal arms from one hot core, faint halo (light); flare lines with `Squash` |
+| ShockRing (drawn) | `Textures.ShockRing` | Soft ring that thickens and brightens on one side (light); shock rings, hot rings |
+| FireBurstA / FireBurstB (drawn) | `Textures.FireBurstA/B` | 4x4: white-hot puff with flickering tongues that chars inside and breaks up, value baked as grey; fire bodies. `assets/textures/fire.py` |
+| BurnOut (drawn) | `Textures.BurnOut` | 4x4: mottled charcoal with cooling cracks that swells and tears; burn-out behind a fire body |
+| DustPuff (drawn) | `Textures.DustPuff` | 4x4: heavy mottled dust/smoke with a broken rim that keeps changing; dust bodies, smoke, wisps |
+
+The "(drawn)" rows are `src/shared/VFX/Textures.luau` entries: until a sheet is uploaded
+and its id put in `UPLOADED` there, the entry gives a library fallback (listed in that file).
 
 Gradient strips used as mesh `TextureID` should fade left to right (along U),
 matching the MeshFactory UV layout.

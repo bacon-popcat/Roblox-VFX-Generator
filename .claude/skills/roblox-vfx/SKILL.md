@@ -211,7 +211,10 @@ automatically a better one.
   `flipbook.mjs`, `vfxtex.py`, `examples.py`. AGPL-3.0, ported from Roqer
   (https://github.com/S4US/Roqer), whose VFX skill the design/explosions/motion/
   camera-world/drawing-textures/review references are adapted from.
-- `examples/`: approved effects. Match their structure and quality.
-  - `SlashImpact.luau`: particles + neon flash + light (no meshes).
-  - `GroundSlam.luau`: mesh shockwave, MeshParticles rock debris, dust, light,
-    template fallbacks.
+- `examples/`: copies of two effects built with `Layers` to the design guidance: the
+  contract's shape (ASSETS, Defaults, Linger, Timeline). Take the design from the references.
+  - `SlashImpact.luau`: the impact skeleton for one hit of many (no meshes).
+  - `GroundSlam.luau`: the skeleton plus a shock mesh, a swelling dust body, rocks
+    (MeshParticles), wind arcs and a crater, with template fallbacks.
+- `tools/luau-test/`: runs every effect outside Studio and checks errors, Linger and budget
+  (`structure.md`, "Testing").

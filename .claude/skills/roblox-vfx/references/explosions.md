@@ -8,8 +8,8 @@ made before it.
 Adapted from Roqer's VFX skill (https://github.com/S4US/Roqer, `roblox-animation-vfx`
 reference `vfx-explosions.md`, AGPL-3.0-or-later). *(measured)* marks numbers from 5,010
 studied emitters, 1,427 textures and 6 explosion videos stepped frame by frame; none was
-checked in Studio. The Luau below is a starting point in our module style, not a tested
-effect.
+checked in Studio. The Luau below is `Layers` spec tables as `FireballExplosion` uses
+them (`att` an Attachment, `p` the Params, `R` the blast's radius).
 
 ## 1. The mass is a flipbook
 
@@ -62,32 +62,22 @@ Speed 225-380, Drag 3-4, each particle easing out at a random angle for 0.35-0.7
 A fire-body layer for a hit with a radius of about 5 studs, 0.03 s after the flash:
 
 ```luau
-local fireBody = makeBurstEmitter(attachment, ASSETS.FireBurstSheet) -- 4x4 fire-burst flipbook
-fireBody.FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4
-fireBody.FlipbookMode = Enum.ParticleFlipbookMode.OneShot
-fireBody.Lifetime = NumberRange.new(0.45, 0.8)
-fireBody.Speed = NumberRange.new(60, 140)
-fireBody.SpreadAngle = Vector2.new(180, 180)
-fireBody.Drag = 4
-fireBody.Rotation = NumberRange.new(0, 360)
-fireBody.RotSpeed = NumberRange.new(-40, 40)
-fireBody.LightEmission = 0.2
-fireBody.LightInfluence = 0
-fireBody.Brightness = 5
-fireBody.ZOffset = 1
-fireBody.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.new(1, 0.95, 0.75)),
-	ColorSequenceKeypoint.new(0.25, Color3.new(1, 0.6, 0.2)),
-	ColorSequenceKeypoint.new(0.6, Color3.new(1, 0.3, 0.1)),
-	ColorSequenceKeypoint.new(1, Color3.new(0.6, 0.12, 0.05)),
+-- R = the blast's radius (studs); FireballExplosion's fireLayer
+local fireBody = Layers.Emitter(att, {
+	Texture = Textures.FireBurstA, -- drawn 4x4 fire-burst sheet (Layers sets Grid4x4, OneShot)
+	Lifetime = { 0.45, 0.8 },
+	Speed = { 12 * R / 5, 28 * R / 5 },
+	SpreadAngle = 180,
+	Drag = 4,
+	Rotation = { 0, 360 },
+	RotSpeed = { -40, 40 },
+	LightEmission = 0.2,
+	Brightness = 5,
+	ZOffset = 1,
+	Color = { { 0, p.HotColor }, { 0.25, p.Color:Lerp(p.HotColor, 0.35) }, { 0.6, p.Color:Lerp(p.DeepColor, 0.5) }, { 1, p.DeepColor } },
+	Size = { { 0, 0.6 * R, 0.15 * R }, { 0.3, 1.6 * R, 0.35 * R }, { 1, 1.8 * R, 0.35 * R } },
 })
-fireBody.Size = NumberSequence.new({
-	NumberSequenceKeypoint.new(0, 3),
-	NumberSequenceKeypoint.new(0.3, 8),
-	NumberSequenceKeypoint.new(1, 9),
-})
--- ... after the flash:
-ctx.Wait(0.03)
+-- ... 0.03 s after the flash:
 ctx.Emit(fireBody, p.FireCount) -- Defaults: FireCount = 8
 ```
 
@@ -111,24 +101,19 @@ is the darkest moment, lasting 0.1-0.3 s before it thins and lightens. Put a bur
 (section 6) just behind the fire body, so the fire covers it until it breaks up:
 
 ```luau
-local burnOut = makeBurstEmitter(attachment, ASSETS.BurnOutSheet) -- 4x4 burn-out flipbook
-burnOut.FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4
-burnOut.FlipbookMode = Enum.ParticleFlipbookMode.OneShot
-burnOut.Lifetime = NumberRange.new(0.5, 0.7)
-burnOut.Speed = NumberRange.new(5, 15)
-burnOut.SpreadAngle = Vector2.new(180, 180)
-burnOut.Drag = 4
-burnOut.Rotation = NumberRange.new(0, 360)
-burnOut.LightEmission = 0
-burnOut.LightInfluence = 0
-burnOut.Brightness = 2.5
-burnOut.ZOffset = 0.5
-burnOut.Color = ColorSequence.new(Color3.new(1, 0.45, 0.15), Color3.new(0.9, 0.35, 0.12))
-burnOut.Size = NumberSequence.new(7, 9)
-burnOut.Transparency = NumberSequence.new({
-	NumberSequenceKeypoint.new(0, 0.1),
-	NumberSequenceKeypoint.new(0.6, 0.3),
-	NumberSequenceKeypoint.new(1, 1),
+local burnOut = Layers.Emitter(att, {
+	Texture = Textures.BurnOut, -- drawn 4x4 burn-out sheet
+	Lifetime = { 0.5, 0.7 },
+	Speed = { 1 * R / 5, 3 * R / 5 },
+	SpreadAngle = 180,
+	Drag = 4,
+	Rotation = { 0, 360 },
+	LightEmission = 0,
+	Brightness = 2.5,
+	ZOffset = 0.5, -- just behind the fire body
+	Color = { { 0, p.Color:Lerp(p.DeepColor, 0.3) }, { 1, p.DeepColor } },
+	Size = { { 0, 1.4 * R }, { 1, 1.8 * R } },
+	Transparency = { { 0, 0.1 }, { 0.6, 0.3 }, { 1, 1 } },
 })
 -- about 0.25 s after the fire body: ctx.Emit(burnOut, 2)
 ```
@@ -172,25 +157,23 @@ balls; otherwise use soft or mottled smoke.
 Self-lit smoke that bursts out with the fire, fades in, hangs and fades:
 
 ```luau
-local smoke = makeBurstEmitter(attachment, ASSETS.SmokeSheet) -- e.g. a 4x4 smoke flipbook
-smoke.Lifetime = NumberRange.new(0.9, 1.4)
-smoke.Speed = NumberRange.new(40, 80)
-smoke.SpreadAngle = Vector2.new(180, 180)
-smoke.Drag = 6
-smoke.Acceleration = Vector3.new(0, 2, 0)
-smoke.Rotation = NumberRange.new(0, 360)
-smoke.RotSpeed = NumberRange.new(-20, 20)
-smoke.LightEmission = 0
-smoke.LightInfluence = 0
-smoke.Brightness = 1.6
-smoke.Color = ColorSequence.new(Color3.new(0.55, 0.53, 0.5))
-smoke.Size = NumberSequence.new(4, 10)
-smoke.Transparency = NumberSequence.new({
-	NumberSequenceKeypoint.new(0, 0.75),
-	NumberSequenceKeypoint.new(0.15, 0.45),
-	NumberSequenceKeypoint.new(1, 1.15), -- above 1: gone before the lifetime ends
+local smoke = Layers.Emitter(att, {
+	Texture = Textures.DustPuff, -- drawn 4x4 mottled smoke
+	Lifetime = { 0.9, 1.4 },
+	Speed = { 8 * R / 5, 16 * R / 5 },
+	SpreadAngle = 180,
+	Drag = 6,
+	Acceleration = Vector3.new(0, 2 * s, 0),
+	Rotation = { 0, 360 },
+	RotSpeed = { -20, 20 },
+	LightEmission = 0,
+	Brightness = 1.6,
+	Color = p.SmokeColor, -- a twin with { { 0, grey }, { 0.25, p.Color }, { 1, grey } } beside fire
+	Size = { { 0, 0.8 * R, 0.2 * R }, { 1, 2.1 * R, 0.4 * R } },
+	Transparency = { { 0, 0.75 }, { 0.15, 0.3 }, { 1, 1.15 } }, -- above 1: gone before the lifetime ends
 })
--- with the fire body (+0.05 s): ctx.Emit(smoke, 5); smoke.TimeScale *= 0.75
+-- with the fire body (+0.05 s), slowed while it hangs:
+Layers.Emit(ctx, smoke, 6, 0.75)
 ```
 
 - **Beside fire,** add a twin whose Colour runs from the fire's orange to grey.
