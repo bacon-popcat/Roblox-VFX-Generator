@@ -13,3 +13,4 @@ sourcemap.json
 # Reference clips stored by tools/vfx/clip.mjs
 .vfx-clips/
 __pycache__/
+tools/luau-test/.bundle.luau
