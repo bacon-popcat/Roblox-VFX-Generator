@@ -2,9 +2,9 @@
 
 What experienced Roblox VFX artists do and why: what the effect is for, colour, value and
 brightness, layers, timing and motion. Read it with `recipes.md` before designing an effect.
-`style-guide.md` and the "Oscar's corrections" list at the top of `recipes.md` override
-anything here; this file is a set of observations, not a style. Depart from it when the
-effect calls for it.
+Where it disagrees with other files in this skill (including `style-guide.md` and the
+"Oscar's corrections" list in `recipes.md`), follow this file (`SKILL.md`, Precedence). It
+is a set of observations, not a style: depart from it when the effect calls for it.
 
 Adapted from Roqer's VFX skill (https://github.com/S4US/Roqer, `roblox-animation-vfx`
 references `vfx-design.md` and `vfx-craft.md`, AGPL-3.0-or-later), rewritten for our
@@ -14,8 +14,8 @@ How far to trust a number:
 - *(measured)*: from Roqer's studies of published effects by experienced Roblox VFX artists:
   49 effects (5,010 particle emitters and 1,215 of their textures), their videos, a
   hand-drawn texture set, a 1,108-texture community kit and a tutorial by the artist snaliel.
-- *(verified)*: checked in Studio by Roqer's authors. Not re-checked in this project unless
-  `structure.md` "Engine gotchas" says so; our own verified notes win where they differ.
+- *(verified)*: checked in Studio by Roqer's authors. Where an engine gotcha in
+  `structure.md` disagrees, follow this file.
 - *(starting point)*: common practice; tune it by looking.
 
 In our modules a Roqer "EmitDelay" is a `ctx.Wait` (or a `task.spawn` + `ctx.Wait` branch)
@@ -107,7 +107,7 @@ before the layer, and "EmitCount" is the `n` in `ctx.Emit(emitter, n)`.
 - **White is kept** for thin shapes: rings, flares, winds, crescents and the hottest core
   (section 3).
 - **Lights take the palette too.** One PointLight per hue tints the character in both
-  colours of a two-hue effect (our budget allows two).
+  colours of a two-hue effect.
 
 ## 3. Value
 
@@ -220,19 +220,16 @@ How one orange shape renders under a new place's lighting *(verified)*:
   Artists use 2-20 on shockwave and slash decals. **A glowing crack that cools:** a decal at
   `Color3` around 10, tweened to black over about 1.3 s.
 
-Our own gotcha (`structure.md`): additive bright green above Brightness 1 clips to mint/white
-on light ground. Brightness numbers are relative to the place's bloom and background; judge
-them in captures, not by the table.
+Brightness numbers are relative to the place's bloom and background: read the Bloom, follow
+the numbers above, and confirm them in captures with the colour check.
 
 ## 5. Layers and orientation
 
 - **Many layers, usually one sprite each** *(measured)*: one hit in the studied slashes has
   40-60 distinct layers; a small orb is 17 layers on one attachment; the median burst is 1
   particle, and 37% of emitters have Speed near 0: sprites stacked and timed in place. 20 of
-  48 files add glowing meshes too (`meshes.md`). Our "3-5 layers" in `SKILL.md` are roles
-  (core, shape, secondary, residue); each role is usually several single-sprite emitters.
-  Keep the instance budget in `SKILL.md` in mind: most of an effect's emitters can share a few
-  attachments.
+  48 files add glowing meshes too (`meshes.md`). Most of an effect's emitters
+  can share a few attachments.
 - **Big counts are for scatter:** sparks, droplets, debris and dots at 10-160 a burst.
   Sustained beams and trails use `Rate` 15-2000.
 

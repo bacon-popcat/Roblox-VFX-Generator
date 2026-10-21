@@ -53,9 +53,7 @@ one just after them (`+ 1`) *(two Roqer runs drifted the camera and were fixed t
 ## Lights
 
 - Flash a light, then fade it, ideally with its Range growing as Brightness falls: from
-  Brightness 3-9 and Range 0-8 to 0 and 35-40 over 0.3-1 s. Our budget caps Range at 20, so
-  grow to 20; past that a light tints the whole floor (`FireballExplosion` keeps Brightness ~1,
-  Range ~10 for that reason).
+  Brightness 3-9 and Range 0-8 to 0 and 35-40 over 0.3-1 s.
 - Create a fresh light per play (in `ctx.Folder`, on `ctx.Anchor()`).
 - Keep a light's Range short enough that it marks the spot rather than tinting the floor.
 - One PointLight per hue for a two-hue effect (`design.md` section 2).

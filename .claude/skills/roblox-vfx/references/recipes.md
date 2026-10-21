@@ -5,8 +5,11 @@ Timings are in effect seconds. Layers are listed in draw-priority order.
 The studied numbers behind these (palette, value, brightness, timing) are in `design.md`;
 fire and smoke in `explosions.md`; projectiles, slashes, beams and auras in `motion.md`.
 
-**Recreating a reference: Oscar's corrections so far** (apply these by default; they came
-from playtest screenshots, not from the reference video):
+**Recreating a reference: Oscar's corrections so far** (they came from playtest
+screenshots, not from the reference video). Apply them where Roqer's guidance says nothing;
+where they conflict, follow `design.md` / `explosions.md` / `motion.md` (`SKILL.md`,
+Precedence). The main conflict: a fire body is a boiling mass of flipbook particles
+(`explosions.md`), not beam sheets carrying one image.
 - Big flame sheets (walls, curtains, central columns) stay fixed in the world, lying
   along the effect's shape, not turned to the camera. Use beams with `FaceCamera = false`
   (orientation rule in `structure.md` "Engine gotchas"). Particles can only face the
@@ -111,10 +114,12 @@ See `src/shared/VFX/Effects/MagnetPull.luau`. Driven by a per-frame loop for `Du
 
 ## Projectile (fireball, energy bolt)
 Persistent while flying, plus an impact on hit. Studied heads, ribbons, paths and volleys:
-`motion.md`. Trails run on real time; for ribbons that must work in slow-mo use a Beam
-(`structure.md` gotchas).
-1. Core: small bright sphere or glow particle, `LockedToPart = true`.
-2. Trail: Trail with WidthScale tapering to 0, Lifetime 0.15-0.3.
+`motion.md`, which wins where this list differs.
+1. Head: one sprite (a `VelocityParallel` diamond aimed along the path, or a camera-facing
+   core), cleared at impact.
+2. Ribbons: 2-3 textured Trails (a sharp one ~0.6 s with a gap behind the head, a soft one
+   ~0.85 s, a tendril ~0.3 s; shorter on a fast straight shot), `Lifetime` divided by
+   `ctx.TimeScale`.
 3. Shed particles: Rate 30-60, small, inherit some velocity (`VelocityInheritance` 0.2-0.4).
 4. On hit: play an Impact effect at the hit point.
 

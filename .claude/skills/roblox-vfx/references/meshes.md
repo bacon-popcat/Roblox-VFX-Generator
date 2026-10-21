@@ -159,11 +159,12 @@ studied effect files add glowing meshes beside their particles. From Roqer's VFX
 - Under vertex colours keep the part's `Color` white, because `Color` multiplies them.
 - A MeshPart's texture cannot scroll (`TextureID` has no offset). Animate size, rotation and
   `Transparency`, or put a scrolling Beam alongside.
-- Roqer found that `MeshPart.TextureID` ignores alpha; our verified gotcha (`structure.md`) is
-  more precise: alpha cuts holes only once the part's `Transparency` is above 0 (0.02 is
-  enough). Use ours.
-- `ForceField` material: our gotcha says it ignores `TextureID` and gives a hairline rim, and
-  its animation speed cannot be set, so it suits a shield or aura, not a timed wipe.
+- `MeshPart.TextureID` ignores alpha: the texture's colour covers the whole surface and
+  nothing shows through *(verified)*. Don't put a fading texture there; fade the part's
+  `Transparency` (a `Neon` card fading from about 0 to 1 is the reliable mesh effect), or a
+  Decal on a part with `Transparency = 1`.
+- `Material = ForceField` with a texture gives a shimmering, edge-lit shell. Its animation
+  speed cannot be controlled, so it suits a shield or aura, not a timed wipe.
 - **Big shells, domes and columns** that are half transparent across their whole surface read
   as tinted plastic and cover the screen; below a `Transparency` of about 0.75 they look solid
   against a bright sky. Keep a big shell faint (0.85-0.96), or give it surface shape (streaks,

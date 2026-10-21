@@ -8,11 +8,9 @@ has the studied numbers behind them.
 Adapted from Roqer's VFX skill (https://github.com/S4US/Roqer, `roblox-animation-vfx`
 reference `vfx-motion.md`, AGPL-3.0-or-later). Marks as in `design.md`.
 
-**Our clock first.** `Trail.Lifetime` is real time, so trails come out wrong in slow-mo and
-fade during a VFXScrub freeze (`structure.md` "Engine gotchas"). For projectile ribbons, use
-a Beam from the launch point to the head, bent into the flight parabola, as `FireballExplosion`
-does. Weapon trails that must be Trails (`WindBladeTrail`) are judged at 1x in the harness, or
-with their lifetime divided by `ctx.TimeScale` while scrubbing.
+**Trails and our clock.** `Trail.Lifetime` is real time: set `trail.Lifetime = authored /
+ctx.TimeScale` so a trail keeps its length in slow-mo, and capture trail layers while the
+effect still plays slowly rather than frozen (`structure.md` "Engine gotchas").
 
 ## Projectiles
 
@@ -33,8 +31,7 @@ A projectile has three parts *(measured)*:
   suit curving missiles: a fireball at 120 studs a second with 0.6-0.85 s ribbons left a
   straight line from the blast back to the thrower *(seen in a Roqer run)*. On a fast,
   straight shot keep the drawn length a few times the head's, fading the tail to Transparency 1
-  (27 of 66 studied trails fade, 57 taper to nothing), or clear it at impact. With our Beam
-  ribbons, that is the beam's length from the head back, not the whole flight.
+  (27 of 66 studied trails fade, 57 taper to nothing), or clear it at impact.
 - **Shed particles:** droplets or specks at 15-60 a second, with gravity or drag, not locked
   to the part.
 
@@ -59,8 +56,8 @@ that is only a sprite with a thin trail reads as floating, not thrown.
   one frame does not move the spawn point; `structure.md` gotchas).
 - **A crescent slash without a mesh:** sweep a ribbon through an arc. Two attachments on a
   part at the blade's inner and outer radius; rotate the part through `Spin` 160 degrees over
-  0.14 s (`Quart` Out) with `ctx.Tween`. A narrow band reads as a crescent, a wide one as a
-  fan. As a Trail it has the real-time problem above.
+  0.14 s (`Quart` Out) with `ctx.Tween`, with a Trail between them (`FaceCamera = false`, width
+  tapering to 0). A narrow band reads as a crescent, a wide one as a fan.
 - **Roll the whole effect for a diagonal swing.** A flat slash seen from a low camera is
   edge-on and almost invisible, so check it from the game's real camera height.
 - **Stabs and dashes:** a one-frame (0.04 s) flash moving at 155-444 studs a second, with
@@ -73,8 +70,7 @@ Use a few Beams plus many particles:
   (0.75-150) and `TextureSpeed` (1-12), so the scrolls never line up. Fade the ends over 5-10%
   of the length, or make the body a capsule (Transparency `1, 0, 1` along it).
 - **Fill:** `VelocityParallel` flame streaks at `Rate` 500-2000, Speed up to 300, Drag 10,
-  `Squash` ramping 0 to 3. Check the rate against our budget (`SKILL.md`): channelled effects
-  stay under ~200 particles a second, so thin the fill and widen each streak instead.
+  `Squash` ramping 0 to 3.
 - **The muzzle:** a crown of short curved beams, and flat shockwave rings.
 - **Duration:** hold the beam 3.5-5 s, then collapse the widths to 0 over 0.5-1 s.
 - **A drilling dash:** three beams around one axis that roll 180 degrees while their widths
