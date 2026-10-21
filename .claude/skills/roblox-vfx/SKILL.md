@@ -41,8 +41,7 @@ require `MeshFactory` or `VFXScrub` (edit-time tools), nor `ForgeBridge` or Forg
 2. **Read `references/style-guide.md`** and follow it over your own taste.
 3. **Pick textures** from `references/textures.md`. Reuse before inventing. If nothing
    fits, generate one ("Making new textures" there): Codex's built-in image tool by
-   default, Gemini Pro through Composio if Codex's result isn't good enough, ComfyUI only
-   for very complex ones.
+   default, ComfyUI if Codex's result isn't good enough or the image is very complex.
 4. **Meshes:** if the effect needs a mesh shape (slash arc, shockwave, spikes,
    shards, rocks), follow `references/meshes.md` before writing the effect.
    **Forge:** if the effect is authored in VFX Forge, or needs Forge mesh VFX, bezier

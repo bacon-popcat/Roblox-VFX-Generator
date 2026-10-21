@@ -74,8 +74,7 @@ When nothing in the library fits, generate one (white RGB, shape in alpha; tint 
 | Image | Generator |
 |---|---|
 | Default: any new texture or image (user's choice) | **Codex's built-in `image_gen` tool**, run with `codex exec` (see below). Uses the user's ChatGPT subscription, no API credits |
-| Codex's result isn't good enough after a couple of tries | Google Gemini through Composio: `GEMINI_GENERATE_IMAGE` via `COMPOSIO_MULTI_EXECUTE_TOOL` (find it with `COMPOSIO_SEARCH_TOOLS`), `model: "gemini-3-pro-image-preview"` for detail |
-| Very complex (exact flipbook grids, consistent frames across a sheet, tileable or img2img work) | ComfyUI (local, via comfy-mcp; call `server_info` first) |
+| Codex's result isn't good enough after a couple of tries, or very complex (exact flipbook grids, consistent frames across a sheet, tileable or img2img work) | ComfyUI (local, via comfy-mcp; call `server_info` first) |
 
 Codex: run in the background from a new scratch folder `$D`, with the API key hidden so it
 stays on the subscription:
@@ -93,8 +92,7 @@ OpenAI API account, not the subscription.
 1. Generate the image. Prompt for a **single isolated shape, pure white on a pure black
    background, no text, no frame**, and say the layout you need (centred, square, tall
    streak for a beam, NxN grid of cells for a flipbook). Save the result to the scratchpad
-   (with Gemini, the response's `data.image.s3url` is short-lived, so download it right away).
-   Look at it before converting.
+   and look at it before converting.
 2. Convert it to white RGB with the shape in alpha (alpha = brightness, RGB = 255) and
    resize to a power of two. Do this with numpy inside Blender
    (`mcp__Blender__execute_blender_code`; Blender's Python has numpy, system Python does
