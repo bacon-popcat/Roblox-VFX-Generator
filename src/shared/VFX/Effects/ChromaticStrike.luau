@@ -197,13 +197,16 @@ end
 
 -- Projectile paths: { along (0 caster .. 1 target), height, side (+ = caster's right) }; heights
 -- and sides are studs at the default Scale. Measured on two 0.25x recordings (far and behind
--- the caster): four projectiles shot out one after another (~0.15 s apart), each from its
--- own caster burst: a sky loop, a low smoky streak, a fast hooked sky shot and the tallest
--- loop. Each is a bright star head trailing a twisted white smoke ribbon with a black outline;
--- the trail stays drawn from the caster until FadeAt, then erases from the caster end.
+-- the caster): two caster bursts (0.13 s and 0.5 s), each shooting three projectiles at
+-- once: a loop over the left, a low smoky streak and a shot over the right. Each is a bright
+-- star head trailing a twisted white smoke ribbon with a black outline; the trail stays drawn
+-- from the caster until FadeAt, then erases from the caster end. `Burst` marks the first
+-- projectile of each burst (the caster's burst fires with it).
 local WIRES = {
-	{ -- 1. sky: wide overhand loop; up the left, over the top, down the right, hooks in
+	-- burst 1
+	{ -- sky: wide overhand loop; up the left, over the top, down the right, hooks in
 		Launch = 0.13,
+		Burst = true,
 		Travel = 0.56,
 		FadeAt = 0.95,
 		Fade = 0.22,
@@ -213,17 +216,30 @@ local WIRES = {
 			{ 0.6, 18, 7 }, { 0.8, 10, 5 }, { 0.95, 6, 1 }, { 1, 4, 0 },
 		},
 	},
-	{ -- 2. low streak: chest height, nearly straight, chromatic head
-		Launch = 0.28,
+	{ -- low streak: chest height, nearly straight, chromatic head
+		Launch = 0.14,
 		Travel = 0.42,
 		Soft = true, -- a chunky smoky white streak rather than a thin twisted rope
-		FadeAt = 0.98,
+		FadeAt = 0.95,
 		Fade = 0.18,
 		Width = 3,
 		Points = { { 0, 3, 0 }, { 0.5, 3.2, 0 }, { 1, 3, 0 } },
 	},
-	{ -- 3. sky: fast, up the left to ~15 studs, a sharp hook, dives across
-		Launch = 0.44,
+	{ -- sky: a lower arc up the right to ~16 studs, over and in
+		Launch = 0.15,
+		Travel = 0.48,
+		FadeAt = 0.97,
+		Fade = 0.2,
+		Width = 1.2,
+		Points = {
+			{ 0, 3, 0 }, { 0.03, 9, 4 }, { 0.1, 15, 6 }, { 0.3, 16, 5 }, { 0.6, 11, 3 },
+			{ 0.85, 6, 1 }, { 1, 4, 0 },
+		},
+	},
+	-- burst 2
+	{ -- sky: fast, up the left to ~15 studs, a sharp hook, dives across
+		Launch = 0.5,
+		Burst = true,
 		Travel = 0.31,
 		FadeAt = 1.02,
 		Fade = 0.18,
@@ -233,13 +249,22 @@ local WIRES = {
 			{ 0.75, 6, 0 }, { 1, 4, 0 },
 		},
 	},
-	{ -- 4. sky: the tallest; up the right to ~27 studs (star glint at the apex), S-dives in
-		Launch = 0.58,
+	{ -- low streak
+		Launch = 0.52,
+		Travel = 0.36,
+		Soft = true,
+		FadeAt = 1.05,
+		Fade = 0.15,
+		Width = 2.5,
+		Points = { { 0, 2.8, 0 }, { 0.5, 3, 0 }, { 1, 3, 0 } },
+	},
+	{ -- sky: the tallest; up the right to ~27 studs (star glint at the apex), S-dives in
+		Launch = 0.54,
 		Travel = 0.5,
 		FadeAt = 1.1,
 		Fade = 0.16,
 		Width = 1.2,
-		Glint = 0.81, -- effect time of the big star flash at its apex
+		Glint = 0.77, -- effect time of the big star flash at its apex
 		Points = {
 			{ 0, 3, 0 }, { 0.02, 12, 3 }, { 0.06, 22, 3.5 }, { 0.12, 27, 3 }, { 0.25, 24, 6 },
 			{ 0.45, 18, 4 }, { 0.6, 14, -2 }, { 0.8, 10, -1 }, { 1, 4, 0 },
@@ -1852,11 +1877,17 @@ function Effect.Play(ctx)
 		end)
 	end
 
-	-- each projectile fires from its own caster burst: sparks, white streaky wings, a puff of
-	-- smoke, sparkle stars and prismatic flares
-	for i, wire in WIRES do
+	-- each burst of three projectiles fires with a caster burst: sparks, white streaky wings,
+	-- a puff of smoke, sparkle stars and prismatic flares
+	local burstN = 0
+	for _, wire in WIRES do
+		if not wire.Burst then
+			continue
+		end
+		burstN += 1
+		local first = burstN == 1
 		at(wire.Launch - 0.01, function()
-			ctx.Emit(sparks, if i == 1 then p.SparkCount else math.ceil(p.SparkCount * 0.6))
+			ctx.Emit(sparks, if first then p.SparkCount else math.ceil(p.SparkCount * 0.6))
 			blades.EmissionDirection = Enum.NormalId.Top
 			blades.SpreadAngle = Vector2.new(45, 45)
 			ctx.Emit(blades, 2)
@@ -1875,7 +1906,7 @@ function Effect.Play(ctx)
 	burst(0.5, shards, 2)
 	burst(0, specks, 10)
 	burst(0.05, void, 1)
-	burst(0.46, bokeh, 14) -- a cloud of white diamond sparkles between the shots
+	burst(0.46, bokeh, 14) -- a cloud of white diamond sparkles before the second burst
 	for time = 1.18, 1.82, 0.05 do -- glints twinkle round the target until the dash drills in
 		burst(time, targetGlints, 3)
 	end

@@ -211,8 +211,8 @@ its LookVector, or pass the runtime-only override `Caster` (a BasePart). `Scale`
 the target eruption; caster bursts, projectiles and the dash use 0.56x of it. Plain Luau, one
 per-frame loop (`ctx.Wait(1/240)`) running a time-sorted event list. Play returns at ~3.95 s;
 smoke is gone by ~5.2 s.
-1. 0.13-1.25 s: four projectiles shot one after another (WIRES): three white sky shots and a
-   low smoky streak. Each is a locked
+1. 0.13-1.25 s: six projectiles in two bursts of three (WIRES): four white sky shots and two
+   low smoky streaks. Each is a locked
    4-point star head flown along a Catmull-Rom spline, drawing three camera-facing Trails (a
    white core, a soft white haze `cs_soft_trail` and a dark smoke edge) that stay from the
    caster until they fade. Each trail's width pinches and swells with the distance flown, so
@@ -254,8 +254,9 @@ smoke is gone by ~5.2 s.
 Particle inventory (checked against both 0.25x reference clips and a 0.25x Studio capture,
 2026-10-21; re-check every layer here after any change). Each line is what the reference
 shows -> what we use:
-- projectiles: four, shot out one after another ~0.15 s apart (sky loop 0.13 s, low streak
-  0.28 s, hooked sky shot 0.44 s, tallest loop 0.58 s), each with its own caster burst.
+- projectiles: six, in two caster bursts of three (0.13-0.15 s and 0.5-0.54 s): each burst a
+  shot over the left, a low smoky streak and a shot over the right; the second burst's
+  right shot is the tallest (star glint at its apex). One caster burst per three.
 - projectile trails: wobbly smoky white ribbons ~0.5 stud wide (low streak ~1.5) with a black
   outline, glitter -> three camera-facing Trails per projectile (`WireWidth` 0.36; at 0.18 the
   capture showed hairlines). The outline is a near-opaque black ribbon ~1.35x the haze's
@@ -304,7 +305,7 @@ Camera shake (`ctx.Shake`, `Shake`/`ShakeScale`): 2.2 deg at the launch, 11 deg 
 (~6 deg peak measured once it adds up with distance falloff), a 1.8 deg rumble through the
 burn, 5.5 deg on the finale.
 Budget: a deliberate overrun to match the reference (the user raised it): ~190 instances
-(5 projectiles x 3 Trails, ~95 emitters) and ~700 burst particles plus rate channels. Lower
+(6 projectiles x 3 Trails, ~95 emitters) and ~700 burst particles plus rate channels. Lower
 `SmudgeRate`, `SmokeRate`, `SpikeRate`,
 `SparkCount`, `SpeckCount`, `BokehCount`, `StreakCount`, `PuffCount` and `MoteRate` for
 crowds; `Vignette` and `Shake` should be on only for the caster's own client.
