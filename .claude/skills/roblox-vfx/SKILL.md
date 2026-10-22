@@ -57,9 +57,9 @@ require `MeshFactory` or `VFXScrub` (edit-time tools), nor `ForgeBridge` or Forg
 3. **Textures:** most effects should draw their own (`references/drawing-textures.md`):
    flipbooks, crisp shapes and light with numpy (`tools/vfx/vfxtex.py`), checked with
    `tools/vfx/flipbook.mjs`. Use a library texture (`references/textures.md`) when one
-   already matches the effect's style; Google Gemini through Composio (Pro model for
-   detail) or ComfyUI for painted images numpy can't draw. Built-in `rbxasset://` textures
-   are stand-ins for blocking out only.
+   already matches the effect's style; Codex's built-in image tool by default for painted
+   images numpy can't draw, ComfyUI if Codex's result isn't good enough or the image is very
+   complex. Built-in `rbxasset://` textures are stand-ins for blocking out only.
 4. **Meshes:** if the effect needs a mesh shape (slash arc, shockwave, spikes,
    shards, rocks), follow `references/meshes.md` before writing the effect.
    **Forge:** if the effect is authored in VFX Forge, or needs Forge mesh VFX, bezier
@@ -212,20 +212,24 @@ automatically a better one.
   `flipbook.mjs`, `vfxtex.py`, `examples.py`. AGPL-3.0, ported from Roqer
   (https://github.com/S4US/Roqer), whose VFX skill the design/explosions/motion/
   camera-world/drawing-textures/review references are adapted from.
-- `examples/`: approved effects. Match their structure and quality. The larger approved
-  effects live in `src/shared/VFX/Effects/` (not copied here, so they never go stale); read the
-  closest one before writing a similar effect:
+- `examples/`: copies of two effects built with `Layers` to the design guidance: the
+  contract's shape (ASSETS, Defaults, Linger, Timeline). Take the design from the references.
+  - `SlashImpact.luau`: the impact skeleton for one hit of many (no meshes).
+  - `GroundSlam.luau`: the skeleton plus a shock mesh, a swelling dust body, rocks
+    (MeshParticles), wind arcs and a crater, with template fallbacks.
+  The larger effects live in `src/shared/VFX/Effects/` (not copied here, so they never go
+  stale); read the closest one before writing a similar effect:
   - `ChromaticStrike.luau`: ranged strike rebuilt from a reference. Spline projectiles with
     star heads and layered beam trails, a dash with a spinning head, a camera-locked screen
     vignette, `ctx.Shake`, a long burn driven by a time-sorted event list, custom textures.
-  - `LavaEruption.luau`: fissure eruption; per-frame channel rates, upright beam sheets,
-    SurfaceGui crack decals, pulsing layers measured on 60 fps strips.
-  - `FireballExplosion.luau`: cartoon explosion; textured SmoothSphere balls that cool and
-    dissolve through texture frames, a gas dome from stacked particles, comet beams.
-  - `MagnetPull.luau`: channelled suction; inward Sphere emitters, implosion pulses, a dark
-    core with a Neon ball, MeshParticles shards.
+  - `LavaEruption.luau`: fissure eruption; per-frame channel rates, SurfaceGui crack decals,
+    pulsing layers measured on 60 fps strips.
+  - `FireballExplosion.luau`: a finisher built to `explosions.md`: boiling drawn fire-burst
+    flipbooks, burn-out, smoke from the same burst, comets with textured trail pairs, cracks.
+  - `MagnetPull.luau`: channelled suction; inward Sphere emitters, implosion pulses, an
+    orb-skeleton core that cross-fades, MeshParticles shards, a five-colour palette.
   - `WindSpinSlash.luau` / `WindBladeTrail.luau` / `WindSpinSlashCombo.luau`: a spin slash from
-    phased flipbook layers, a weapon trail, and a composite effect calling child effects.
-  - `SlashImpact.luau`: particles + neon flash + light (no meshes).
-  - `GroundSlam.luau`: mesh shockwave, MeshParticles rock debris, dust, light,
-    template fallbacks.
+    phased flipbook layers, a textured weapon-trail pair, and a composite effect calling
+    child effects.
+- `tools/luau-test/`: runs every effect outside Studio and checks errors, Linger and budget
+  (`structure.md`, "Testing").

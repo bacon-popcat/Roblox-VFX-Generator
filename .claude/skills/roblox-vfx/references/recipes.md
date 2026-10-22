@@ -52,12 +52,10 @@ Each layer is usually its own single-sprite burst (`ctx.Emit(emitter, 1-6)`), ti
 - **Black grit:** a few dark dust particles.
 
 ## Impact (melee hit, punch, slash contact)
-Duration 0.3-0.6.
-1. Core flash: neon disc or sphere, scale up 1 -> 6-8 while fading, 0.1-0.25s.
-2. Sparks: burst 15-30, high speed, high Drag (5-8), short Lifetime (0.2-0.45), `Squash` for streaks.
-3. Ring/shockwave: thin expanding ring facing ctx.CFrame, 0.2-0.3s. Mesh: Ring.
-4. Light pop: PointLight, Brightness 4-8 -> 0 over ~1.5x flash time.
-5. Optional dust: 3-6 large soft particles, LightEmission 0, slow, 0.5-0.8s.
+Duration 0.3-0.6. See `examples/SlashImpact.luau`: the skeleton above for one hit of many
+(R = 4 studs): spiky flash + flare line, colour/black/white impact stars, black backing, a
+claw stroke with its dim twin (one shared angle), streaks with black twins, a flat shock
+ring facing the attacker, embers, and a light that fades while its range grows.
 
 ## Slash (weapon swing arc)
 Duration 0.2-0.4.
@@ -70,21 +68,24 @@ Duration 0.2-0.4.
 ## Spin slash / wind vortex (AoE swing around the caster)
 Duration ~0.3 for the vortex, ~1.5 with residue. See `src/shared/VFX/Effects/WindSpinSlash.luau`.
 1. Vortex: 4-6 flat spinning particles (VelocityPerpendicular, tilted attachment,
-   RotSpeed 800-1000), slash flipbooks played OneShot. Dark normal-blend layers under
-   additive lime ones. Phase each layer's start angle (every texture's arc sits at a
+   RotSpeed 800-1000), slash flipbooks played OneShot. Dark layers under solid lime ones
+   (LightEmission 0, Brightness ~3.5) and one thin additive hot stroke. Phase each layer's start angle (every texture's arc sits at a
    different angle in its quad) so together they form one ~180 deg crescent (an open C,
    not a closed ring); verify with VFXScrub frames. Steep tilt (~20 deg) so one side
    rises: reads as volume.
-2. Flash at ~0.015-0.065: star glare + soft glow above the caster, gone by 0.07.
-3. Ground: wind-ring texture lying flat (0.35-0.6s), smoke as flat haze on a Disc emitter.
+2. Flash at ~0.01: a filled spiky shape over a squashed flare line above the caster, gone by
+   ~0.08 (a thin four-ray star as the whole flash reads as a V once rotated).
+3. Ground: wind-ring texture lying flat (0.35-0.6s), self-lit mottled smoke (a grey pair)
+   as flat haze on a Disc emitter, slowed to 0.8x.
 4. Thin bright crescents rising out of the vortex (0.06-0.27).
 5. Residue: leaves (MeshParticles), sparkles and glow spots on a Disc emitter, debris.
 
 ## Suction / gravity pull / black hole (channelled, 1-3 s)
 See `src/shared/VFX/Effects/MagnetPull.luau`. Driven by a per-frame loop for `Duration`
 (add the value `ctx.Wait` returns to the loop clock, never a fixed 1/60).
-1. Implosion pulses every ~0.17 s, each living ~0.13 s: a translucent dome (camera-facing
-   disc centred on the ground, so the ground hides its lower half) + a flat ground disc.
+1. Implosion pulses every ~0.17 s, each living ~0.13 s: a faint dome (camera-facing disc
+   centred on the ground, so the ground hides its lower half; kept 0.7+ transparent so it
+   doesn't read as tinted plastic, its rim carrying the shape) + a dark flat ground disc.
    They pop in ~1.25x as a faint first frame, snap to full size, then shrink to ~0.3.
 2. The ring at the disc edge: a soft medium-width band (`thick ring 2`) while the pulse is
    big, cross-faded into a crisp neon ring (`thick ring 3`) as it closes. Both exactly at
@@ -102,15 +103,15 @@ See `src/shared/VFX/Effects/MagnetPull.luau`. Driven by a per-frame loop for `Du
    dark shards (MeshParticles with inward Acceleration), streaks skating across the floor.
 4. Flicker layers on a Box volume: short-lived lightning clusters, black jagged streaks,
    thin vertical lines (FacingCameraWorldUp keeps them upright).
-5. Optional core: a star opens it (anticipation: swell while spinning fast, a smaller star
-   counter-spinning inside, a glow + light building up, then snap shut into a bright pop
-   as the pull starts), then a dark ball (flipbook core raised half its
-   size off the ground so the ground cuts only its bottom), a faint ring at its base, looping
-   wisp strands circling it and arcs flashing per pulse. For a bold, fully dark core put a
-   dark `Neon` Ball part inside the flipbook (particles alone stay semi-transparent) and give
-   the layers that must draw over it `ZOffset` > the ball's radius. To make a ring around the
-   core visibly spin, use flat crescent strokes (`Crescent32`) with RotSpeed: a symmetric
-   ring texture can't show rotation.
+5. Optional core: an anticipation first (a spiky star and its black twin swell while
+   spinning, then implode to nothing over ~0.4 s), a pop as the hole opens, then a held core
+   built as the orb skeleton (`motion.md`): black linework, a hard ring, swirling rays, a
+   black pupil, an outer ring, a halo and a black backdrop, every layer cross-fading (Rate
+   ~3, Transparency 1-0-1, random Rotation) so it holds but shimmers, raised half its size
+   so the ground cuts only its bottom. For a bold, fully dark pupil put a dark `Neon` Ball
+   part inside (particles alone stay semi-transparent) and give the layers in front
+   `ZOffset` > the ball's radius. Arcs flash with each pulse. Keep the palette to five
+   colours (violet, magenta, pale lilac, dark violet, near black).
 
 ## Projectile (fireball, energy bolt)
 Persistent while flying, plus an impact on hit. Studied heads, ribbons, paths and volleys:
@@ -142,76 +143,64 @@ the flash while its brightness falls (`design.md` section 6).
 5. Smoke: dark, slow, large, LightEmission 0, 1-1.5s, rises slightly.
 6. Light pop: larger range, longer fade.
 
-### Stylized cartoon explosion (fireball balls)
-See `src/shared/VFX/Effects/FireballExplosion.luau`. Real time ~3.6 s (Play returns at ~2.9 s).
-1. Starburst flash 0-0.05 s (orange spikes, white core on top, ZOffset clear of the ground).
-2. Balls (SmoothSphere) burst out of a small core at 0.03 s and reach full size by 0.05 s,
-   then keep swelling ~25%. Update them every rendered frame (`ctx.Wait(1/240)`), or the
-   20 ms burst lags in slow-mo. Colour timeline: white
-   until ~0.12 s, cream with faint spots at 0.2 s, orange with big blotches at 0.3 s. The
-   lower balls go dark maroon with bright rims by ~0.42 s; the top two hold the spotted
-   orange ~0.1 s longer, then show large glowing lava patches before they dissolve. Never pure black. Drop the rim glow quickly once a ball is dark,
-   or it reads as glass.
-3. 0.03-0.25 s: a soft grey ring for the shock dome (no fill: centred on the ground it
-   reads as an arc), a diffuse orange bloom, a tight floor glow, flat spiky floor rays,
-   dark radial dust and dash sparks. Keep the PointLight weak (Brightness ~1, Range ~10),
-   or it floods the floor.
-4. Comets from ~0.035 s at ~28 studs/s with a slight droop: a thin smoke ribbon, a flame
-   over the last 0.05-0.15 s of path, and a small hot head glow.
-5. 0.42 s: a dark gas dome puffs out under the top balls in ~0.06 s (stacked, flattened
-   camera-facing discs centred above the ground, a lit rim and two glowing band arcs in
-   front). It swallows the lower balls, the bands fade by ~0.95 s and the dome thins out
-   0.9-1.2 s.
-6. 0.6-0.8 s: the top balls dissolve bottom-up (melt texture frames, fast-fading body).
-7. Lava cracks 0.78-3.6 s (orange to ~3 s, deepening to orange-red), with embers 0.3-1.8 s
-   and thin grey wisps from 1.4 s until Play returns.
+### Fireball explosion (a skill's finisher)
+See `src/shared/VFX/Effects/FireballExplosion.luau`, built to `explosions.md`. R = 7 studs.
+1. 0 s: a filled spiky flash to 2.5 R, a white-hot core (Brightness ~40) and a cross flare,
+   gone by ~0.09 s. A light pops (Brightness ~12) and fades over ~0.9 s while its range grows
+   to ~36.
+2. 0.03 s: impact stars (colour/black/white) and the fire body: two drawn fire-burst sheets,
+   8 each, Speed 12-28 R/5, Drag 4, Lifetime 0.45-0.8, Brightness 5, LightEmission 0.2,
+   cooling yellow-white → orange → red; a small hot copy at Brightness 18 dies by 0.3 s.
+   A slower, bigger late wave at 0.1 s keeps the mass growing.
+3. 0.035 s: comets: a hot head, a sharp textured trail (~0.22 s) and a soft one (~0.4 s),
+   lifetimes divided by `ctx.TimeScale`, shedding sparks, on a parabola.
+4. 0.06 s: black backing, smoke from the same burst (grey and a fire-tinted twin, Lifetime
+   0.9-1.4 slowed to 0.75x, Transparency 0.3 at its most solid), streaks with black twins,
+   a ground ring, embers.
+5. 0.26 s: a charcoal burn-out behind the body; 0.3 s: a scorch and lava cracks that cool
+   from orange to dark over ~2.4 s, with thin smoke wisps.
 
 ### Lava fissure eruption (curtain of fire from a crack)
-See `src/shared/VFX/Effects/LavaEruption.luau` (rebuilt from a reference video). ~3.65 s
-of flame, then crack glow to ~4.35 s. Size the big shapes off the fissure length F.
-1. Precursor 0-0.6 s: streak bursts in 3 clusters (orange + near-black), grey rock chips
-   (gone by ~0.4 s), upright flame bursts ~0.25 F tall in the middle 0.6 F, hollow ring
-   curls, dark soft smoke plumes ~0.9 F wide shooting up fast under heavy drag (~0.7-0.8 F
-   by 0.2-0.25 s, gone by ~0.4 s), embers. The crack heats up red-orange from 0.3 s.
-2. Onset ~0.7 s: an orange spike row, then within ~0.035 s a dense curtain of smooth thin
-   tongues 1.0 F wide, ~0.65 F tall at the edges and ~0.95 F in the centre, so the top
-   tapers (about as tall as it is wide), with a soft flame body behind them from ~0.85 s.
-   Wind arcs from ~0.72 s: thin, peach-red, flat ellipses 1.3-1.6 F across the base (plus
-   one raised, tilted layer), gone by ~1.25 s.
-3. Burn: the curtain is 0.75 F wide, around a tapered central flame ~0.45 F wide at its
-   base with a yellow core low down, a dim red streak above it, a hot orange line along
-   the crack, dark side tongues, curls, flecks and a few large orange embers. Saturated
-   orange: yellow only low in the middle, deep red over each tongue's last 40%.
-4. Die-down ~2.85-3.65 s: the curtain narrows to a bundle ~0.2 F wide while it stays
-   tall. Stop emitting ~0.15 s early and shrink lifetimes so nothing lingers. The crack
-   glow stays red-orange and dim.
-5. Playtest tuning (Oscar's changes after the first build, now in the module):
-   - Default `Scale = 2.5` (fissure ~50 studs). Oscar tried 3 first, then settled on 2.5.
-   - The central column, glow, core, streak and both veil beams use `FaceCamera = false`.
-     Their attachments use `CFrame.fromMatrix(Vector3.zero, Vector3.yAxis, Vector3.xAxis)`
-     (X up the flame, Y along the fissure).
-   - Wall height: `WALL_HEIGHT = 0.85` trims the tongue and body lifetimes and the beam
-     heights together. Speed: tongues and body move `TONGUE_RUSH = 1.6`× faster and live
-     1/1.6 as long. The per-frame loop rewrites the tongue `Lifetime`, so the factor is
-     applied there too.
-   - Density: `FlameRate = 100`. The tongues are wider (`Squash` 0.3→0.6). The flame
-     body has its own box at 0.9 of the curtain width, at rate `FlameRate * 0.4`,
-     starting 0.25 transparent. The veil reaches 0.3 transparency at its base. The side
-     tongues get `FlameRate * 0.5` each and the V phase thins them by only 25%; at 55%
-     the sides showed gaps.
-   - Sway: two mixed sines (`0.75 sin(5.7t) + 0.25 sin(10.1t + 1.3)`). They push every
-     live tongue and body particle sideways (`Acceleration = RightVector * 1.6 B * sway`)
-     and move the beam tops by `0.07 B * sway` along the fissure.
-   - Wind arcs: `Speed` 1-1.2 B up with `Drag` 2.5, so they rise ~0.3 B as they spin.
-     Lifetime 0.42-0.5 s, transparency 0.4 → 1, 13 arcs in total.
+See `src/shared/VFX/Effects/LavaEruption.luau`. ~3.65 s of flame, then the crack cools to
+~4.35 s. Size the big shapes off the fissure length F (body B = 0.72 F).
+1. Anticipation 0-0.6 s: streak bursts (orange + their black twins), grey rock chips (gone by
+   ~0.4 s), upright flame bursts in the middle 0.6 F, lava rings and ring curls, a grey smoke
+   veil (never a dense black puff) shooting up under heavy drag, embers. The crack heats up
+   red-orange from 0.3 s.
+2. Onset ~0.7 s: a spiky flash and a flare line along the crack, a spike row, a splash, and
+   within ~0.035 s a dense curtain of solid tongues (Fire Tower flipbooks: hot roots, orange,
+   deep red tops; LightEmission 0.3, Brightness 3) ~0.5 F wide, the centre band ~1.4x taller,
+   over a boiling base of drawn fire bursts, with a soft yellow core glow low in the middle. Wind
+   arcs from ~0.72 s: thin, peach, flat ellipses 1.3-1.6 F across (plus a raised, tilted
+   layer), rising as they spin, gone by ~1.25 s.
+3. Burn: the curtain is ~0.46 F wide and sways (two mixed sines,
+   `0.75 sin(5.7t) + 0.25 sin(10.1t + 1.3)`, pushing every live tongue sideways), with dark
+   charcoal tongues at its edges, curls, flecks, embers,
+   and a hot orange line along the crack. The centre loops a ~0.49 s pulse: a bright blob, a
+   darker flame burning up through it (an arch), then a tall teardrop and a small V.
+4. Die-down ~2.85-3.65 s: the curtain narrows to a bundle ~0.2 F wide while it stays tall.
+   Stop emitting early and shrink lifetimes so nothing lingers; the crack cools to dark.
+5. Kept from Oscar's playtests: `Scale = 2.5` (fissure ~50 studs); tongues rush
+   (`TONGUE_RUSH = 1.6`× faster, living 1/1.6 as long; the per-frame loop rewrites their
+   `Lifetime`, so the factor is applied there too); `FlameRate = 100`; wide tongues
+   (`Squash` 0.3→0.6) so the wall has no gaps; the opening wall rushes up 2.8x faster and is
+   2.5x thicker for ~0.25 s; the heart pulse timing. The scrolling beam veils were replaced
+   by flipbook fire (`explosions.md`): a fire body is a boiling mass of sheets. The central
+   column and its glow stay fixed beams (`FaceCamera = false`): they are light, not body.
 
 ## Ground slam / earth ability
-Duration 0.6-1.2. See `examples/GroundSlam.luau`.
-1. Shockwave ring along the ground. Mesh: Ring.
-2. Rock debris via MeshParticles, upward cone (Spread 45-60). Mesh: Rock.
-3. Optional spikes erupting: tween Spike meshes up from below ground, hold, sink. Mesh: Spike.
-4. Dust ring: soft particles, LightEmission 0.
-5. Light pop.
+Duration 0.6-1.2 (the crater stays ~2.8 s). See `examples/GroundSlam.luau`.
+1. The impact skeleton at the hit (flash, stars, backing, streaks), R = 6.
+2. Shock ring mesh that flattens (height x0.2) while it widens and spins ~150 degrees
+   (Cubic Out, 0.35 s), over a flat ground ring particle. Mesh: Ring.
+3. Dust body that keeps swelling for ~1 s after the flash: warm and cool mottled dust (the
+   drawn DustPuff sheet), self-lit, ~0.3 transparent at its peak, slowed to 0.75x; a flat
+   squashed skirt; a short dust column so it isn't a flat splash; black grit.
+4. Rock debris via MeshParticles, upward cone (Spread 45-60). Mesh: Rock.
+5. Wind arcs: nearly transparent grey crescents, flat, growing to ~5 R by 60% of life.
+6. Crater: 6-36 rocks round the hit, tilted outward, in the hit surface's material
+   (`RaycastResult.Material`); they grow over 0.4 s (Back Out), hold, then sink over 1 s.
+7. Optional spikes erupting: tween Spike meshes up from below ground, hold, sink. Mesh: Spike.
 
 ## Ice / crystal
 Duration 0.5-1.

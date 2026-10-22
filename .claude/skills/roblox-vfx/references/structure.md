@@ -24,10 +24,13 @@ VFX/                                  (repo root)
 ├── tools/vfx/                        dev-machine tools (Node/Python, AGPL from Roqer): clip.mjs
 │                                     (reference clips, compare, colour check), flipbook.mjs,
 │                                     vfxtex.py + examples.py (drawn textures); see its README
-├── assets/textures/                  drawn texture sources (<Name>.py) and their PNGs
+├── tools/luau-test/                  runs every effect outside Studio (luau CLI): errors, Linger, budget
+├── assets/textures/                  drawn texture sources (<group>.py) and their PNGs
 └── src/
     ├── shared/VFX/
     │   ├── VFXPlayer.luau            plays effects by name, builds ctx
+    │   ├── Layers.luau               builds emitters/lights/parts from spec tables, twins, timelines
+    │   ├── Textures.luau             drawn textures (ids, flipbook grid), library fallbacks until uploaded
     │   ├── MeshParticles.luau        MeshPart "particles" (client sim)
     │   ├── MeshFactory.luau          edit-time mesh generator/publisher
     │   ├── VFXScrub.luau             edit-time freeze-frame player for screenshots
@@ -49,6 +52,8 @@ VFX/                                  (repo root)
 | Disk | Studio | Class |
 |---|---|---|
 | `src/shared/VFX/VFXPlayer.luau` | `ReplicatedStorage.Shared.VFX.VFXPlayer` | ModuleScript |
+| `src/shared/VFX/Layers.luau` | `ReplicatedStorage.Shared.VFX.Layers` | ModuleScript |
+| `src/shared/VFX/Textures.luau` | `ReplicatedStorage.Shared.VFX.Textures` | ModuleScript |
 | `src/shared/VFX/MeshParticles.luau` | `ReplicatedStorage.Shared.VFX.MeshParticles` | ModuleScript |
 | `src/shared/VFX/MeshFactory.luau` | `ReplicatedStorage.Shared.VFX.MeshFactory` | ModuleScript |
 | `src/shared/VFX/VFXScrub.luau` | `ReplicatedStorage.Shared.VFX.VFXScrub` | ModuleScript |
@@ -127,42 +132,36 @@ attachment `BladeTip`); keep `Tool.Grip` and the attachments in sync if you resi
 
 ### Magnet pull
 
-`MagnetPull`: purple gravity suction centred on the ground below `ctx.CFrame`. With
-`BlackHole` (default on), a spinning star (`FlashSize`, `FlashTime`, `FlashSpin`, with a
-counter-spinning inner star and a flare) opens it and snaps shut at `FlashOpen`, when the
-pull starts with a burst of bolts and black streaks, and a dark swirling core
-(`CoreSize`) with a neon ring holds in the centre while bright arcs flash with each pulse.
-The pull runs for `Duration` (default 1.5 s): a translucent dome + ground disc (soft
-magenta band closing into a crisp neon ring) pop in at `Radius` and shrink into the centre
-every `PulseInterval`, while dark shards (MeshParticles), specks, smoke wisps
-(`WispRate`), floor streaks (`StreakRate`), lightning, black streaks and thin lines are
-pulled in. The core is a solid dark Neon ball inside a swirling flipbook core, with wisp
-strands and flat crescent strokes spinning around it (`CoreSpinSpeed`) and a faint pink
-ring at its base.
+`MagnetPull`: purple gravity suction centred on the ground below `ctx.CFrame`, in a
+five-colour palette (`Color`, `AccentColor`, `HighlightColor`, `DeepColor`, `InkColor`).
+With `BlackHole` (default on), an anticipation (`FlashTime`, `FlashSize`): a spiky star
+and its black twin swell while spinning, then implode; the hole tears open with a pop, a
+flare and a ring of bolts and black streaks, and a held core (`CoreSize` = R) built like an
+orb holds in the centre: black linework, a hard ring, swirling rays, a black pupil (a dark
+Neon ball), an outer ring, a soft halo and a black backdrop, each cross-fading (Rate 3,
+Transparency 1-0-1) so it shimmers, with arcs flashing each pulse. The pull runs for
+`Duration` (1.5 s): a faint dome, a dark ground disc and a magenta band that hands over to a
+thin hot ring pop in at `Radius` and shrink into the centre every `PulseInterval`, while dark
+shards (MeshParticles), specks, lilac smoke wisps (`WispRate`), floor streaks
+(`StreakRate`), lightning with black jagged twins and thin magenta/black lines are pulled in.
 `BlackHole = false` gives the suction only.
 
 ### Fireball explosion
 
-`FireballExplosion`: stylized cartoon explosion on the ground below `ctx.CFrame`. Play
-returns at ~2.9 s; the cracks fade by ~3.6 s and the last wisps by ~4.3 s.
-1. A starburst flash bursts into a cluster of six balls that fly out of a small core in
-   ~0.03 s. The balls cool from white-hot, through
-   cream and orange with big blotchy spots, into dark maroon balls with glowing rims and
-   lava patches.
-2. The four lower balls sink into a dark gas dome (particles only, no mesh). It is
-   built from stacked, flattened, camera-facing discs centred above the ground, a lit rim
-   and two glowing `BandArc` bands in front, and it puffs out in ~0.06 s at `GasStart`.
-3. The two top balls dissolve quickly (`CrumbleStart`/`CrumbleTime`, 0.6-0.8 s): their
-   shell steps through the `FireMelt` textures while the body fades. The gas dome thins
-   out by ~1.2 s.
-4. The supporting layers: three fire comets (one Beam each, bent into their flight
-   parabola), sparks, a faint shock dome, floor glow/rays/radial dust, lava cracks
-   (`CrackStart`, `CrackTime`), embers, haze and smoke wisps.
-
-Timeline Defaults: `CoolTime`, `TopDelay`, `SinkTime`, `GasStart`/`GasTime`,
-`CrumbleStart`/`CrumbleTime`. Spot, lava and melt colours are baked into their
-textures. The module preloads its custom textures from a top-level `task.spawn` +
-`pcall(ContentProvider.PreloadAsync)`. That doesn't yield the require, so it is allowed.
+`FireballExplosion`: a fireball's finishing explosion on the ground below `ctx.CFrame`
+(`Radius` = R, 7 studs). Play returns once the comets land (~0.9 s); the scorch and cracks
+fade by ~2.7 s.
+1. 0 s: a spiky flash (2.5 R), a white-hot core at Brightness 40 and a cross flare, gone by
+   ~0.09 s; a light pops and fades while its range grows to `LightRange`.
+2. 0.03 s: impact stars (colour/black/white) and the fire body: two drawn fire-burst
+   flipbooks (`FireCount` each) and a small hot copy, shooting out and hanging, cooling from
+   yellow-white to red; a slower, bigger late wave at 0.1 s keeps the mass growing. Comets
+   leave at 0.035 s: a hot head, a sharp and a soft textured Trail (lifetimes divided by
+   `ctx.TimeScale`) and shed sparks, along a parabola (`CometSpeed`, `CometGravity`).
+3. 0.06 s: a black backing, mottled smoke from the same burst (grey and a fire-tinted twin,
+   slowed to 0.75x), streaks with black twins, a ground ring and embers.
+4. 0.26 s: a charcoal burn-out shows through as the fire breaks up; 0.3 s: a scorch and lava
+   cracks that cool from orange to dark over `CrackTime`, with thin smoke wisps.
 
 ### Lava eruption
 
@@ -170,16 +169,21 @@ textures. The module preloads its custom textures from a top-level `task.spawn` 
 (along its RightVector). Plain Luau, no Forge. `WallLength` sizes the crack (F = 20 studs
 at Scale 1); the curtain, wind, column and smoke use the body size B = 0.72 F. `Scale`
 (default 2.5) sizes everything. Play returns when the crack has faded, at ~4.35 s. Matched
-frame by frame against two reference camera angles.
+frame by frame against two reference camera angles (agy-graded), then given the
+Roqer guidance on top without touching the pulse timing.
 1. 0.04-0.6 s precursor: one wide burst of orange and dark streaks, grey rocks, upright
-   flame bursts (gone by ~0.45 s), 4 bold orange rings (custom `lava_ring`), dark smoke and
-   embers. The crack (Top-face SurfaceGuis: a branched dark crack, a lumpy lava line and a
+   flame bursts (gone by ~0.45 s), 4 bold orange rings (custom `lava_ring`), a grey smoke veil
+   (the drawn DustPuff sheet, self-lit, never more solid than 0.5) and embers. The crack (Top-face SurfaceGuis: a branched dark crack, a lumpy lava line and a
    red pool) heats up from 0.3 s.
-2. 0.69 s (`EruptTime`): a spike row, a low radial starburst of wedge flares (custom
-   `lava_wedge`) and a curtain of flame tongues up within ~0.04 s (the opening burst rushes
-   up faster and stands ~20% taller). Three tongue bands follow the curtain width: the
-   sides reach ~0.65 B, the centre band ~0.95 B. A soft flame body, two faint beam veils,
-   wind arcs that rise as they spin, and the hot line along the whole crack come with it.
+2. 0.69 s (`EruptTime`): a spiky flash squashed wide along the crack with a white glint
+   (gone by ~0.12 s), a spike row, a low radial starburst of wedge flares (custom
+   `lava_wedge`) and a curtain of solid-colour flame tongues (LightEmission 0.3,
+   Brightness 3) up within ~0.04 s (the opening burst rushes up faster and stands ~20%
+   taller). Three tongue bands follow the curtain width: the sides reach ~0.65 B, the
+   centre band ~0.95 B. A soft flame body, a boiling base of drawn fire-burst sheets behind
+   the tongues (it replaced two scrolling beam veils), wind arcs that rise as they spin,
+   and the hot line along the whole crack come with it. The light pops and its range
+   spreads 0.6x -> 1x over 0.3 s while it fades.
 3. From 0.80 s the centre loops a ~0.49 s pulse (measured on 60 fps strips of both videos):
    a bright soft blob swells at the base (`lava_glow`), then a darker red flame burns up
    through it (custom `lava_hollow2`, unlit, emitted as bursts at 0.85, 1.34, 1.83, 2.32,
@@ -306,27 +310,22 @@ local helpers, `Effect`, `Defaults`, `Linger`, `Play`, `return`.
 -- <What it looks like, one line.> Layers: <core>, <shape>, <secondary>, <residue>.
 
 local VFX = script.Parent.Parent
+local Layers = require(VFX:WaitForChild("Layers"))
+local Textures = require(VFX:WaitForChild("Textures")) -- only if it uses drawn textures
 local MeshParticles = require(VFX:WaitForChild("MeshParticles")) -- only if used
 
 -- Library ids from ReplicatedStorage.Assets.VFX. Comment = <Folder>/<CardName>.
 local ASSETS = {
 	CoreGlow = "rbxassetid://0", -- StaticVFXTextures/<CardName>
-	WindSheet = "rbxassetid://0", -- FlipbookTextures/<CardName> (cell 256 -> Grid4x4)
+	WindSheet = { Id = "rbxassetid://0", Grid = 4 }, -- FlipbookTextures/<CardName> (cell 256 -> Grid4x4)
 	StreakBeam = "rbxassetid://0", -- MigratedBeams/<CardName>
+	ImpactStar = Textures.ImpactStar, -- drawn: assets/textures/impact.py (Grid4x4)
 	SwirlMesh = { -- MigratedMeshes/<CardName>
 		MeshId = "rbxassetid://0",
 		TextureId = "rbxassetid://0",
 		Scale = Vector3.new(1, 1, 1),
 	},
 }
-
-local function makeBurstEmitter(parent, texture) -- local helpers: camelCase
-	local emitter = Instance.new("ParticleEmitter")
-	emitter.Rate = 0
-	emitter.Texture = texture
-	emitter.Parent = parent
-	return emitter
-end
 
 local Effect = {}
 
@@ -340,11 +339,35 @@ Effect.Linger = 0.8 -- effect seconds kept alive after Play returns
 
 function Effect.Play(ctx)
 	local p = ctx.Params
-	-- build layers under ctx.Folder / ctx.Anchor(); time them with ctx.Wait
+	local att = Layers.Attachment(ctx.Anchor())
+	local stars = Layers.Emitter(att, { -- one sprite per layer, a spec table per emitter
+		Texture = ASSETS.ImpactStar,
+		Lifetime = { 0.1, 0.15 },
+		LightEmission = -1,
+		Brightness = 5,
+		Color = p.Color,
+		Size = { { 0, 4 }, { 0.25, 8, 1.5 }, { 1, 9 } },
+	})
+	local black = Layers.Black(stars) -- its black twin, a step in front
+	Layers.Timeline(ctx, { -- layers fire in steps, in effect time
+		{ 0.03, function()
+			ctx.Emit(stars, 3)
+			ctx.Emit(black, 3)
+		end },
+	})
 end
 
 return Effect
 ```
+
+`Layers` (`src/shared/VFX/Layers.luau`, header for the full list): `Emitter`/`Twin`/`Black`/
+`Dim`/`White` build emitters from spec tables (sequences, ranges, enums and textures given
+compactly; `Flat = true` lies a sprite in the attachment's plane); `Light` and `Pop` (flash
+and fade a light while its range grows, capped at 60); `Part`, `Quiet`, `Attachment`;
+`Timeline` (`{ time, fn }` steps in effect time); `Track` (keyframe value at t); `Ground`
+(raycast below, skipping characters) and `Frame` (layout frame, +X = viewer's right);
+`Emit(ctx, e, n, slow)` for lingering layers. `Textures` holds the drawn sheets as
+`{ Id, Grid }`, with a library fallback until each is uploaded.
 
 The module's top level must not yield on or error over anything Studio-only: the harness
 requires every effect at startup, and one bad module stops it.
@@ -510,9 +533,8 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 - `MeshPart.TextureID` ignores `Part.Color` (the texture's RGB shows as-is). Don't fade or
   cut a mesh with its texture's alpha (Roqer: the colour covers the whole surface): animate
   the part's `Transparency`, or put a Decal on a part with `Transparency = 1`
-  (`references/meshes.md`, "Mesh effects"). `FireballExplosion` swaps `TextureID` through
-  dissolve frames with `Transparency` just above 0, which showed holes there; new effects
-  should not rely on it.
+  (`references/meshes.md`, "Mesh effects"). The old `FireballExplosion` swapped `TextureID`
+  through dissolve frames with `Transparency` just above 0 and showed holes; don't rely on it.
 - Neon renders colours lighter and yellower: `(255, 145, 35)` reads lemon. Push orange to
   roughly `(255, 110, 25)`. Dark Neon colours read much brighter than their RGB.
 - `ForceField` material with a texture gives a shimmering, edge-lit shell whose animation
@@ -601,8 +623,8 @@ apply like the gotchas above, and win where one of them disagrees.
 3. `Rate = 0` on burst emitters.
 4. Visible parts: `Anchored`; `CanCollide`, `CanQuery`, `CanTouch`, `CastShadow` false.
 5. `Linger` covers the longest particle or mesh-particle lifetime after `Play` returns.
-6. Effects may require `MeshParticles`; never `MeshFactory`, `VFXScrub` (edit-time tools),
-   `ForgeBridge` or the ForgeVFX package (use `ctx.Forge`).
+6. Effects may require `MeshParticles`, `Layers` and `Textures`; never `MeshFactory`,
+   `VFXScrub` (edit-time tools), `ForgeBridge` or the ForgeVFX package (use `ctx.Forge`).
 7. No hard runtime dependency on Studio-only folders: library assets as `ASSETS` ids,
    mesh templates with a plain-Part fallback, no `WaitForChild` into them.
 8. Defaults: PascalCase keys, attribute-safe types, everything tunable exposed.
@@ -611,6 +633,14 @@ apply like the gotchas above, and win where one of them disagrees.
 11. Effects run on the client only.
 
 ## Testing (VFXHarness)
+
+**Before Studio**, run `node tools/luau-test/run.mjs [<Effect>]` (needs the `luau` CLI,
+https://github.com/luau-lang/luau/releases, on PATH or as `LUAU=<path>`). It runs every
+effect on a virtual clock with Roblox stubs that type-check every property, at 1x and 0.25x,
+and reports errors (mapped to file:line), bad property names, types, enums and sequences,
+Linger that cuts particles off, PointLight ranges over 60, instances left outside
+`ctx.Folder`, and particle/instance counts. It doesn't render, so look in Studio too. Add an
+override case to `CASES` in `run.mjs` for an effect with runtime-only keys.
 
 1. With `rojo serve` connected, press Play in Studio. The harness adds a button for every
    ModuleScript in `Effects` and a target part 12 studs in front of you.
@@ -692,10 +722,25 @@ tools/vfx/clip.mjs help`). Every time it prints or labels is effect seconds (rea
    freeze time at 0.1x. When the reference comes from more than one camera angle, match a
    camera to each: a layer that looks right from the front can be flat, thin or misplaced
    from the side.
-3. **Compare at most twice.** Each round is a rebuild plus a capture, and the reference can't
-   be copied exactly. A grader subagent that compares **only against the reference** can
-   judge each round (state anything intentionally out of scope). After the second round, fix
-   what the pairs show most clearly, then report what still differs.
+3. Grade each round with **agy** (Antigravity CLI, Gemini), not a Claude subagent. Run
+   `.claude/skills/roblox-vfx/scripts/agy_grade.sh <sheet dir> [NNNN ...]` as a background
+   Bash command: it calls `agy.exe` directly on one sheet JPEG at a time (retry once) and
+   writes `agy_NNNN.txt` next to it. Don't grade through the `agy-bridge` MCP: an image grade
+   takes ~1-2 min (agy logs in again on every call, ~40 s even for a trivial prompt) and the
+   app's MCP hop gives up at ~60 s, so about half the calls fail with "Request timed out".
+   It grades with Gemini 4 Argon (High) (`gemini-4-argon-high`); set `AGY_MODEL` to another
+   id or name from `agy models` to change it. A wrong name prints the model list instead of a
+   grade, which the script reports as a missing score.
+   Set `AGY_QUESTION` to replace the default (lava) question. It should say: the
+   reference is ground truth, grade **only against it**, what the sheet layout is
+   (timestamps, which column is REF, which row is which angle, grid spacing), what is out of
+   scope, and ask for a 0-10 score per timestamp and angle, concrete differences (shape,
+   size in studs, colour, missing or extra layers, detail), and the top fixes in order.
+   Treat its stud sizes as estimates and its hex colours as guesses, and check each fix
+   against the sheet yourself before applying it.
+   **Compare at most twice** (Roqer): each round is a rebuild plus a capture, and the
+   reference can't be copied exactly. After the second round, fix what the pairs show most
+   clearly, then report what still differs.
 4. Finish with a read-only file-integrity subagent: contract, rules grep, Linger maths,
    budget counts, docs accuracy.
 5. Before every capture, check the Studio module's Source hash matches the disk file (Rojo
@@ -720,6 +765,7 @@ tools/vfx/clip.mjs help`). Every time it prints or labels is effect seconds (rea
 - [ ] All tunables in `Defaults` (incl. `Color`, `Scale`), attribute-safe types only.
 - [ ] `Linger` covers the longest lifetime.
 - [ ] Mesh templates looked up without yielding, with a fallback; no `MeshFactory` require.
+- [ ] `node tools/luau-test/run.mjs <Name>` passes with no warnings.
 - [ ] Rules grep is clean:
       `grep -nE "task\.(wait|delay)|[^.]wait\(|TweenService|:Emit\(|MeshFactory|ForgeVFX|ForgeBridge|\.emit\(" src/shared/VFX/Effects/<Name>.luau`
 - [ ] Forge layers only if the effect needs them (see "VFX Forge layers"); template looked up
@@ -735,6 +781,10 @@ tools/vfx/clip.mjs help`). Every time it prints or labels is effect seconds (rea
 
 - `ctx` has no FOV, blur or impact-frame helper yet (camera shake exists: `ctx.Shake`). Add
   one to `VFXPlayer` (and mirror it in `VFXScrub`) when the first effect needs it.
+- The drawn textures in `src/shared/VFX/Textures.luau` (`Textures.Pending`) still use library
+  fallbacks: upload `assets/textures/*.flipbook.png`, `Glint.png` and `ShockRing.png` and put
+  the ids in `UPLOADED`. The redesigned effects (2026-10-21) were checked with
+  `tools/luau-test` only, not yet looked at in Studio.
 - `tools/vfx` (2026-10-21) was tested on synthetic clips and sheets in a Linux container, not
   yet on Oscar's Windows PC; `vfxtex.render_flipbook` and MeshFactory `Surface`/`Swirl`/`Dome`
   have not run in Blender/Studio yet.
