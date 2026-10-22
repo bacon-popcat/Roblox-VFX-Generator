@@ -3,7 +3,7 @@
 -- the caster charges (chromatic ground ring, a black void frame, a huge prismatic
 -- starburst) and fires a tunnelling dash along a rainbow ground streak, and the target
 -- erupts: a giant jagged white flash with rainbow fringes, a light pillar, halo rings that
--- rise around it, crystal spikes with rainbow tips, RGB glitch bolts, star flashes, cross-flares,
+-- rise around it, crystal spikes with rainbow tips, RGB bolts spiking out, star flashes, cross-flares,
 -- leaves and debris, a 4-point cross finale and a crown of arched smoke plumes.
 -- Layers: projectiles (star heads; twisting core, haze and smoke-edge Trails), caster sparks/void/starburst/rays/
 -- crystals/bokeh/dark shell/prismatic sparkle stars and flares, dash head (a white ball of
@@ -1272,9 +1272,10 @@ function Effect.Play(ctx)
 			SpreadAngle = Vector2.new(180, 180),
 			Lifetime = NumberRange.new(0.15, 0.32),
 			Size = seq({ { 0, 1.5 * s, 0.5 * s }, { 0.15, 5 * s, 1.6 * s }, { 0.7, 4.5 * s, 1.5 * s }, { 1, 0 } }),
-			Transparency = seq({ { 0, 0.2 }, { 0.7, 0.35 }, { 1, 1 } }),
+			Transparency = seq({ { 0, 0.4 }, { 0.7, 0.55 }, { 1, 1 } }),
 			Rotation = lean,
-			Squash = NumberSequence.new(0.35), -- tall glassy blades, as in the far clip's burn
+			-- thin translucent slivers: at a low Squash the shard reads as a thick soft arrowhead
+			Squash = NumberSequence.new(1.8),
 			-- solid, not additive: overlapping additive spikes add up to a white blob
 			LightEmission = 0.1,
 			Brightness = 1.6,
@@ -1313,16 +1314,23 @@ function Effect.Play(ctx)
 		Brightness = 2,
 		ZOffset = 2,
 	})
-	-- RGB-split zigzag bolts: light refracting through the glass, so they are additive (the
-	-- texture's baked black edges add nothing and drop out) and see-through, never solid decals
-	local glitch = emitter(glitchPart, {
+	-- RGB-split bolts that spike out of the centre (reference burn): each shoots out fast,
+	-- mostly sideways, stops under heavy drag and is gone in ~0.05-0.09 s. Stretched along
+	-- their flight (VelocityParallel) and a little see-through; additive, so the texture's
+	-- baked black edges drop out.
+	local boltAt = attachment(base, CFrame.new(target + UP * 3.5 * s))
+	local glitch = emitter(boltAt, {
 		Texture = ASSETS.RgbBolt,
-		Shape = Enum.ParticleEmitterShape.Box,
-		Speed = NumberRange.new(0),
-		Lifetime = NumberRange.new(0.08, 0.16),
-		Size = sizeRange(1.8 * s, 3.2 * s),
-		Transparency = seq({ { 0, 0.3 }, { 0.6, 0.45 }, { 1, 1 } }),
-		Rotation = NumberRange.new(-70, 70),
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		EmissionDirection = Enum.NormalId.Front,
+		SpreadAngle = Vector2.new(35, 180), -- fanned all round, tilted up to 35 deg
+		Speed = NumberRange.new(60 * s, 100 * s),
+		Drag = 20,
+		Lifetime = NumberRange.new(0.05, 0.09),
+		Size = seq({ { 0, 0.6 * s, 0.2 * s }, { 0.3, 4 * s, 1 * s }, { 1, 4.5 * s, 1 * s } }),
+		Squash = NumberSequence.new(0.6), -- long and thin along the flight
+		Rotation = NumberRange.new(-90), -- VelocityParallel runs the texture's X along the velocity
+		Transparency = seq({ { 0, 0.25 }, { 0.6, 0.4 }, { 1, 1 } }),
 		LightEmission = 1,
 		Brightness = 2.5,
 		ZOffset = 3,
@@ -1392,8 +1400,8 @@ function Effect.Play(ctx)
 		Drag = 4,
 		Lifetime = NumberRange.new(0.2, 0.4),
 		Size = seq({ { 0, 1 * s, 0.5 * s }, { 0.15, 4 * s, 2 * s }, { 1, 3.5 * s, 1.8 * s } }),
-		Squash = NumberSequence.new(0.5), -- tall, sharp
-		Transparency = seq({ { 0, 0.5 }, { 0.15, 0.3 }, { 0.8, 0.45 }, { 1, 1 } }),
+		Squash = NumberSequence.new(1.8), -- thin slivers, not arrowheads
+		Transparency = seq({ { 0, 0.6 }, { 0.15, 0.45 }, { 0.8, 0.55 }, { 1, 1 } }),
 		Rotation = NumberRange.new(-25, 25),
 		LightEmission = 0.25,
 		Brightness = 2,
@@ -1612,17 +1620,6 @@ function Effect.Play(ctx)
 		Transparency = seq({ { 0, 0 }, { 0.7, 0.2 }, { 1, 1 } }),
 		Brightness = 3,
 		ZOffset = 2,
-	})
-	local inkClaws = emitter(impactAt, { -- black ink claw slashes framing the crown
-		Texture = ASSETS.DashSwirl,
-		Color = ColorSequence.new(ink),
-		LightEmission = 0,
-		Speed = NumberRange.new(0),
-		Lifetime = NumberRange.new(0.18, 0.26),
-		Size = sizeRange(3 * s, 4.5 * s),
-		Rotation = NumberRange.new(100, 200),
-		Transparency = seq({ { 0, 0.1 }, { 0.7, 0.2 }, { 1, 1 } }),
-		ZOffset = 5,
 	})
 	local impactRays = emitter(impactAt, { -- broad soft light rays fanning out of the flash
 		Texture = ASSETS.SunRays,
@@ -1980,7 +1977,7 @@ function Effect.Play(ctx)
 			burst(time + 0.03, blastJets, 3)
 			burst(time + 0.04, blastSmoke, 3)
 			burst(time + 0.05, flakes, math.ceil(p.FlakeCount / 3))
-			burst(time + 0.03, glitch, 2)
+			burst(time + 0.03, glitch, 4)
 		end
 	end
 	-- crystal spikes, rainbow tips and prismatic patches: bursts every ~0.07 s
@@ -2003,9 +2000,9 @@ function Effect.Play(ctx)
 	end
 	-- glitch ribbons
 	local burnLen = tFinale - tImpact
-	for i = 0, 13 do -- RGB glitch bolts flicker through the burn, often in pairs
-		local time = tImpact + 0.15 + i * (burnLen - 0.3) / 13
-		burst(time, glitch, i % 3 == 0 and 2 or 1)
+	for i = 0, 23 do -- RGB bolts spike out through the burn, often two or three at once
+		local time = tImpact + 0.08 + i * (burnLen - 0.25) / 23
+		burst(time, glitch, i % 3 == 0 and 3 or 2)
 		burst(time + 0.02, prismStreaks, 2)
 	end
 	for i, wire in WIRES do -- a big star flash at a projectile's apex
@@ -2021,8 +2018,6 @@ function Effect.Play(ctx)
 	for _, dt in { 0.3, 0.5, 0.9, 1.35 } do
 		burst(tImpact + dt, rainbowRays, 4)
 	end
-	burst(tImpact + 0.13, inkClaws, 3)
-	burst(tImpact + 0.55, inkClaws, 2)
 	local starT = tImpact + 0.05
 	while starT < tFinale - 0.05 do -- star flashes every ~0.06 s, more early
 		burst(starT, starFlash, starT < tImpact + 0.6 and 3 or 2)
