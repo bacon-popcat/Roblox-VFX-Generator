@@ -1272,9 +1272,10 @@ function Effect.Play(ctx)
 			SpreadAngle = Vector2.new(180, 180),
 			Lifetime = NumberRange.new(0.15, 0.32),
 			Size = seq({ { 0, 1.5 * s, 0.5 * s }, { 0.15, 5 * s, 1.6 * s }, { 0.7, 4.5 * s, 1.5 * s }, { 1, 0 } }),
-			Transparency = seq({ { 0, 0.2 }, { 0.7, 0.35 }, { 1, 1 } }),
+			Transparency = seq({ { 0, 0.4 }, { 0.7, 0.55 }, { 1, 1 } }),
 			Rotation = lean,
-			Squash = NumberSequence.new(0.35), -- tall glassy blades, as in the far clip's burn
+			-- thin translucent slivers: at a low Squash the shard reads as a thick soft arrowhead
+			Squash = NumberSequence.new(1.8),
 			-- solid, not additive: overlapping additive spikes add up to a white blob
 			LightEmission = 0.1,
 			Brightness = 1.6,
@@ -1392,8 +1393,8 @@ function Effect.Play(ctx)
 		Drag = 4,
 		Lifetime = NumberRange.new(0.2, 0.4),
 		Size = seq({ { 0, 1 * s, 0.5 * s }, { 0.15, 4 * s, 2 * s }, { 1, 3.5 * s, 1.8 * s } }),
-		Squash = NumberSequence.new(0.5), -- tall, sharp
-		Transparency = seq({ { 0, 0.5 }, { 0.15, 0.3 }, { 0.8, 0.45 }, { 1, 1 } }),
+		Squash = NumberSequence.new(1.8), -- thin slivers, not arrowheads
+		Transparency = seq({ { 0, 0.6 }, { 0.15, 0.45 }, { 0.8, 0.55 }, { 1, 1 } }),
 		Rotation = NumberRange.new(-25, 25),
 		LightEmission = 0.25,
 		Brightness = 2,
