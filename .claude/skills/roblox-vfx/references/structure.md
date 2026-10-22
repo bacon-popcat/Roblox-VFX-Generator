@@ -211,7 +211,8 @@ its LookVector, or pass the runtime-only override `Caster` (a BasePart). `Scale`
 the target eruption; caster bursts, projectiles and the dash use 0.56x of it. Plain Luau, one
 per-frame loop (`ctx.Wait(1/240)`) running a time-sorted event list. Play returns at ~3.95 s;
 smoke is gone by ~5.2 s.
-1. 0.14-1.25 s: three white projectiles and two low smoky streaks (WIRES). Each is a locked
+1. 0.13-1.25 s: four projectiles shot one after another (WIRES): three white sky shots and a
+   low smoky streak. Each is a locked
    4-point star head flown along a Catmull-Rom spline, drawing three camera-facing Trails (a
    white core, a soft white haze `cs_soft_trail` and a dark smoke edge) that stay from the
    caster until they fade. Each trail's width pinches and swells with the distance flown, so
@@ -253,9 +254,13 @@ smoke is gone by ~5.2 s.
 Particle inventory (checked against both 0.25x reference clips and a 0.25x Studio capture,
 2026-10-21; re-check every layer here after any change). Each line is what the reference
 shows -> what we use:
-- projectile trails: wobbly smoky white ribbons ~0.5 stud wide (low streaks ~1.5), dark
-  smoke edges, glitter -> three camera-facing Trails per projectile (`WireWidth` 0.36; at
-  0.18 the capture showed hairlines).
+- projectiles: four, shot out one after another ~0.15 s apart (sky loop 0.13 s, low streak
+  0.28 s, hooked sky shot 0.44 s, tallest loop 0.58 s), each with its own caster burst.
+- projectile trails: wobbly smoky white ribbons ~0.5 stud wide (low streak ~1.5) with a black
+  outline, glitter -> three camera-facing Trails per projectile (`WireWidth` 0.36; at 0.18 the
+  capture showed hairlines). The outline is a near-opaque black ribbon ~1.35x the haze's
+  width, placed 0.3 x scale behind the white (away from the camera) so it always draws
+  behind: Trails have no ZOffset.
 - projectile heads: small bright 4-point stars; the low streak's chromatic -> Star / ChromWisp.
 - charge dome: crescent strokes swirling round a hemisphere -> spinning `DashSwirl` quads (a
   Wispy Sphere puff read as a blob).
@@ -264,7 +269,9 @@ shows -> what we use:
   and squashed they read as a crown of upright spikes).
 - dash head: the front of a fireball: a round white front of curled strokes with white
   flame tongues streaming back from it, dark smoke wedge behind -> churning `DashSwirl` + Glow
-  core + `lava_streak` tongues locked to the head (VelocityParallel, emitted backward) +
+  core + `lava_streak` tongues locked to the head (VelocityParallel, emitted backward), with a
+  black outline (a dark Glow disc just bigger than the ball and dark, wider copies of the
+  tongues behind them; a dark SoftTrail beam behind the line's haze) +
   `shotHead` wedge (a Starburst ball with a spike splash did not match; a fast-spinning
   crescent ball alone read as a disc).
 - ground streak: thin twin rainbow line under a soft white streak -> RainbowStreak beam + line.
