@@ -270,8 +270,8 @@ Effect.Defaults = {
 	VignetteLeft = Color3.fromRGB(180, 40, 140), -- magenta screen edge on the big flashes
 	VignetteRight = Color3.fromRGB(40, 160, 170), -- teal screen edge
 	Scale = 2.5, -- sizes the target eruption; caster bursts, wires and dash use 0.56x of it
-	CasterDistance = 32, -- studs from the target to the caster (without a `Caster` override)
-	ImpactTime = 1.85, -- effect time of the giant impact flash (dash lands)
+	CasterDistance = 33, -- studs from the target to the caster (without a `Caster` override)
+	ImpactTime = 2, -- effect time of the giant impact flash (dash lands)
 	FinaleTime = 3.7, -- the pillar collapses into the 4-point cross (a long burn: ~1.85 s)
 	WireWidth = 0.18, -- trail core width (x caster scale); haze and dark edge are a few times wider
 	WireSegments = 6, -- beam segments per looping sky trail x 3 beams (fewer = cheaper, angular loops); low streaks use 1
@@ -289,7 +289,7 @@ Effect.Defaults = {
 	PlumeCount = 12, -- arched smoke hooks in total
 	Vignette = true,
 	Shake = true, -- camera shake on the launch, the impact, the burn and the finale
-	ShakeScale = 1, -- multiplies every shake's strength
+	ShakeScale = 1.4, -- multiplies every shake's strength
 	LightBrightness = 3,
 	LightRange = 8,
 }
