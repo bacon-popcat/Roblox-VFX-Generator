@@ -205,7 +205,7 @@ overrun of the ~50 guideline to match the reference); burst particles ~194.
 
 `ChromaticStrike`: a white, prismatic ranged strike, rebuilt from reference videos (1x from
 two angles, then 0.25x from far and from behind the caster; the reference's blue variant was
-not copied). `ImpactScale` (1.3) sizes the target eruption on top of `Scale`. `ctx.CFrame` is the target; the caster stands `CasterDistance` (32) studs along
+not copied). `ImpactScale` (1.15) sizes the target eruption on top of `Scale`. `ctx.CFrame` is the target; the caster stands `CasterDistance` (32) studs along
 its LookVector, or pass the runtime-only override `Caster` (a BasePart). `Scale` (2.5) sizes
 the target eruption; caster bursts, projectiles and the dash use 0.56x of it. Plain Luau, one
 per-frame loop (`ctx.Wait(1/240)`) running a time-sorted event list. Play returns at ~3.95 s;
@@ -237,7 +237,7 @@ smoke is gone by ~5.2 s.
    bolts (`cs_rgb_bolt`) drawn additive and see-through (light refracting through glass:
    the baked black edges drop out; drawn solid they read as cartoon zigzag decals) with thin
    rainbow streaks beside them, a crown of thin white energy spikes shooting up round the base
-   (at the hit, each surge and through the burn), dark chips flung out, a dense swirling floor smoke, 4-point star flashes every ~0.06 s plus five big cross stars, blade
+   (at the hit, each surge and through the burn), dark chips flung out, a thin swirling floor smoke (thick smoke turned the burn into a white wall), 4-point star flashes every ~0.06 s plus five big cross stars, blade
    flares, rising motes, leaves, rocks, puffs, smoke, wind rings.
 4. `FinaleTime`: a 4-point cross that shrinks to a dot with a ground flash and a blast;
    arched smoke hooks (`cs_smoke_hook`) and floor smoke linger.
