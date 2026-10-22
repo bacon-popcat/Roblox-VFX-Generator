@@ -212,16 +212,19 @@ per-frame loop (`ctx.Wait(1/240)`) running a time-sorted event list. Play return
 smoke is gone by ~5.2 s.
 1. 0.14-1.25 s: three white projectiles (WIRES). Each is a locked 4-point star head over a
    trail of beam segments bent along a Catmull-Rom spline (twisted white core, soft white haze
-   `cs_soft_trail`, dark smoke edge) that stays drawn from the caster until it fades. A low
-   smoky streak with a chromatic head, a steep arch over the left, then (0.6 s) one that shoots
+   `cs_soft_trail`, dark smoke edge) that stays drawn from the caster until it fades. Two
+   straight low shots look like the dash (a thin bright line in a soft white streak, the
+   dash's head), with sparkle stars and prismatic flares round the caster on each salvo; a steep arch over the left, then (0.6 s) one that shoots
    very high, loops over itself and dives in.
 2. 1.10 s: spiky white ball at the target, chromatic ground ring + wind dome at the caster;
    1.30 s black void frame (2 frames); 1.33 s prismatic launch (white mass + tall chromatic
-   rays) and the dash: it rushes ~78% of the way, then grinds in. Its head is white crescent
-   strokes spinning flat across the path, a drilling ring of three rolling ribbons
-   (`motion.md`), chromatic flares, black smoke and a soft white streak back to the caster;
-   tunnel rings and a rainbow ground streak that fades to a thin orange twin line. Dark
-   shell, bokeh and chromatic shards at the caster.
+   rays) and the dash: it rushes ~78% of the way, then grinds in. Its head (`shotHead`) is a
+   flickering spiky white ball with a white splash fanned back off it, a dark smoke wedge
+   with rainbow slivers on its edges and black debris; a thin bright line and a soft white
+   haze run back to the caster, and glowing white orbs hang along the path. Tunnel rings and
+   a bright rainbow ground streak (white centre, drawn behind the head) that fades to a thin
+   orange twin line. Dark shell, bokeh, sparkle stars and small prismatic glints at the
+   caster (the cloudy wisps and black ink lump were shrunk after a playtest).
 3. `ImpactTime` 1.85 s: white-hot core star, jagged V-wing flash (custom `cs_impact_flash`,
    white over red/blue copies for the fringe), blast streaks, a ground flash ring, screen wash
    and magenta/teal edge vignette (camera-locked particles), light pillar, dark shockwave,
