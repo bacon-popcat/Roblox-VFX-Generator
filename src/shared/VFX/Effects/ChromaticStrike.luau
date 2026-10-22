@@ -874,7 +874,7 @@ function Effect.Play(ctx)
 		Enabled = false,
 		Speed = NumberRange.new(0),
 		Lifetime = NumberRange.new(0.06, 0.1),
-		Size = seq({ { 0, 1.1 * sc, 0.25 * sc }, { 0.5, 1.6 * sc, 0.3 * sc }, { 1, 1.3 * sc } }),
+		Size = seq({ { 0, 2 * sc, 0.4 * sc }, { 0.5, 2.9 * sc, 0.5 * sc }, { 1, 2.4 * sc } }),
 		Transparency = seq({ { 0, 0 }, { 0.6, 0.15 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-1400, -900),
@@ -889,9 +889,9 @@ function Effect.Play(ctx)
 		Enabled = false,
 		Speed = NumberRange.new(0),
 		Lifetime = NumberRange.new(0.06),
-		Size = NumberSequence.new(1.2 * sc),
-		Transparency = seq({ { 0, 0.1 }, { 1, 1 } }),
-		Brightness = 5,
+		Size = NumberSequence.new(1.5 * sc),
+		Transparency = seq({ { 0, 0.3 }, { 1, 1 } }),
+		Brightness = 3,
 		ZOffset = 1.4,
 		TimeScale = ctx.TimeScale,
 	})
@@ -905,7 +905,7 @@ function Effect.Play(ctx)
 		Enabled = false,
 		Speed = NumberRange.new(6 * sc, 12 * sc),
 		Lifetime = NumberRange.new(0.08, 0.14),
-		Size = seq({ { 0, 1.4 * sc, 0.4 * sc }, { 1, 2 * sc } }),
+		Size = seq({ { 0, 2.2 * sc, 0.6 * sc }, { 1, 3.2 * sc } }),
 		Transparency = seq({ { 0, 0.05 }, { 0.6, 0.3 }, { 1, 1 } }),
 		Rotation = NumberRange.new(-110, -70),
 		Brightness = 3,
@@ -933,12 +933,12 @@ function Effect.Play(ctx)
 		Texture = ASSETS.DashStreak,
 		TextureMode = Enum.TextureMode.Stretch,
 		Color = ColorSequence.new(p.Color),
-		Brightness = 2.5,
+		Brightness = 1.5,
 		Segments = 8,
 		Width0 = 0,
 		Width1 = 0,
-		Transparency = seq({ { 0, 0.05 }, { 0.6, 0.45 }, { 1, 1 } }),
-		ZOffset = 1,
+		Transparency = seq({ { 0, 0.2 }, { 0.6, 0.55 }, { 1, 1 } }),
+		ZOffset = 0,
 		Enabled = false,
 	})
 	local headSmoke = emitter(headAt, { -- black smoke cylinder it bores through
@@ -949,10 +949,11 @@ function Effect.Play(ctx)
 		Enabled = false,
 		Speed = NumberRange.new(0.5, 1.5),
 		SpreadAngle = Vector2.new(180, 180),
-		Lifetime = NumberRange.new(0.12, 0.25), -- left behind the fast head: a tail ~8-12 studs long
-		Size = seq({ { 0, 1 * sc }, { 0.3, 1.8 * sc }, { 1, 2.2 * sc } }),
-		Transparency = seq({ { 0, 0.2 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.15, 0.3), -- left behind the fast head: a tail ~10-14 studs long
+		Size = seq({ { 0, 1.8 * sc }, { 0.3, 3 * sc }, { 1, 3.6 * sc } }),
+		Transparency = seq({ { 0, 0.05 }, { 0.6, 0.3 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
+		ZOffset = 2.5, -- over the additive white streak, which would wash it out
 		TimeScale = ctx.TimeScale,
 	})
 	local tunnelAt = attachment(base, CFrame.fromMatrix(caster + UP * 3, right, dashDir))
