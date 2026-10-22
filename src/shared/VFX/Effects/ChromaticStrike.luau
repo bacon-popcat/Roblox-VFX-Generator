@@ -283,8 +283,8 @@ Effect.Defaults = {
 	SmokeRate = 150, -- ground smoke puffs / s while the pillar burns
 	LeafCount = 22,
 	RockCount = 30,
-	FlakeCount = 24, -- white glass flakes tumbling out of the impact
-	ShardCount = 16, -- big translucent glass shards flung out of the impact (half again per surge)
+	FlakeCount = 24, -- dark chips tumbling out of the impact
+	CrownCount = 18, -- thin white energy spikes shooting up round the base (more through the burn)
 	PuffCount = 24, -- opaque grey puffs bursting out of the impact
 	StreakCount = 56, -- white blast streaks flying out of the impact
 	MoteRate = 60, -- white glints rising through the burn / s
@@ -375,6 +375,8 @@ function Effect.Play(ctx)
 	local glitchPart = ctx.Anchor(CFrame.new(target + UP * 6 * s)) -- box volume over the burn
 	glitchPart.Size = Vector3.new(14, 10, 14) * s
 	local spikePart = ctx.Anchor(CFrame.new(target + UP * 3 * s))
+	local crownPart = ctx.Anchor(CFrame.new(target + UP * 0.5 * s)) -- disc the spike crown rises from
+	crownPart.Size = Vector3.new(11, 0.2, 11) * s
 	spikePart.Size = Vector3.new(18, 0.2, 18) * s
 	local smokePart = ctx.Anchor(CFrame.new(target + UP * 2 * s))
 	smokePart.Size = Vector3.new(36, 0.2, 36) * s
@@ -1223,6 +1225,7 @@ function Effect.Play(ctx)
 			Size = seq({ { 0, 1.5 * s, 0.5 * s }, { 0.15, 5 * s, 1.6 * s }, { 0.7, 4.5 * s, 1.5 * s }, { 1, 0 } }),
 			Transparency = seq({ { 0, 0.1 }, { 0.7, 0.25 }, { 1, 1 } }),
 			Rotation = lean,
+			Squash = NumberSequence.new(0.8), -- thin sharp blades, not wide glass panes
 			-- solid, not additive: overlapping additive spikes add up to a white blob
 			LightEmission = 0.25,
 			Brightness = 2.5,
@@ -1288,20 +1291,27 @@ function Effect.Play(ctx)
 		Brightness = 2.5,
 		ZOffset = 2.8,
 	})
-	local glassShards = emitter(impactAt, { -- big translucent glass blades flung out of the impact
+	-- the crown: thin white energy spikes shooting straight up out of a disc round the base,
+	-- leaning a little outward, that stop under drag and stand for a moment (the reference's
+	-- upright jagged white spikes inside the rings)
+	local crown = emitter(crownPart, {
 		Texture = ASSETS.JaggedShard,
+		Shape = Enum.ParticleEmitterShape.Disc,
+		ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
 		Orientation = Enum.ParticleOrientation.VelocityParallel,
-		SpreadAngle = Vector2.new(180, 180),
-		Speed = NumberRange.new(40 * s, 70 * s),
-		Drag = 6,
-		Lifetime = NumberRange.new(0.35, 0.6),
-		Size = seq({ { 0, 1.5 * s, 0.5 * s }, { 0.2, 3.5 * s, 1 * s }, { 1, 2.5 * s, 0.8 * s } }),
-		Transparency = seq({ { 0, 0.2 }, { 0.6, 0.45 }, { 1, 1 } }),
-		LightEmission = 0.5,
-		Brightness = 2.5,
+		EmissionDirection = Enum.NormalId.Top,
+		SpreadAngle = Vector2.new(22, 22),
+		Speed = NumberRange.new(30 * s, 60 * s),
+		Drag = 9,
+		Lifetime = NumberRange.new(0.15, 0.3),
+		Size = seq({ { 0, 2 * s, 0.5 * s }, { 0.2, 6 * s, 1.5 * s }, { 1, 5 * s, 1.2 * s } }),
+		Squash = NumberSequence.new(1.6), -- very thin
+		Transparency = seq({ { 0, 0 }, { 0.6, 0.15 }, { 1, 1 } }),
+		LightEmission = 0.8,
+		Brightness = 3,
 		ZOffset = 2.5,
 	})
-	local flakes = emitter(impactAt, { -- small white glass flakes tumbling down
+	local flakes = emitter(impactAt, { -- small dark chips tumbling down
 		Texture = ASSETS.Speck,
 		SpreadAngle = Vector2.new(180, 180),
 		Speed = NumberRange.new(15 * s, 30 * s),
@@ -1311,8 +1321,8 @@ function Effect.Play(ctx)
 		Size = sizeRange(0.2 * s, 0.45 * s),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-300, 300),
-		LightEmission = 0.3,
-		Brightness = 1.5,
+		Color = ColorSequence.new(Color3.fromRGB(55, 55, 62)),
+		LightEmission = 0,
 	})
 	-- 4-point star flashes popping all over the burn, a few big ones
 	local starFlash = emitter(glitchPart, {
@@ -1809,10 +1819,10 @@ function Effect.Play(ctx)
 		ctx.Emit(inkCore, 6)
 	end)
 	burst(tImpact + 0.05, groundWave, 1)
-	at(tImpact + 0.02, function() -- the white smoke blast and flying glass
+	at(tImpact + 0.02, function() -- the white smoke blast and the spike crown
 		ctx.Emit(blastJets, 24)
 		ctx.Emit(blastSmoke, 28)
-		ctx.Emit(glassShards, p.ShardCount)
+		ctx.Emit(crown, p.CrownCount)
 	end)
 	burst(tImpact + 0.1, flakes, p.FlakeCount)
 	at(tImpact + 0.1, function() -- the wide V flare as the pillar forms
@@ -1834,10 +1844,10 @@ function Effect.Play(ctx)
 		burst(time, spikesLeft, 6)
 		burst(time + 0.01, spikesRight, 6)
 		burst(time + 0.02, blastStreaks, math.ceil(p.StreakCount / 3))
-		if time > tImpact + 0.1 then -- each surge: a pop, more glass and white smoke
+		if time > tImpact + 0.1 then -- each surge: a pop, more spikes and white smoke
 			burst(time, coreStar, 1)
 			burst(time + 0.01, groundFlash, 1)
-			burst(time + 0.02, glassShards, math.ceil(p.ShardCount / 2))
+			burst(time + 0.02, crown, math.ceil(p.CrownCount / 2))
 			burst(time + 0.03, blastJets, 12)
 			burst(time + 0.04, blastSmoke, 14)
 			burst(time + 0.05, flakes, math.ceil(p.FlakeCount / 3))
@@ -1851,6 +1861,7 @@ function Effect.Play(ctx)
 		burst(burn, spikesLeft, math.ceil(n / 2))
 		burst(burn + 0.01, spikesRight, math.ceil(n / 2))
 		burst(burn + 0.03, chromSpikes, math.max(1, math.ceil(n / 2)))
+		burst(burn + 0.04, crown, math.max(1, math.ceil(p.CrownCount / 9)))
 		if burn < tFinale - 0.4 then
 			burst(burn + 0.02, blobs, 2)
 		end

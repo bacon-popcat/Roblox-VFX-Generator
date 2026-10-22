@@ -233,11 +233,11 @@ smoke is gone by ~5.2 s.
    base ring, and a white smoke blast: soft jets and billows sprayed low and flat in every
    direction (again on each surge). The burn runs to `FinaleTime` (3.7 s): rising thin halos
    (`cs_halo_thin`), crystal spike fans with three surges (each a core pop, a ground flash
-   ring, more flung glass shards, flakes and white smoke), a few rainbow spikes, RGB glitch
+   ring, more crown spikes, chips and white smoke), a few rainbow spikes, RGB glitch
    bolts (`cs_rgb_bolt`) drawn additive and see-through (light refracting through glass:
    the baked black edges drop out; drawn solid they read as cartoon zigzag decals) with thin
-   rainbow streaks beside them, big translucent glass shards and white flakes flung out of
-   the impact, a dense swirling floor smoke, 4-point star flashes every ~0.06 s plus five big cross stars, blade
+   rainbow streaks beside them, a crown of thin white energy spikes shooting up round the base
+   (at the hit, each surge and through the burn), dark chips flung out, a dense swirling floor smoke, 4-point star flashes every ~0.06 s plus five big cross stars, blade
    flares, rising motes, leaves, rocks, puffs, smoke, wind rings.
 4. `FinaleTime`: a 4-point cross that shrinks to a dot with a ground flash and a blast;
    arched smoke hooks (`cs_smoke_hook`) and floor smoke linger.
