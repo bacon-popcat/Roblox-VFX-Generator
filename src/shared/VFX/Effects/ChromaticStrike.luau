@@ -1594,25 +1594,26 @@ function Effect.Play(ctx)
 		Orientation = Enum.ParticleOrientation.VelocityParallel,
 		EmissionDirection = Enum.NormalId.Front,
 		SpreadAngle = Vector2.new(14, 180),
-		Color = ColorSequence.new(Color3.fromRGB(240, 240, 245)),
-		LightEmission = 0.5,
-		Brightness = 2,
+		-- solid self-lit grey, not glowing: glowing white smoke stacks into a white-out
+		Color = ColorSequence.new(Color3.fromRGB(200, 200, 206)),
+		LightEmission = 0,
+		Brightness = 1,
 		Speed = NumberRange.new(45 * s, 70 * s),
 		Drag = 7,
 		Lifetime = NumberRange.new(0.3, 0.5),
 		Size = seq({ { 0, 2 * s, 0.5 * s }, { 0.4, 4.5 * s, 1 * s }, { 1, 5.5 * s, 1 * s } }),
 		Squash = NumberSequence.new(1.4), -- long along the flight
 		-- clear at the centre: it shows once it has flown out
-		Transparency = seq({ { 0, 0.9 }, { 0.2, 0.5 }, { 0.5, 0.6 }, { 1, 1 } }),
+		Transparency = seq({ { 0, 1 }, { 0.2, 0.7 }, { 0.5, 0.78 }, { 1, 1 } }),
 		ZOffset = -1,
 	})
 	local blastSmoke = emitter(jetAt, {
 		Texture = ASSETS.Smoke,
 		EmissionDirection = Enum.NormalId.Front,
 		SpreadAngle = Vector2.new(20, 180),
-		Color = ColorSequence.new(Color3.fromRGB(232, 232, 238)),
-		LightEmission = 0.2,
-		Brightness = 1.3,
+		Color = ColorSequence.new(Color3.fromRGB(190, 190, 197)),
+		LightEmission = 0,
+		Brightness = 1,
 		Speed = NumberRange.new(30 * s, 50 * s),
 		Drag = 5,
 		Acceleration = Vector3.new(0, 3 * s, 0),
@@ -1620,7 +1621,7 @@ function Effect.Play(ctx)
 		Size = seq({ { 0, 2.3 * s, 0.6 * s }, { 0.3, 5.2 * s, 1.1 * s }, { 1, 7.5 * s, 1.7 * s } }),
 		Squash = NumberSequence.new(-0.3), -- a little wider than tall
 		-- a veil, not a wall, and clear while it is still in the middle
-		Transparency = seq({ { 0, 1 }, { 0.15, 0.66 }, { 0.4, 0.72 }, { 1, 1 } }),
+		Transparency = seq({ { 0, 1 }, { 0.15, 0.72 }, { 0.4, 0.78 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-40, 40),
 		ZOffset = -1.5,
@@ -1858,8 +1859,8 @@ function Effect.Play(ctx)
 	end)
 	burst(tImpact + 0.05, groundWave, 1)
 	at(tImpact + 0.02, function() -- the white smoke blast and the spike crown
-		ctx.Emit(blastJets, 16)
-		ctx.Emit(blastSmoke, 11)
+		ctx.Emit(blastJets, 10)
+		ctx.Emit(blastSmoke, 9)
 		ctx.Emit(crown, p.CrownCount)
 		ctx.Emit(coreSpikes, p.CoreSpikeCount)
 		ctx.Emit(coreDebris, 10)
@@ -1890,8 +1891,8 @@ function Effect.Play(ctx)
 			burst(time + 0.02, crown, math.ceil(p.CrownCount / 2))
 			burst(time + 0.01, coreSpikes, math.ceil(p.CoreSpikeCount / 2))
 			burst(time + 0.02, coreDebris, 4)
-			burst(time + 0.03, blastJets, 6)
-			burst(time + 0.04, blastSmoke, 4)
+			burst(time + 0.03, blastJets, 3)
+			burst(time + 0.04, blastSmoke, 3)
 			burst(time + 0.05, flakes, math.ceil(p.FlakeCount / 3))
 			burst(time + 0.03, glitch, 2)
 		end
