@@ -727,6 +727,8 @@ defineClass("ImageLabel", "Instance", {
 	ImageTransparency = "number", ZIndex = "number",
 }, { BackgroundTransparency = 0, Image = "", ImageTransparency = 0, ZIndex = 1 })
 defineClass("Decal", "Instance", { Texture = "string", Color3 = "Color3", Transparency = "number", Face = "enum:NormalId", ZIndex = "number" }, { Texture = "", Transparency = 0, ZIndex = 1 })
+defineClass("Workspace", "Instance", { CurrentCamera = "Instance?" })
+defineClass("Camera", "Instance", { CFrame = "CFrame", FieldOfView = "number", CameraType = "enum:CameraType", ViewportSize = "Vector2", Focus = "CFrame" }, { FieldOfView = 70 })
 defineClass("Highlight", "Instance", {
 	FillColor = "Color3", FillTransparency = "number", OutlineColor = "Color3", OutlineTransparency = "number",
 	DepthMode = "enum:HighlightDepthMode", Adornee = "Instance?", Enabled = "bool",
@@ -776,6 +778,9 @@ local CLASS_DEFAULT_VALUES = {
 	end,
 	Decal = function()
 		return { Color3 = Color3.new(1, 1, 1), Face = Enum.NormalId.Front }
+	end,
+	Camera = function()
+		return { CFrame = CFrame.lookAt(Vector3.new(0, 8, 30), Vector3.new(0, 3, 0)), CameraType = Enum.CameraType.Custom, ViewportSize = Vector2.new(1920, 1080), Focus = CFrame.identity }
 	end,
 	Highlight = function()
 		return { FillColor = Color3.new(1, 0, 0), OutlineColor = Color3.new(1, 1, 1), DepthMode = Enum.HighlightDepthMode.AlwaysOnTop }
@@ -1120,7 +1125,11 @@ local function service(name)
 	s._props.Name = name
 	return s
 end
-workspace = service("Workspace")
+workspace = newInstance("Workspace")
+workspace._props.Name = "Workspace"
+local camera = newInstance("Camera")
+camera.Parent = workspace
+workspace._props.CurrentCamera = camera
 local ground = newInstance("Part")
 ground._props.Name = "Ground"
 ground._props.Anchored = true

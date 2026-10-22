@@ -58,6 +58,7 @@ VFX/                                  (repo root)
 | `src/shared/VFX/MeshFactory.luau` | `ReplicatedStorage.Shared.VFX.MeshFactory` | ModuleScript |
 | `src/shared/VFX/VFXScrub.luau` | `ReplicatedStorage.Shared.VFX.VFXScrub` | ModuleScript |
 | `src/shared/VFX/VFXCamera.luau` | `ReplicatedStorage.Shared.VFX.VFXCamera` | ModuleScript |
+| `src/shared/VFX/VFXShake.luau` | `ReplicatedStorage.Shared.VFX.VFXShake` | ModuleScript (camera shake behind `ctx.Shake`) |
 | `src/shared/VFX/ForgeBridge.luau` | `ReplicatedStorage.Shared.VFX.ForgeBridge` | ModuleScript |
 | `src/shared/VFX/ForgeAssets/<Name>.rbxmx` | `ReplicatedStorage.Shared.VFX.ForgeAssets.<Name>` | Model (Forge template) |
 | `src/shared/Packages/ForgeVFX.lua` | `ReplicatedStorage.Shared.Packages.ForgeVFX` | ModuleScript (Wally link to the ForgeVFX package) |
@@ -165,28 +166,77 @@ fade by ~2.7 s.
 ### Lava eruption
 
 `LavaEruption`: a lava fissure on the ground below `ctx.CFrame`, running across the view
-(along its RightVector). Plain Luau, no Forge. `WallLength` (the fissure, 20 studs) sizes
-the fissure, curtain, wind and smoke; `Scale` (default 2.5) sizes everything. Play returns
-when the crack has cooled, at ~4.35 s. Every mass of fire is a flipbook particle layer; the
-only single-image layers are light (the hot line) and the crack.
-1. 0-0.6 s anticipation: streak clusters with black twins, flung rocks, upright flame bursts,
-   lava rings, ring curls, a grey smoke veil that shoots up under heavy drag, and embers. The
-   crack (three Top-face SurfaceGuis: a dark rift, an orange rift line and a red pool) heats
-   up from 0.3 s.
-2. 0.69 s (`EruptTime`): a spiky flash and a flare line run along the crack, the light pops
-   and settles while its range grows to `LightRange`, a spike row and a splash fire, and a
-   curtain of solid flame tongues (Fire Tower flipbooks: hot roots, orange, deep red tops) is
-   up within ~0.04 s, over a boiling base of drawn fire bursts (`BaseRate`) with a white-hot
-   core low in the middle. The centre band is 1.45x taller; wind arcs swirl round the base.
-3. Burning (to `EruptTime` + `BurnTime`, ~2.85 s): the curtain sways (two mixed sines), dark
-   charcoal tongues alternate at its edges, curls, flecks and embers fly, and fire-tinted
-   smoke rises off its top (`SmokeRate`).
-4. Die-down (`FadeTime`): the edge bands stop, the curtain narrows to a thin bundle and the
-   tongue lifetimes shrink so nothing lingers; then the crack cools from orange to dark over
-   `CrackFadeTime`.
+(along its RightVector). Plain Luau, no Forge. `WallLength` sizes the crack (F = 20 studs
+at Scale 1); the curtain, wind, column and smoke use the body size B = 0.72 F. `Scale`
+(default 2.5) sizes everything. Play returns when the crack has faded, at ~4.35 s. Matched
+frame by frame against two reference camera angles.
+1. 0.04-0.6 s precursor: one wide burst of orange and dark streaks, grey rocks, upright
+   flame bursts (gone by ~0.45 s), 4 bold orange rings (custom `lava_ring`), dark smoke and
+   embers. The crack (Top-face SurfaceGuis: a branched dark crack, a lumpy lava line and a
+   red pool) heats up from 0.3 s.
+2. 0.69 s (`EruptTime`): a spike row, a low radial starburst of wedge flares (custom
+   `lava_wedge`) and a curtain of flame tongues up within ~0.04 s (the opening burst rushes
+   up faster and stands ~20% taller). Three tongue bands follow the curtain width: the
+   sides reach ~0.65 B, the centre band ~0.95 B. A soft flame body, two faint beam veils,
+   wind arcs that rise as they spin, and the hot line along the whole crack come with it.
+3. From 0.80 s the centre loops a ~0.49 s pulse (measured on 60 fps strips of both videos):
+   a bright soft blob swells at the base (`lava_glow`), then a darker red flame burns up
+   through it (custom `lava_hollow2`, unlit, emitted as bursts at 0.85, 1.34, 1.83, 2.32,
+   2.81 and 3.30 s), so its rim reads as an arch for ~0.05 s; ~0.2 s later a tall slender
+   teardrop flares (`lava_wedge`), and the sides lean into a small V. There is no standing
+   ring: the reference's "arch" is these moving layers. ~0.95-1.05 s: the curtain opens
+   into a V around the first teardrop. The curtain holds ~0.72 B wide with dark tongues at
+   its edges.
+4. From 2.85 s (`EruptTime` + `BurnTime`): the sides stop, small flame clumps flare at the
+   old edges, and the centre hands over (~3.0-3.15 s) to a die-down fan of straight streaks
+   (custom `lava_streak`, two outward-tilted half-boxes plus a bright core) that closes into
+   a parallel bundle by 3.4 s and is gone by ~3.67 s.
 
 One per-frame loop (`ctx.Wait(1/240)`) drives the bursts (one per step), channel rates,
-box widths, tongue lifetimes and speeds, the sway, the light and the crack.
+emitter box widths, beam widths, the light and the crack. Instances: ~56 (a deliberate
+overrun of the ~50 guideline to match the reference); burst particles ~194.
+
+### Chromatic strike
+
+`ChromaticStrike`: a white, prismatic ranged strike, rebuilt from reference videos (1x from
+two angles, then 0.25x from far and from behind the caster; the reference's blue variant was
+not copied). `ctx.CFrame` is the target; the caster stands `CasterDistance` (32) studs along
+its LookVector, or pass the runtime-only override `Caster` (a BasePart). `Scale` (2.5) sizes
+the target eruption; caster bursts, projectiles and the dash use 0.56x of it. Plain Luau, one
+per-frame loop (`ctx.Wait(1/240)`) running a time-sorted event list. Play returns at ~3.95 s;
+smoke is gone by ~5.2 s.
+1. 0.14-1.25 s: three white projectiles (WIRES). Each is a locked 4-point star head over a
+   trail of beam segments bent along a Catmull-Rom spline (twisted white core, soft white haze
+   `cs_soft_trail`, dark smoke edge) that stays drawn from the caster until it fades. A low
+   smoky streak with a chromatic head, a steep arch over the left, then (0.6 s) one that shoots
+   very high, loops over itself and dives in.
+2. 1.10 s: spiky white ball at the target, chromatic ground ring + wind dome at the caster;
+   1.30 s black void frame (2 frames); 1.33 s prismatic launch (white mass + tall chromatic
+   rays) and the dash: it rushes ~78% of the way, then grinds in. Its head is white crescent
+   strokes spinning flat across the path, a drilling ring of three rolling ribbons
+   (`motion.md`), chromatic flares, black smoke and a soft white streak back to the caster;
+   tunnel rings and a rainbow ground streak that fades to a thin orange twin line. Dark
+   shell, bokeh and chromatic shards at the caster.
+3. `ImpactTime` 1.85 s: white-hot core star, jagged V-wing flash (custom `cs_impact_flash`,
+   white over red/blue copies for the fringe), blast streaks, a ground flash ring, screen wash
+   and magenta/teal edge vignette (camera-locked particles), light pillar, dark shockwave,
+   base ring. The burn runs to `FinaleTime` (3.7 s): rising thin halos (`cs_halo_thin`),
+   crystal spike fans with three surges, rainbow spikes, black-edged RGB glitch bolts
+   (`cs_rgb_bolt`), 4-point star flashes every ~0.06 s plus five big cross stars, blade
+   flares, rising motes, leaves, rocks, puffs, smoke, wind rings.
+4. `FinaleTime`: a 4-point cross that shrinks to a dot with a ground flash and a blast;
+   arched smoke hooks (`cs_smoke_hook`) and floor smoke linger.
+Camera shake (`ctx.Shake`, `Shake`/`ShakeScale`): 2.2 deg at the launch, 11 deg on the impact
+(~6 deg peak measured once it adds up with distance falloff), a 1.8 deg rumble through the
+burn, 5.5 deg on the finale.
+Budget: a deliberate overrun to match the reference (the user raised it): ~200 instances
+(3 projectiles x `WireSegments` 4 x core + haze + ink beams, ~75 emitters) and ~650 burst
+particles plus rate channels. Lower `WireSegments`, `SmudgeRate`, `SmokeRate`, `SpikeRate`,
+`SparkCount`, `SpeckCount`, `BokehCount`, `StreakCount`, `PuffCount` and `MoteRate` for
+crowds; `Vignette` and `Shake` should be on only for the caster's own client.
+Grading note (2026-10-21): with the default per-frame agy prompt, the reference graded
+against its own second playback scored 6/10, so absolute agy scores on this effect are
+capped well below 10; compare against that baseline.
 
 ## VFX Forge layers
 
@@ -329,6 +379,7 @@ requires every effect at startup, and one bad module stops it.
 | `ctx.Emit(emitter, n)` | | Burst `n` particles; sets `emitter.TimeScale`. Use instead of `:Emit()`. |
 | `ctx.Tween(inst, t, props, style?, dir?)` | -> Tween | Tween in effect time. Default `Quad` / `Out`. |
 | `ctx.Wait(t)` | -> number | Yield in effect time. Returns the effect time that actually passed (often more than `t`: a 1/60 wait usually takes 1-2 frames). Per-frame loops should add the return value, not `t`, to their clock. |
+| `ctx.Shake(magnitude, duration, options?)` | | Shake the local camera: rotation only, `magnitude` in degrees, `duration` in effect seconds, distance-gated (`options.Range`, default 250 studs from `options.Position` or the effect). `options`: `Roughness`, `FadeIn`. Implemented by `VFXShake` (undo before the camera scripts, apply after, so it never drifts); `VFXPlayer.Clear` stops it, `VFXScrub` skips it. Pass a `Shake = false` override for effects replicated from other players. |
 | `ctx.Forge(template, cf?, options?)` | -> env | Play a VFX Forge template as a layer at `cf` (default `ctx.CFrame`), retimed to `ctx.TimeScale`. Non-blocking; `env.Finished:await()` waits for it. `options`: `{ Scale = n, Color = Color3, ColorMode = "multiply" or "replace" }`. See "VFX Forge layers". |
 
 `MeshParticles.Burst(ctx, template, count, config)`: non-blocking mesh debris; config in
@@ -416,6 +467,23 @@ local meshFolder = meshRoot and meshRoot:FindFirstChild("Meshes")
 ## Engine gotchas (verified in Studio)
 
 - `ParticleEmitter.Size` is a **half-width**: `Size = 5` draws a 10x10-stud quad.
+- A `Beam` samples its `Transparency` (and `Color`) only at **segment vertices**. With
+  `Segments = 1` that is just the two ends, so a sequence like `{0:1, 0.15:0, 0.85:0, 1:1}`
+  draws nothing at all. Give beams with mid-length keys enough segments (e.g. 12).
+- `VelocityParallel` particles run the texture's X along the velocity; an upright texture
+  needs `Rotation = -90` to point its tip along the motion.
+- Particles are depth-tested against the floor: one centred at ground level loses its lower
+  half. Raise the emitter so the quad's bottom sits at the ground.
+- Emitters sort by their anchor's distance to the camera plus `ZOffset`. With an elevated
+  camera, a higher anchor is nearer, so a dark layer meant to draw over a bright one needs
+  a clear margin (e.g. `ZOffset` 3 vs 0.95), not +0.5.
+- A dark particle over additive glow needs `LightInfluence = 0`: the effect's PointLight
+  otherwise lights it back to orange and it disappears.
+- A rate window shorter than a frame (~0.02 s) can emit nothing; use explicit bursts.
+- Studio renders only a fraction of particles at low graphics quality. With Editor Quality
+  Level on Automatic it can drop to Level 1 (for example when a live-editing session joins),
+  and captures show a shorter wall with small bursts missing. Before grading, check
+  `settings().Rendering.EditQualityLevel` and keep it at Level 21.
 - Moving an `Attachment` (or an emitter's part) between `ctx.Emit` calls in the same frame
   does **not** move the spawn point; every burst lands where it was. To burst clusters at
   different spots from one emitter, give each cluster its own loop step (one burst per
@@ -649,10 +717,25 @@ tools/vfx/clip.mjs help`). Every time it prints or labels is effect seconds (rea
    freeze time at 0.1x. When the reference comes from more than one camera angle, match a
    camera to each: a layer that looks right from the front can be flat, thin or misplaced
    from the side.
-3. **Compare at most twice.** Each round is a rebuild plus a capture, and the reference can't
-   be copied exactly. A grader subagent that compares **only against the reference** can
-   judge each round (state anything intentionally out of scope). After the second round, fix
-   what the pairs show most clearly, then report what still differs.
+3. Grade each round with **agy** (Antigravity CLI, Gemini), not a Claude subagent. Run
+   `.claude/skills/roblox-vfx/scripts/agy_grade.sh <sheet dir> [NNNN ...]` as a background
+   Bash command: it calls `agy.exe` directly on one sheet JPEG at a time (retry once) and
+   writes `agy_NNNN.txt` next to it. Don't grade through the `agy-bridge` MCP: an image grade
+   takes ~1-2 min (agy logs in again on every call, ~40 s even for a trivial prompt) and the
+   app's MCP hop gives up at ~60 s, so about half the calls fail with "Request timed out".
+   It grades with Gemini 4 Argon (High) (`gemini-4-argon-high`); set `AGY_MODEL` to another
+   id or name from `agy models` to change it. A wrong name prints the model list instead of a
+   grade, which the script reports as a missing score.
+   Set `AGY_QUESTION` to replace the default (lava) question. It should say: the
+   reference is ground truth, grade **only against it**, what the sheet layout is
+   (timestamps, which column is REF, which row is which angle, grid spacing), what is out of
+   scope, and ask for a 0-10 score per timestamp and angle, concrete differences (shape,
+   size in studs, colour, missing or extra layers, detail), and the top fixes in order.
+   Treat its stud sizes as estimates and its hex colours as guesses, and check each fix
+   against the sheet yourself before applying it.
+   **Compare at most twice** (Roqer): each round is a rebuild plus a capture, and the
+   reference can't be copied exactly. After the second round, fix what the pairs show most
+   clearly, then report what still differs.
 4. Finish with a read-only file-integrity subagent: contract, rules grep, Linger maths,
    budget counts, docs accuracy.
 5. Before every capture, check the Studio module's Source hash matches the disk file (Rojo
@@ -691,9 +774,8 @@ tools/vfx/clip.mjs help`). Every time it prints or labels is effect seconds (rea
 
 ## Open issues (2026-10-12; delete each line when fixed)
 
-- `ctx` has no camera/screen helper (FOV, blur, impact frames, shake), so effects can't use
-  `references/camera-world.md` without breaking rule 1. Add one to `VFXPlayer` (and mirror it
-  in `VFXScrub`) when the first effect needs it.
+- `ctx` has no FOV, blur or impact-frame helper yet (camera shake exists: `ctx.Shake`). Add
+  one to `VFXPlayer` (and mirror it in `VFXScrub`) when the first effect needs it.
 - The drawn textures in `src/shared/VFX/Textures.luau` (`Textures.Pending`) still use library
   fallbacks: upload `assets/textures/*.flipbook.png`, `Glint.png` and `ShockRing.png` and put
   the ids in `UPLOADED`. The redesigned effects (2026-10-21) were checked with

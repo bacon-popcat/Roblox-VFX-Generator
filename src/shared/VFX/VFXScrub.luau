@@ -128,6 +128,9 @@ function VFXScrub.Play(name, cframe, overrides, stopAt, timeScale, seed)
 		return part
 	end
 
+	-- Camera shake is skipped: a scrub freezes on a fixed capture camera.
+	function ctx.Shake() end
+
 	local skippedForge = false
 	function ctx.Forge(template, at, options)
 		if not ForgeBridge.Available() then

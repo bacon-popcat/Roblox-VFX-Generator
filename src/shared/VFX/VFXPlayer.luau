@@ -7,6 +7,7 @@ local TweenService = game:GetService("TweenService")
 
 local ForgeBridge = require(script.Parent:WaitForChild("ForgeBridge"))
 local VFXCamera = require(script.Parent:WaitForChild("VFXCamera"))
+local VFXShake = require(script.Parent:WaitForChild("VFXShake"))
 
 local VFXPlayer = {}
 VFXPlayer.TimeScale = 1
@@ -115,6 +116,23 @@ function VFXPlayer.Play(name, cframe, overrides)
 		return part
 	end
 
+	-- Shake the local camera (rotation only, effect time, distance-gated; see VFXShake).
+	-- magnitude in degrees, duration in effect seconds. options: Roughness, FadeIn,
+	-- Position (default this effect's position), Range (default 250 studs).
+	-- Effects replicated from other players should pass a Shake = false override.
+	function ctx.Shake(magnitude, duration, options)
+		options = options or {}
+		VFXShake.Start({
+			Magnitude = magnitude,
+			Duration = duration,
+			Roughness = options.Roughness,
+			FadeIn = options.FadeIn,
+			Position = options.Position or cframe.Position,
+			Range = options.Range,
+			TimeScale = timeScale,
+		})
+	end
+
 	-- Play a VFX Forge template (Shared.VFX.ForgeAssets) as a layer, retimed to
 	-- this play's TimeScale. Non-blocking; see ForgeBridge for the options.
 	-- Returns Forge's env: env.Finished:await() waits until the layer is done.
@@ -147,6 +165,7 @@ function VFXPlayer.Play(name, cframe, overrides)
 end
 
 function VFXPlayer.Clear()
+	VFXShake.Stop()
 	for env in activeForge do
 		env.Clear()
 	end

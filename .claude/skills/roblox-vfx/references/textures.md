@@ -92,18 +92,30 @@ When nothing in the library fits, make one (white RGB, shape in alpha; tint with
 | Image | Tool |
 |---|---|
 | Flipbooks (frames that grow and break apart on an exact grid), crisp drawn shapes (claws, crescents, puffs, splinters, cracks, impact stars) and light (glows, glints, flares, rings, lens streaks) | Draw it with numpy: `tools/vfx/vfxtex.py` (`drawing-textures.md`). Exact grids, padding and frame-to-frame change, checked by `tools/vfx/flipbook.mjs` |
-| Default for any other single texture or image | Google Gemini through Composio: `GEMINI_GENERATE_IMAGE` via `COMPOSIO_MULTI_EXECUTE_TOOL` (find it with `COMPOSIO_SEARCH_TOOLS`) on the default model |
-| Detailed, or the default model's result isn't good enough | Same tool with `model: "gemini-3-pro-image-preview"` (Nano Banana Pro; supports `image_size` 2K/4K and other aspect ratios) |
-| Painterly sheets numpy can't draw (tileable or img2img work, or Gemini Pro keeps missing) | ComfyUI (local, via comfy-mcp; call `server_info` first) |
+| Default for any other single texture or image (user's choice) | **Codex's built-in `image_gen` tool**, run with `codex exec` (see below). Uses the user's ChatGPT subscription, no API credits |
+| Codex's result isn't good enough after a couple of tries, painterly sheets numpy can't draw, or tileable / img2img work | ComfyUI (local, via comfy-mcp; call `server_info` first) |
 | A 3D look: a simulation, a lit volume, shaded debris | Render it in Blender with `vfxtex.render_flipbook` (`drawing-textures.md`) |
+
+Codex: run in the background from a new scratch folder `$D`, with the API key hidden so it
+stays on the subscription:
+
+```bash
+cd "$D" && env -u OPENAI_API_KEY codex exec --skip-git-repo-check -s workspace-write -C "$D"   "Use your built-in image_gen tool (not the CLI fallback, not code that draws) to make one PNG: <prompt>. Copy the result into this folder as <name>.png. Work only in this folder. Reply with the saved path and the dimensions."
+```
+
+It takes ~1 min and saves ~1254x1254 (size and image model can't be chosen; Codex also keeps
+a copy in `~/.codex/generated_images/`). It can also give a real transparent background
+with a smooth alpha fade if asked. Don't use Codex's `image_gen.py` CLI fallback: it bills the
+OpenAI API account, not the subscription. To pass a reference image, put `-i <file>` after
+the prompt (before it, `-i` swallows the prompt).
 
 For a drawn texture, steps 1-2 below are replaced by `vfxtex` (it writes white RGB with the
 shape in alpha, at the size you ask for) and `flipbook.mjs`; continue at step 3.
 
 1. Generate the image. Prompt for a **single isolated shape, pure white on a pure black
    background, no text, no frame**, and say the layout you need (centred, square, tall
-   streak for a beam, NxN grid of cells for a flipbook). Save the result (the response's
-   `data.image.s3url` is short-lived, so download it right away) to the scratchpad.
+   streak for a beam, NxN grid of cells for a flipbook). Save the result to the scratchpad
+   and look at it before converting.
 2. Convert it to white RGB with the shape in alpha (alpha = brightness, RGB = 255) and
    resize to a power of two. Do this with numpy inside Blender
    (`mcp__Blender__execute_blender_code`; Blender's Python has numpy, system Python does
@@ -118,6 +130,25 @@ shape in alpha, at the size you ask for) and `flipbook.mjs`; continue at step 3.
 Beam and Trail textures: X spans the beam's width, Y runs along its length and tiles,
 so draw them tall (e.g. 128 x 512) with the streak running vertically. A wide texture
 shows up as stripes across the beam.
+
+`VelocityParallel` particles run the texture's **X** along the velocity, so an upright
+(tall) texture needs `Rotation = -90` to point its tip along the motion.
+
+Uploaded textures (white RGB, shape in alpha; drawn with PIL in Python unless noted):
+
+| Name | Id | Use |
+|---|---|---|
+| lava_streak | rbxassetid://138131925212643 | Straight flame streak, soft root, long taper to a sharp tip (128x512). LavaEruption die-down fan. |
+| lava_wedge | rbxassetid://109547847796563 | Soft flare wedge, bright rounded root (64x256). Radial ground starbursts and splashes (VelocityParallel, Rotation -90). |
+| lava_ring | rbxassetid://113782032324685 | Thick soft, slightly lumpy ring (128x128). Bold flung rings; reads better than the hollow curl flipbooks. |
+| lava_glow | rbxassetid://87365446017300 | Round soft glow that falls to exactly zero at the edge (128x128). Use instead of Blurred Spec 11 (284205403), which has a hard bottom edge on upright quads. |
+| lava_arch2 | rbxassetid://91461964686009 | Inverted U with a wobbly flame-edged rim (128x192). No longer used: as a standing glow it read as a ring sticker. |
+| lava_hollow2 | rbxassetid://104220462120494 | Soft egg with a wavy flame-licked rim and wide falloff (128x128). A dark unlit particle in front of a bright glow cuts a soft hollow. lava_glow's alpha is a steep cone, so it only reads big when added; it can't darken. |
+| cs_impact_flash | rbxassetid://106031250604546 | Jagged V-wing flash mass, wider than tall (512, Codex image_gen). ChromaticStrike impact and launch; red/blue copies behind = chromatic fringe. |
+| cs_smoke_hook | rbxassetid://134858289383590 | Smoky arched hook stroke, 1:2 tall (256x512, Codex image_gen). Lingering arched smoke plumes (Squash ~0.6-1). |
+| cs_soft_trail | rbxassetid://85104342894286 | Soft fibrous trail strip, Gaussian across, uniform along (segment joints never show) (128x512, drawn in Python). Beam texture (Wrap) for smoky projectile trails; library streaks tile with hard ends. |
+| cs_rgb_bolt | rbxassetid://100904020799857 | Black-edged RGB-split zigzag bolt, colour baked, transparent (512, Codex image_gen). Glitch bolts at LightEmission 0. |
+| cs_halo_thin | rbxassetid://118128517935651 | Crisp thin ring at 0.86 of the half-width with a tight glow (512, drawn in Python). Halo rings that must stay thin. |
 
 <!-- Add your own uploaded textures below, e.g.
 | soft_glow | rbxassetid://000000 | Round soft glow for cores and auras |

@@ -73,6 +73,10 @@ local function runCase(case, timeScale)
 	function ctx.Forge()
 		error("ctx.Forge is not available in the test runtime")
 	end
+	function ctx.Shake(magnitude, duration, options)
+		assert(type(magnitude) == "number" and type(duration) == "number", "ctx.Shake(magnitude, duration, options?) expects numbers")
+		assert(options == nil or type(options) == "table", "ctx.Shake options must be a table")
+	end
 
 	local start = Runtime.now()
 	local returnedAt, destroyAt, done
@@ -133,7 +137,9 @@ local function runCase(case, timeScale)
 		local death = e.time + e.life / math.max(e.ts or 1, 1e-6)
 		total += e.count
 		lastDeath = math.max(lastDeath, death)
-		if death > destroyAt + 0.02 then
+		-- a particle living 20 s or more is a held layer edited live and removed with the
+		-- folder (ChromaticStrike's vignette), not one cut short
+		if death > destroyAt + 0.02 and e.life < 20 then
 			cutParticles += e.count
 			cutLate = math.max(cutLate, death - destroyAt)
 		end
@@ -164,7 +170,7 @@ local function runCase(case, timeScale)
 
 	local leftover = {}
 	for _, d in workspace:GetDescendants() do
-		if d.Name ~= "Ground" and d.Name ~= "TestWeapon" and d ~= container and not d:IsDescendantOf(container) then
+		if d.Name ~= "Ground" and d.Name ~= "TestWeapon" and d.ClassName ~= "Camera" and d ~= container and not d:IsDescendantOf(container) then
 			table.insert(leftover, d.ClassName .. " " .. d.Name)
 		end
 	end
