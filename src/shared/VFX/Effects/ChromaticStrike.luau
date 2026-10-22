@@ -269,7 +269,7 @@ Effect.Defaults = {
 	VignetteLeft = Color3.fromRGB(180, 40, 140), -- magenta screen edge on the big flashes
 	VignetteRight = Color3.fromRGB(40, 160, 170), -- teal screen edge
 	Scale = 2.5, -- sizes the target eruption; caster bursts, wires and dash use 0.56x of it
-	ImpactScale = 1.3, -- the target eruption on top of Scale (bigger than the caster's side)
+	ImpactScale = 1.15, -- the target eruption on top of Scale (bigger than the caster's side)
 	DashScale = 1.6, -- the dash head, its dark tail and its line, on top of the 0.56x
 	CasterDistance = 32, -- studs from the target to the caster (without a `Caster` override)
 	ImpactTime = 1.85, -- effect time of the giant impact flash (dash lands)
@@ -280,12 +280,12 @@ Effect.Defaults = {
 	SpeckCount = 16, -- black shrapnel at the impact (the pre-hits use fractions of it)
 	BokehCount = 10, -- white dots flying out inside the caster's shell
 	SpikeRate = 95, -- sets the crystal spikes per 0.07 s step (SpikeRate * 0.07, split over two fans)
-	SmokeRate = 150, -- ground smoke puffs / s while the pillar burns
+	SmokeRate = 100, -- ground smoke puffs / s while the pillar burns
 	LeafCount = 22,
 	RockCount = 30,
 	FlakeCount = 24, -- dark chips tumbling out of the impact
 	CrownCount = 18, -- thin white energy spikes shooting up round the base (more through the burn)
-	PuffCount = 24, -- opaque grey puffs bursting out of the impact
+	PuffCount = 16, -- opaque grey puffs bursting out of the impact
 	StreakCount = 56, -- white blast streaks flying out of the impact
 	MoteRate = 60, -- white glints rising through the burn / s
 	PlumeCount = 12, -- arched smoke hooks in total
@@ -1406,7 +1406,7 @@ function Effect.Play(ctx)
 		Lifetime = NumberRange.new(1, 1.4),
 		Size = seq({ { 0, 4 * s, 1.2 * s }, { 1, 8 * s, 2.5 * s } }),
 		Squash = NumberSequence.new(-0.5), -- flat, hugging the floor
-		Transparency = seq({ { 0, 1 }, { 0.15, 0.58 }, { 0.6, 0.7 }, { 1, 1 } }),
+		Transparency = seq({ { 0, 1 }, { 0.15, 0.78 }, { 0.6, 0.85 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-45, 45), -- swirling
 		TimeScale = ctx.TimeScale,
@@ -1473,7 +1473,7 @@ function Effect.Play(ctx)
 		Drag = 4,
 		Lifetime = NumberRange.new(0.5, 0.7),
 		Size = seq({ { 0, 2.5 * s, 0.8 * s }, { 1, 4.5 * s, 1.5 * s } }),
-		Transparency = seq({ { 0, 0.15 }, { 0.6, 0.35 }, { 1, 1 } }),
+		Transparency = seq({ { 0, 0.4 }, { 0.6, 0.55 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-30, 30),
 	})
@@ -1566,7 +1566,7 @@ function Effect.Play(ctx)
 		Lifetime = NumberRange.new(0.3, 0.5),
 		Size = seq({ { 0, 2 * s, 0.5 * s }, { 0.4, 4.5 * s, 1 * s }, { 1, 5.5 * s, 1 * s } }),
 		Squash = NumberSequence.new(1.4), -- long along the flight
-		Transparency = seq({ { 0, 0.15 }, { 0.5, 0.35 }, { 1, 1 } }),
+		Transparency = seq({ { 0, 0.45 }, { 0.5, 0.6 }, { 1, 1 } }),
 		ZOffset = 1.5,
 	})
 	local blastSmoke = emitter(jetAt, {
@@ -1574,15 +1574,15 @@ function Effect.Play(ctx)
 		EmissionDirection = Enum.NormalId.Front,
 		SpreadAngle = Vector2.new(20, 180),
 		Color = ColorSequence.new(Color3.fromRGB(232, 232, 238)),
-		LightEmission = 0.3,
-		Brightness = 1.8,
+		LightEmission = 0.2,
+		Brightness = 1.3,
 		Speed = NumberRange.new(30 * s, 50 * s),
 		Drag = 5,
 		Acceleration = Vector3.new(0, 3 * s, 0),
 		Lifetime = NumberRange.new(0.6, 0.9),
 		Size = seq({ { 0, 2 * s, 0.5 * s }, { 0.3, 4.5 * s, 1 * s }, { 1, 6.5 * s, 1.5 * s } }),
 		Squash = NumberSequence.new(-0.3), -- a little wider than tall
-		Transparency = seq({ { 0, 0.15 }, { 0.4, 0.3 }, { 1, 1 } }),
+		Transparency = seq({ { 0, 0.55 }, { 0.4, 0.65 }, { 1, 1 } }), -- a veil, not a wall
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-40, 40),
 		ZOffset = 1.2,
@@ -1820,8 +1820,8 @@ function Effect.Play(ctx)
 	end)
 	burst(tImpact + 0.05, groundWave, 1)
 	at(tImpact + 0.02, function() -- the white smoke blast and the spike crown
-		ctx.Emit(blastJets, 24)
-		ctx.Emit(blastSmoke, 28)
+		ctx.Emit(blastJets, 16)
+		ctx.Emit(blastSmoke, 14)
 		ctx.Emit(crown, p.CrownCount)
 	end)
 	burst(tImpact + 0.1, flakes, p.FlakeCount)
@@ -1848,8 +1848,8 @@ function Effect.Play(ctx)
 			burst(time, coreStar, 1)
 			burst(time + 0.01, groundFlash, 1)
 			burst(time + 0.02, crown, math.ceil(p.CrownCount / 2))
-			burst(time + 0.03, blastJets, 12)
-			burst(time + 0.04, blastSmoke, 14)
+			burst(time + 0.03, blastJets, 6)
+			burst(time + 0.04, blastSmoke, 5)
 			burst(time + 0.05, flakes, math.ceil(p.FlakeCount / 3))
 			burst(time + 0.03, glitch, 2)
 		end
