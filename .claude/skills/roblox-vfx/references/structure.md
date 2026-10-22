@@ -210,12 +210,14 @@ its LookVector, or pass the runtime-only override `Caster` (a BasePart). `Scale`
 the target eruption; caster bursts, projectiles and the dash use 0.56x of it. Plain Luau, one
 per-frame loop (`ctx.Wait(1/240)`) running a time-sorted event list. Play returns at ~3.95 s;
 smoke is gone by ~5.2 s.
-1. 0.14-1.25 s: three white projectiles (WIRES). Each is a locked 4-point star head over a
-   trail of beam segments bent along a Catmull-Rom spline (twisted white core, soft white haze
-   `cs_soft_trail`, dark smoke edge) that stays drawn from the caster until it fades. Two
-   straight low shots look like the dash (a thin bright line in a soft white streak, the
-   dash's head), with sparkle stars and prismatic flares round the caster on each salvo; a steep arch over the left, then (0.6 s) one that shoots
-   very high, loops over itself and dives in.
+1. 0.14-1.25 s: three white projectiles and two low smoky streaks (WIRES). Each is a locked
+   4-point star head flown along a Catmull-Rom spline, drawing three camera-facing Trails (a
+   white core, a soft white haze `cs_soft_trail` and a dark smoke edge) that stay from the
+   caster until they fade. Each trail's width pinches and swells with the distance flown, so
+   it reads as a twisting smoky ribbon. They replaced a chain of beam segments, which kinked
+   and banded at every joint. The low streaks are chunky smoky plumes with chromatic heads;
+   sparkle stars and prismatic flares spray round the caster on each salvo. A steep arch
+   over the left, then (0.6 s) one that shoots very high, loops over itself and dives in.
 2. 1.10 s: spiky white ball at the target, chromatic ground ring + wind dome at the caster;
    1.30 s black void frame (2 frames); 1.33 s prismatic launch (white mass + tall chromatic
    rays) and the dash: it rushes ~78% of the way, then grinds in. Its head (`shotHead`) is a
@@ -228,18 +230,20 @@ smoke is gone by ~5.2 s.
 3. `ImpactTime` 1.85 s: white-hot core star, jagged V-wing flash (custom `cs_impact_flash`,
    white over red/blue copies for the fringe), blast streaks, a ground flash ring, screen wash
    and magenta/teal edge vignette (camera-locked particles), light pillar, dark shockwave,
-   base ring. The burn runs to `FinaleTime` (3.7 s): rising thin halos (`cs_halo_thin`),
-   crystal spike fans with three surges, rainbow spikes, black-edged RGB glitch bolts
-   (`cs_rgb_bolt`), 4-point star flashes every ~0.06 s plus five big cross stars, blade
+   base ring, and a white smoke blast: soft jets and billows sprayed low and flat in every
+   direction (again on each surge). The burn runs to `FinaleTime` (3.7 s): rising thin halos
+   (`cs_halo_thin`), crystal spike fans with three surges, a few small rainbow spikes, small
+   black-edged RGB glitch scribbles (`cs_rgb_bolt`; at full size they read as cartoon
+   zigzags), 4-point star flashes every ~0.06 s plus five big cross stars, blade
    flares, rising motes, leaves, rocks, puffs, smoke, wind rings.
 4. `FinaleTime`: a 4-point cross that shrinks to a dot with a ground flash and a blast;
    arched smoke hooks (`cs_smoke_hook`) and floor smoke linger.
 Camera shake (`ctx.Shake`, `Shake`/`ShakeScale`): 2.2 deg at the launch, 11 deg on the impact
 (~6 deg peak measured once it adds up with distance falloff), a 1.8 deg rumble through the
 burn, 5.5 deg on the finale.
-Budget: a deliberate overrun to match the reference (the user raised it): ~200 instances
-(3 projectiles x `WireSegments` 4 x core + haze + ink beams, ~75 emitters) and ~650 burst
-particles plus rate channels. Lower `WireSegments`, `SmudgeRate`, `SmokeRate`, `SpikeRate`,
+Budget: a deliberate overrun to match the reference (the user raised it): ~190 instances
+(5 projectiles x 3 Trails, ~95 emitters) and ~700 burst particles plus rate channels. Lower
+`SmudgeRate`, `SmokeRate`, `SpikeRate`,
 `SparkCount`, `SpeckCount`, `BokehCount`, `StreakCount`, `PuffCount` and `MoteRate` for
 crowds; `Vignette` and `Shake` should be on only for the caster's own client.
 Grading note (2026-10-21): with the default per-frame agy prompt, the reference graded

@@ -5,8 +5,7 @@
 -- erupts: a giant jagged white flash with rainbow fringes, a light pillar, halo rings that
 -- rise around it, crystal spikes with rainbow tips, RGB glitch bolts, star flashes, cross-flares,
 -- leaves and debris, a 4-point cross finale and a crown of arched smoke plumes.
--- Layers: projectiles (sky shots: star heads, core/haze/smoke-edge beam trails; low shots: a
--- thin bright line in a soft streak, the dash's head), caster sparks/void/starburst/rays/
+-- Layers: projectiles (star heads; twisting core, haze and smoke-edge Trails), caster sparks/void/starburst/rays/
 -- crystals/bokeh/dark shell/prismatic sparkle stars and flares, dash head (a flickering spiky
 -- white ball, a white splash fanned back, a dark smoke wedge with rainbow slivers, black
 -- debris), thin bright line + soft haze back to the caster, glowing orbs along the path,
@@ -68,7 +67,7 @@ local ASSETS = {
 }
 
 local WHITE = Color3.new(1, 1, 1)
-local LINE = Color3.fromRGB(255, 244, 214) -- the shots' thin bright line, a little warm
+local LINE = Color3.fromRGB(255, 244, 214) -- the dash's thin bright line, a little warm
 local UP = Vector3.yAxis
 
 --------------------------------------------------------------------------------
@@ -203,10 +202,10 @@ end
 -- ribbon edged with dark smoke; the trail stays drawn from the caster until FadeAt, then fades
 -- while its tail pulls in.
 local WIRES = {
-	{ -- low streak 1 (first burst): chest height, straight, a spiky white head on a dark wedge
+	{ -- low streak 1 (first burst): chest height, nearly straight, chromatic head
 		Launch = 0.14,
 		Travel = 0.42,
-		Soft = true, -- a thin bright line in a soft white streak rather than a kinked rope
+		Soft = true, -- a chunky smoky white streak rather than a thin twisted rope
 		FadeAt = 0.95,
 		Fade = 0.18,
 		Width = 3,
@@ -274,7 +273,6 @@ Effect.Defaults = {
 	ImpactTime = 2, -- effect time of the giant impact flash (dash lands)
 	FinaleTime = 3.7, -- the pillar collapses into the 4-point cross (a long burn: ~1.85 s)
 	WireWidth = 0.18, -- trail core width (x caster scale); haze and dark edge are a few times wider
-	WireSegments = 6, -- beam segments per looping sky trail x 3 beams (fewer = cheaper, angular loops); low streaks use 1
 	SmudgeRate = 70, -- smoke smudge puffs / s per wire tip while it travels
 	SparkCount = 16, -- caster spark bursts (the later bursts are fractions of it)
 	SpeckCount = 16, -- black shrapnel at the impact (the pre-hits use fractions of it)
@@ -461,57 +459,64 @@ function Effect.Play(ctx)
 	end
 
 	------------------------------------------------------------------ wires
-	-- Each projectile trail is WireSegments cubic beam segments from its tail to its tip
-	-- along a spline, drawn three times: a bright twisted core, a soft white smoke haze around
-	-- it and a wider dark smoke edge behind. The head is a locked bright star.
-	local skySegments = math.max(1, math.floor(p.WireSegments))
+	-- Each projectile is a tip attachment flown along a spline, drawing three camera-facing
+	-- Trails: a bright core, a soft white smoke haze around it and a wider dark smoke edge
+	-- behind. A trail samples the tip every frame, so the curve is smooth with no segment
+	-- joints (the old chain of beam segments kinked and banded at every joint). Each trail's
+	-- width (the distance between its two attachments) pinches and swells with the distance
+	-- flown, so it reads as a twisting smoky ribbon. The head is a locked bright star.
+	-- Trail.Lifetime is real time, so it is divided by ctx.TimeScale; a VFXScrub freeze drops
+	-- trail segments (capture the projectiles at a very low speed instead).
+	local timeScale = math.max(ctx.TimeScale, 0.05)
 	local wireSlots = {}
 	for slot, wireDef in WIRES do
-		-- a nearly straight low streak is one cubic beam: joints show as rungs on a straight trail
-		local segments = wireDef.Soft and 1 or skySegments
-		local atts = {}
-		for i = 1, segments + 1 do
-			atts[i] = attachment(base, CFrame.new(caster))
+		local tipAt = attachment(base, CFrame.new(caster))
+		local life = (wireDef.FadeAt + wireDef.Fade - wireDef.Launch + 0.05) / timeScale
+		local function layer(width, props)
+			local a0 = attachment(base, CFrame.new(caster))
+			local a1 = attachment(base, CFrame.new(caster))
+			local trail = Instance.new("Trail")
+			trail.Attachment0 = a0
+			trail.Attachment1 = a1
+			trail.FaceCamera = true
+			trail.LightInfluence = 0
+			trail.LightEmission = 1
+			trail.Lifetime = life
+			trail.MinLength = 0.05
+			trail.TextureMode = Enum.TextureMode.Wrap
+			trail.Enabled = false
+			for key, value in props do
+				trail[key] = value
+			end
+			trail.Parent = base
+			return { Trail = trail, A0 = a0, A1 = a1, Width = width }
 		end
-		local b = atts[#atts]
-		local core = {
-			Texture = wireDef.Soft and "" or ASSETS.WireBeam, -- a low streak's core is a solid thin line
-			TextureMode = Enum.TextureMode.Wrap,
-			TextureLength = 3 * sc,
-			Width0 = p.WireWidth * (wireDef.Soft and 0.8 or wireDef.Width) * sc,
-			Width1 = p.WireWidth * (wireDef.Soft and 0.8 or wireDef.Width) * sc,
-			Color = ColorSequence.new(wireDef.Soft and LINE or p.Color),
-			Brightness = wireDef.Soft and 4 or 3,
-			ZOffset = 0.5,
-			Enabled = false,
-		}
-		local hazeProps = {
-			Texture = ASSETS.SoftTrail,
-			TextureMode = Enum.TextureMode.Wrap,
-			TextureLength = 5 * sc,
-			TextureSpeed = -0.8,
-			Width0 = p.WireWidth * (1.5 + 1.3 * wireDef.Width) * sc,
-			Width1 = p.WireWidth * (1.5 + 1.3 * wireDef.Width) * sc,
+		local w = p.WireWidth * wireDef.Width * sc
+		local core = layer(w, {
+			Texture = wireDef.Soft and ASSETS.SoftTrail or ASSETS.WireBeam,
+			TextureLength = (wireDef.Soft and 6 or 3) * sc,
 			Color = ColorSequence.new(p.Color),
-			-- near-normal blend: additive haze doubles up where two segments overlap at a joint
-			LightEmission = 0.1,
-			Brightness = 1.3,
-			ZOffset = 0.2,
-			Enabled = false,
-		}
-		local inkProps = {
+			Brightness = wireDef.Soft and 1.4 or 3,
+			-- the newest part is thickest; the old trail thins like a brush stroke
+			WidthScale = seq({ { 0, 1 }, { 1, 0.6 } }),
+		})
+		local haze = layer(p.WireWidth * (1.5 + 1.3 * wireDef.Width) * sc, {
 			Texture = ASSETS.SoftTrail,
-			TextureMode = Enum.TextureMode.Wrap,
+			TextureLength = 5 * sc,
+			Color = ColorSequence.new(p.Color),
+			LightEmission = 0.3,
+			Brightness = 1.3,
+			-- the smoke spreads as it ages
+			WidthScale = seq({ { 0, 0.6 }, { 0.3, 1 }, { 1, 1.4 } }),
+		})
+		local inkLayer = layer(p.WireWidth * (2.2 + 1.1 * wireDef.Width) * sc, {
+			Texture = ASSETS.SoftTrail,
 			TextureLength = 4 * sc,
-			TextureSpeed = 0.6,
-			Width0 = p.WireWidth * (2.2 + 1.1 * wireDef.Width) * sc,
-			Width1 = p.WireWidth * (2.2 + 1.1 * wireDef.Width) * sc,
 			Color = ColorSequence.new(ink),
 			LightEmission = 0,
-			ZOffset = -0.3,
-			Enabled = false,
-		}
-		local tip = emitter(b, { -- bright head + glitter shed along the wire
+			WidthScale = seq({ { 0, 0.5 }, { 0.3, 1 }, { 1, 1.3 } }),
+		})
+		local tip = emitter(tipAt, { -- glitter shed along the wire
 			Texture = ASSETS.Sparkle,
 			Rate = 45,
 			Enabled = false,
@@ -525,7 +530,7 @@ function Effect.Play(ctx)
 			Brightness = 3,
 			TimeScale = ctx.TimeScale,
 		})
-		local head = emitter(b, { -- the projectile's head: a bright 4-point star that rides the tip
+		local head = emitter(tipAt, { -- the projectile's head: a bright 4-point star that rides the tip
 			Texture = ASSETS.Star,
 			LockedToPart = true,
 			Rate = 40,
@@ -539,7 +544,7 @@ function Effect.Play(ctx)
 			ZOffset = 1,
 			TimeScale = ctx.TimeScale,
 		})
-		local headGlow = emitter(b, { -- soft glow round it; the low streak's is chromatic
+		local headGlow = emitter(tipAt, { -- soft glow round it; the low streak's is chromatic
 			Texture = wireDef.Soft and ASSETS.ChromWisp or ASSETS.Glow,
 			LockedToPart = true,
 			Rate = 30,
@@ -553,10 +558,7 @@ function Effect.Play(ctx)
 			ZOffset = 0.8,
 			TimeScale = ctx.TimeScale,
 		})
-		-- a low streak's head is the dash's (shotHead); its dark wedge is the smudge. The
-		-- attachments' X runs along the path, so -X (Left) points back
-		local kit = wireDef.Soft and shotHead(b, Enum.NormalId.Left, 0.8 * sc) or nil
-		local smudge = kit and kit.Wedge or emitter(b, { -- smoke puffs billowing off the tip (grey, a few dark)
+		local smudge = emitter(tipAt, { -- smoke puffs billowing off the tip (grey, a few dark)
 			Texture = ASSETS.Smoke,
 			Rate = p.SmudgeRate,
 			Enabled = false,
@@ -571,25 +573,19 @@ function Effect.Play(ctx)
 			RotSpeed = NumberRange.new(-40, 40),
 			TimeScale = ctx.TimeScale,
 		})
-		local cores, hazes, inks = {}, {}, {}
-		for i = 1, segments do
-			cores[i] = beam(atts[i], atts[i + 1], core)
-			hazes[i] = beam(atts[i], atts[i + 1], hazeProps)
-			if not wireDef.Soft then -- the low streaks have no dark edge: their dark is the wedge
-				inks[i] = beam(atts[i], atts[i + 1], inkProps)
-			end
-		end
 		wireSlots[slot] = {
-			Segments = segments,
-			Atts = atts,
-			Cores = cores,
-			Hazes = hazes,
-			Inks = inks,
+			TipAt = tipAt,
+			Layers = { core, haze, inkLayer },
+			Core = core,
+			Haze = haze,
+			Ink = inkLayer,
 			Tip = tip,
 			Head = head,
 			HeadGlow = headGlow,
 			Smudge = smudge,
-			Kit = kit,
+			-- each wire twists at its own rate and phase
+			Twist = 0.9 + 0.25 * slot,
+			Phase = slot * 1.7,
 		}
 	end
 	-- per-play path state lives on the slots: WIRES is shared by every play
@@ -602,27 +598,27 @@ function Effect.Play(ctx)
 		world[#world] = target + UP * wire.Points[#wire.Points][2] * wireScale
 		wireSlots[i].World = world
 		wireSlots[i].Done = false
+		wireSlots[i].Started = false
+		wireSlots[i].Flown = 0
 	end
 
 	local function showWire(slot, on)
-		for _, b in slot.Cores do
-			b.Enabled = on
-		end
-		for _, b in slot.Inks do
-			b.Enabled = on
-		end
-		for _, b in slot.Hazes do
-			b.Enabled = on
+		for _, l in slot.Layers do
+			l.Trail.Enabled = on
 		end
 		if not on then
 			slot.Tip.Enabled = false
 			slot.Head.Enabled = false
 			slot.HeadGlow.Enabled = false
 			slot.Smudge.Enabled = false
-			if slot.Kit then
-				enableKit(slot.Kit, false)
-			end
 		end
+	end
+
+	-- place a layer's two attachments across the path at `pos` (the frame's Y is across it)
+	local function placeLayer(l, frame, width)
+		local offset = frame.YVector * (width / 2)
+		l.A0.WorldCFrame = frame + offset
+		l.A1.WorldCFrame = frame - offset
 	end
 
 	local function updateWire(wire, slot, t)
@@ -633,70 +629,43 @@ function Effect.Play(ctx)
 		local tipS = math.clamp(life / wire.Travel, 0, 1)
 		tipS = 1 - (1 - tipS) ^ 1.25 -- shoots out fast, eases into the target
 		local fadeK = math.clamp((t - wire.FadeAt) / wire.Fade, 0, 1)
-		-- a comet wire (Trail < 1) only keeps the last Trail of its path behind the tip
-		local tailS = math.max(math.max(tipS - (wire.Trail or 1), 0), 0.35 * fadeK)
 		if fadeK >= 0.999 then
 			slot.Done = true
 			showWire(slot, false)
 			return false
 		end
-		-- place the attachments along the visible stretch, X along the path, and bend each
-		-- segment into the spline (cubic Hermite: curve size = path speed * step / 3)
-		local segments = slot.Segments
-		local step = (tipS - tailS) / segments
-		local speeds = {}
-		for i, att in slot.Atts do
-			local at = tailS + (i - 1) * step
-			local e = 1e-3
-			local lo, hi = math.max(at - e, 0), math.min(at + e, 1)
-			local tangent = spline(slot.World, hi) - spline(slot.World, lo)
-			att.WorldCFrame = alongFrame(spline(slot.World, at), tangent)
-			speeds[i] = tangent.Magnitude / (hi - lo)
+		local e = 1e-3
+		local lo, hi = math.max(tipS - e, 0), math.min(tipS + e, 1)
+		local tangent = spline(slot.World, hi) - spline(slot.World, lo)
+		local pos = spline(slot.World, tipS)
+		local frame = alongFrame(pos, tangent)
+		if slot.Last then
+			slot.Flown += (pos - slot.Last).Magnitude
 		end
-		-- the core thins out up high and toward the tail, like a brush stroke
-		-- the white core and haze fade first, leaving a thin dark ink line that erodes last
+		slot.Last = pos
+		slot.TipAt.WorldCFrame = frame
+		-- the ribbon twists: its width pinches and swells with the distance flown (two mixed
+		-- sines so the rhythm never looks mechanical)
+		local d = slot.Flown / sc
+		local twist = 0.3 + 0.7 * math.abs(math.sin(d * 0.35 * slot.Twist + slot.Phase) * 0.8
+			+ math.sin(d * 0.9 + slot.Phase * 2) * 0.2)
+		placeLayer(slot.Core, frame, slot.Core.Width * twist)
+		placeLayer(slot.Haze, frame, slot.Haze.Width * (0.6 + 0.4 * twist))
+		placeLayer(slot.Ink, frame, slot.Ink.Width * (0.75 + 0.25 * twist))
+		if not slot.Started then
+			-- the attachments sit on the path's start before the trails start drawing
+			slot.Started = true
+			showWire(slot, true)
+		end
+		-- the white core and haze fade first, leaving the dark edge to erode last.
+		-- Trail transparency runs from the head (0) to the oldest part (1).
 		local whiteK = math.clamp((t - wire.FadeAt + 0.25) / 0.22, 0, 1)
-		-- transparency ramps along the whole trail (tail -> head), split across the segments
-		local function ramp(tail, head, k)
-			local a = math.clamp(tail + (1 - tail) * k, 0, 1)
-			local b = math.clamp(head + (1 - head) * k, 0, 1)
-			return function(i)
-				local u0, u1 = (i - 1) / segments, i / segments
-				local t0, t1 = a + (b - a) * u0, a + (b - a) * u1
-				-- ends slightly softer: where two segments overlap at a bend this keeps the joint
-				-- from flaring into a bright band, without leaving gaps on straight trails
-				local function half(t)
-					return 1 - (1 - t) * 0.8
-				end
-				return seq({
-					{ 0, i == 1 and t0 or half(t0) },
-					{ 0.08, t0 + (t1 - t0) * 0.08 },
-					{ 0.92, t0 + (t1 - t0) * 0.92 },
-					{ 1, i == segments and t1 or half(t1) },
-				})
-			end
-		end
-		local coreT = ramp(0.45, 0, whiteK)
-		local inkT = NumberSequence.new(math.clamp(0.3 + 0.7 * fadeK, 0, 1))
-		local hazeT = ramp(0.75, 0.4, whiteK)
-		for i = 1, segments do
-			for _, b in { slot.Cores[i], slot.Hazes[i], slot.Inks[i] } do
-				b.CurveSize0 = speeds[i] * step / 3
-				b.CurveSize1 = -speeds[i + 1] * step / 3
-			end
-			slot.Cores[i].Transparency = coreT(i)
-			if slot.Inks[i] then
-				slot.Inks[i].Transparency = inkT
-			end
-			slot.Hazes[i].Transparency = hazeT(i)
-		end
-		showWire(slot, true)
+		slot.Core.Trail.Transparency = seq({ { 0, whiteK }, { 1, 0.45 + 0.55 * whiteK } })
+		slot.Haze.Trail.Transparency = seq({ { 0, 0.4 + 0.6 * whiteK }, { 1, 0.75 + 0.25 * whiteK } })
+		slot.Ink.Trail.Transparency = seq({ { 0, 0.3 + 0.7 * fadeK }, { 1, 0.5 + 0.5 * fadeK } })
 		local traveling = tipS < 0.999
 		slot.Tip.Enabled = traveling
 		slot.Smudge.Enabled = traveling
-		if slot.Kit then
-			enableKit(slot.Kit, traveling)
-		end
 		-- the head shines until the trail starts to fade (it rests on the target in between)
 		slot.Head.Enabled = fadeK <= 0
 		slot.HeadGlow.Enabled = fadeK <= 0
@@ -1264,7 +1233,7 @@ function Effect.Play(ctx)
 		Speed = NumberRange.new(0.5, 2),
 		EmissionDirection = Enum.NormalId.Top,
 		Lifetime = NumberRange.new(0.12, 0.25),
-		Size = seq({ { 0, 2 * s }, { 0.2, 4 * s }, { 1, 2.5 * s } }),
+		Size = seq({ { 0, 1.4 * s }, { 0.2, 2.8 * s }, { 1, 1.8 * s } }),
 		Transparency = seq({ { 0, 0 }, { 0.6, 0.15 }, { 1, 1 } }),
 		Rotation = NumberRange.new(-40, 40),
 		Brightness = 2.5,
@@ -1288,9 +1257,9 @@ function Effect.Play(ctx)
 		Texture = ASSETS.RgbBolt,
 		Shape = Enum.ParticleEmitterShape.Box,
 		Speed = NumberRange.new(0),
-		Lifetime = NumberRange.new(0.1, 0.18),
-		Size = sizeRange(3 * s, 5 * s),
-		Transparency = seq({ { 0, 0 }, { 0.7, 0 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.08, 0.14),
+		Size = sizeRange(0.9 * s, 1.6 * s), -- small scribbles in the burst, not big zigzags
+		Transparency = seq({ { 0, 0.15 }, { 0.7, 0.25 }, { 1, 1 } }),
 		Rotation = NumberRange.new(-70, 70),
 		LightEmission = 0,
 		Brightness = 1.5,
@@ -1520,6 +1489,44 @@ function Effect.Play(ctx)
 		Transparency = seq({ { 0, 0 }, { 0.7, 0.2 }, { 1, 1 } }),
 		Brightness = 4,
 		ZOffset = 3,
+	})
+	-- the reference's blast is white smoke: soft jets sprayed out low and flat in every
+	-- direction (EmissionDirection Front with SpreadAngle.Y 180 fans them all round the
+	-- vertical), long streaky jets first, then the billowing body
+	local jetAt = attachment(base, CFrame.new(target + UP * 1.5 * s))
+	local blastJets = emitter(jetAt, {
+		Texture = ASSETS.Smoke,
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		EmissionDirection = Enum.NormalId.Front,
+		SpreadAngle = Vector2.new(14, 180),
+		Color = ColorSequence.new(Color3.fromRGB(240, 240, 245)),
+		LightEmission = 0.5,
+		Brightness = 2,
+		Speed = NumberRange.new(45 * s, 70 * s),
+		Drag = 7,
+		Lifetime = NumberRange.new(0.3, 0.5),
+		Size = seq({ { 0, 2 * s, 0.5 * s }, { 0.4, 4.5 * s, 1 * s }, { 1, 5.5 * s, 1 * s } }),
+		Squash = NumberSequence.new(1.4), -- long along the flight
+		Transparency = seq({ { 0, 0.15 }, { 0.5, 0.35 }, { 1, 1 } }),
+		ZOffset = 1.5,
+	})
+	local blastSmoke = emitter(jetAt, {
+		Texture = ASSETS.Smoke,
+		EmissionDirection = Enum.NormalId.Front,
+		SpreadAngle = Vector2.new(20, 180),
+		Color = ColorSequence.new(Color3.fromRGB(232, 232, 238)),
+		LightEmission = 0.3,
+		Brightness = 1.8,
+		Speed = NumberRange.new(30 * s, 50 * s),
+		Drag = 5,
+		Acceleration = Vector3.new(0, 3 * s, 0),
+		Lifetime = NumberRange.new(0.6, 0.9),
+		Size = seq({ { 0, 2 * s, 0.5 * s }, { 0.3, 4.5 * s, 1 * s }, { 1, 6.5 * s, 1.5 * s } }),
+		Squash = NumberSequence.new(-0.3), -- a little wider than tall
+		Transparency = seq({ { 0, 0.15 }, { 0.4, 0.3 }, { 1, 1 } }),
+		Rotation = NumberRange.new(0, 360),
+		RotSpeed = NumberRange.new(-40, 40),
+		ZOffset = 1.2,
 	})
 	local groundFlash = emitter(groundAt, { -- crisp white ring racing out across the floor
 		Texture = ASSETS.HaloThin,
@@ -1753,6 +1760,10 @@ function Effect.Play(ctx)
 		ctx.Emit(inkCore, 6)
 	end)
 	burst(tImpact + 0.05, groundWave, 1)
+	at(tImpact + 0.02, function() -- the white smoke blast
+		ctx.Emit(blastJets, 18)
+		ctx.Emit(blastSmoke, 22)
+	end)
 	at(tImpact + 0.1, function() -- the wide V flare as the pillar forms
 		ctx.Emit(wingWhite, 1)
 		ctx.Emit(wingBlue, 1)
@@ -1772,6 +1783,10 @@ function Effect.Play(ctx)
 		burst(time, spikesLeft, 6)
 		burst(time + 0.01, spikesRight, 6)
 		burst(time + 0.02, blastStreaks, math.ceil(p.StreakCount / 3))
+		if time > tImpact + 0.1 then -- each surge sprays more white smoke
+			burst(time + 0.03, blastJets, 8)
+			burst(time + 0.04, blastSmoke, 10)
+		end
 	end
 	-- crystal spikes, rainbow tips and prismatic patches: bursts every ~0.07 s
 	local burn = tImpact + 0.12
@@ -1779,7 +1794,7 @@ function Effect.Play(ctx)
 		local n = math.max(1, math.floor(p.SpikeRate * 0.07 + 0.5))
 		burst(burn, spikesLeft, math.ceil(n / 2))
 		burst(burn + 0.01, spikesRight, math.ceil(n / 2))
-		burst(burn + 0.03, chromSpikes, math.max(1, n))
+		burst(burn + 0.03, chromSpikes, math.max(1, math.ceil(n / 2)))
 		if burn < tFinale - 0.4 then
 			burst(burn + 0.02, blobs, 2)
 		end
@@ -1792,12 +1807,12 @@ function Effect.Play(ctx)
 	local burnLen = tFinale - tImpact
 	for i = 0, 13 do -- RGB glitch bolts flicker through the burn, often in pairs
 		local time = tImpact + 0.15 + i * (burnLen - 0.3) / 13
-		burst(time, glitch, i % 3 == 0 and 2 or 1)
+		burst(time, glitch, 1)
 	end
 	for i, wire in WIRES do -- a big star flash at a projectile's apex
 		if wire.Glint then
 			at(wire.Glint, function()
-				local tip = wireSlots[i].Atts[#wireSlots[i].Atts]
+				local tip = wireSlots[i].TipAt
 				flareAt.WorldCFrame = CFrame.new(tip.WorldPosition)
 				bigStar.Size = seq({ { 0, 1 * sc }, { 0.25, 5 * sc }, { 1, 0 } })
 				ctx.Emit(bigStar, 1)
