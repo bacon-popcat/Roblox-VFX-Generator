@@ -59,6 +59,7 @@ local ASSETS = {
 	Rocks = "rbxassetid://14305019062", -- FlipbookTextures/Random Rocks (Grid4x4, one rock per cell)
 	WireBeam = "rbxassetid://134298856602125", -- MigratedBeams/BeamThinJaggedStreak (wavy white line)
 	RainbowStreak = "rbxassetid://134095631127258", -- MigratedBeams/BeamChromaticStreak (twin rainbow rails)
+	LavaStreak = "rbxassetid://138131925212643", -- lava_streak (custom, LavaEruption): straight flame tongue, soft root, sharp tip
 	DashSwirl = "rbxassetid://17388445727", -- StaticVFXTextures/Crescent32 (layered crescent strokes)
 	PillarCore = "rbxassetid://7135001284", -- MigratedBeams/BeamStretchedGlowColumn
 	PillarLines = "rbxassetid://6091329339", -- MigratedBeams/BeamGlowingStreakLines
@@ -985,10 +986,10 @@ function Effect.Play(ctx)
 		Enabled = false,
 		Speed = NumberRange.new(0),
 		Lifetime = NumberRange.new(0.06, 0.1),
-		Size = seq({ { 0, 1.5 * ds, 0.3 * ds }, { 0.5, 2.2 * ds, 0.3 * ds }, { 1, 1.9 * ds } }),
+		Size = seq({ { 0, 1.3 * ds, 0.25 * ds }, { 0.5, 1.9 * ds, 0.25 * ds }, { 1, 1.7 * ds } }),
 		Transparency = seq({ { 0, 0 }, { 0.6, 0.15 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
-		RotSpeed = NumberRange.new(-1400, -900),
+		RotSpeed = NumberRange.new(-500, -300), -- churning, not a spinning disc
 		Brightness = 3,
 		ZOffset = 1.6,
 		TimeScale = ctx.TimeScale,
@@ -1007,7 +1008,31 @@ function Effect.Play(ctx)
 		ZOffset = 1.4,
 		TimeScale = ctx.TimeScale,
 	})
-	-- EmissionDirection Top = the attachment's +Y, which headAt points back at the caster
+	-- EmissionDirection Top = the attachment's +Y, which headAt points back at the caster.
+	-- The head is the front of a fireball: white flame tongues rooted on the round front and
+	-- streaming back from it, tips trailing (locked to the head, so they stay attached while
+	-- it rushes forward and only stretch back by their own speed)
+	local headLicks = emitter(headAt, {
+		Texture = ASSETS.LavaStreak,
+		LockedToPart = true,
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		EmissionDirection = Enum.NormalId.Top,
+		SpreadAngle = Vector2.new(28, 28),
+		Rate = 90,
+		Enabled = false,
+		Speed = NumberRange.new(4 * ds, 8 * ds),
+		Drag = 6,
+		Lifetime = NumberRange.new(0.08, 0.14),
+		Size = seq({ { 0, 0.8 * ds, 0.2 * ds }, { 0.4, 2.4 * ds, 0.4 * ds }, { 1, 2.8 * ds } }),
+		Squash = NumberSequence.new(0.8), -- long tapering tongues
+		Rotation = NumberRange.new(-90), -- VelocityParallel runs the texture's X along the velocity
+		Color = colors({ { 0, WHITE }, { 1, Color3.fromRGB(165, 165, 172) } }),
+		LightEmission = 0.6,
+		Brightness = 2.5,
+		Transparency = seq({ { 0, 0.1 }, { 0.6, 0.3 }, { 1, 1 } }),
+		ZOffset = 1.5,
+		TimeScale = ctx.TimeScale,
+	})
 	local dashKit = shotHead(headAt, Enum.NormalId.Top, ds)
 	-- the dash's wedge lives longer, so its dark tail stretches further behind the head
 	dashKit.Wedge.Lifetime = NumberRange.new(0.22, 0.38)
@@ -2075,7 +2100,7 @@ function Effect.Play(ctx)
 			streakTail.WorldCFrame = CFrame.new(caster + UP * 2 * sc)
 			-- the ground streak is drawn behind the head as it goes
 			railFront.WorldCFrame = CFrame.fromMatrix(caster:Lerp(target, along) + UP * 0.08, dashDir, right)
-			for _, e in { headBall, headCore, headFlares, pathOrbs } do
+			for _, e in { headBall, headCore, headLicks, headFlares, pathOrbs } do
 				e.Enabled = true
 			end
 			enableKit(dashKit, true)
@@ -2083,7 +2108,7 @@ function Effect.Play(ctx)
 			if dashT > 1 then
 				railFront.WorldCFrame = CFrame.fromMatrix(target + UP * 0.08, dashDir, right)
 			end
-			for _, e in { headBall, headCore, headFlares, pathOrbs } do
+			for _, e in { headBall, headCore, headLicks, headFlares, pathOrbs } do
 				e.Enabled = false
 			end
 			enableKit(dashKit, false)

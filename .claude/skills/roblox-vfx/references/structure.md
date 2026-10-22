@@ -223,7 +223,8 @@ smoke is gone by ~5.2 s.
    1.30 s black void frame (2 frames); 1.33 s prismatic launch (white mass + radial chromatic
    rays) and the dash (sized by `DashScale`, 1.6x): it rushes ~78% of the way, then grinds
    in (tracked on the far clip: ~48% of the path 0.18 s after the launch, ~70% at 0.28 s,
-   ~86% at 0.38 s). Its head is a white ball of crescent strokes spinning round a hot core,
+   ~86% at 0.38 s). Its head is the front of a fireball: a round white front of churning crescent strokes
+   with white flame tongues streaming back from it,
    with a dark smoke wedge (`shotHead`) with rainbow slivers on its edges and black debris; a
    thin bright line and a soft white haze run back to the caster, and fading crescent
    afterimages hang along the path. Tunnel rings and
@@ -260,8 +261,11 @@ shows -> what we use:
 - void: a black disc ~3 caster heights across, 2 frames -> DarkDisc, 9-10 x caster scale.
 - launch: white mass with radial rainbow rays -> ImpactFlash + SunRays turned randomly (world-up
   and squashed they read as a crown of upright spikes).
-- dash head: white ball of curled crescent strokes, dark smoke wedge behind -> spinning
-  `DashSwirl` + Glow core + `shotHead` wedge (a Starburst ball with a spike splash did not match).
+- dash head: the front of a fireball: a round white front of curled strokes with white
+  flame tongues streaming back from it, dark smoke wedge behind -> churning `DashSwirl` + Glow
+  core + `lava_streak` tongues locked to the head (VelocityParallel, emitted backward) +
+  `shotHead` wedge (a Starburst ball with a spike splash did not match; a fast-spinning
+  crescent ball alone read as a disc).
 - ground streak: thin twin rainbow line under a soft white streak -> RainbowStreak beam + line.
 - impact: jagged white flash with red/blue fringes, dark ink heart -> `cs_impact_flash` x3 +
   Glowing Black Energy.
