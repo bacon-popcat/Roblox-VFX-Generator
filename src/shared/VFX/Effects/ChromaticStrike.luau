@@ -269,6 +269,7 @@ Effect.Defaults = {
 	VignetteLeft = Color3.fromRGB(180, 40, 140), -- magenta screen edge on the big flashes
 	VignetteRight = Color3.fromRGB(40, 160, 170), -- teal screen edge
 	Scale = 2.5, -- sizes the target eruption; caster bursts, wires and dash use 0.56x of it
+	DashScale = 1.6, -- the dash head, its dark tail and its line, on top of the 0.56x
 	CasterDistance = 32, -- studs from the target to the caster (without a `Caster` override)
 	ImpactTime = 1.85, -- effect time of the giant impact flash (dash lands)
 	FinaleTime = 3.7, -- the pillar collapses into the 4-point cross (a long burn: ~1.85 s)
@@ -953,6 +954,7 @@ function Effect.Play(ctx)
 	})
 
 	------------------------------------------------------------------ dash
+	local ds = sc * p.DashScale -- the dash head, its tail and line
 	local headAt = attachment(base, CFrame.fromMatrix(caster + UP * 2.5 * sc, right, -dashDir))
 	-- the head, as in the reference: a flickering spiky white ball with a white splash fanned
 	-- back off it, a dark smoke wedge with chromatic slivers trailing it and black debris
@@ -965,7 +967,7 @@ function Effect.Play(ctx)
 		Enabled = false,
 		Speed = NumberRange.new(0),
 		Lifetime = NumberRange.new(0.05, 0.08),
-		Size = seq({ { 0, 1.1 * sc, 0.2 * sc }, { 1, 1.5 * sc, 0.2 * sc } }),
+		Size = seq({ { 0, 1.1 * ds, 0.2 * ds }, { 1, 1.5 * ds, 0.2 * ds } }),
 		Transparency = seq({ { 0, 0 }, { 0.6, 0.1 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		Brightness = 4,
@@ -979,23 +981,26 @@ function Effect.Play(ctx)
 		Enabled = false,
 		Speed = NumberRange.new(0),
 		Lifetime = NumberRange.new(0.06),
-		Size = NumberSequence.new(1.2 * sc),
+		Size = NumberSequence.new(1.2 * ds),
 		Transparency = seq({ { 0, 0.1 }, { 1, 1 } }),
 		Brightness = 5,
 		ZOffset = 1.4,
 		TimeScale = ctx.TimeScale,
 	})
 	-- EmissionDirection Top = the attachment's +Y, which headAt points back at the caster
-	local dashKit = shotHead(headAt, Enum.NormalId.Top, sc)
+	local dashKit = shotHead(headAt, Enum.NormalId.Top, ds)
+	-- the dash's wedge lives longer, so its dark tail stretches further behind the head
+	dashKit.Wedge.Lifetime = NumberRange.new(0.22, 0.38)
+	dashKit.Wedge.Rate = 150
 	local headFlares = emitter(headAt, { -- small prismatic flares thrown off the head
 		Texture = ASSETS.ChromWisp,
 		Rate = 30,
 		Enabled = false,
-		Speed = NumberRange.new(2 * sc, 6 * sc),
+		Speed = NumberRange.new(2 * ds, 6 * ds),
 		SpreadAngle = Vector2.new(180, 180),
 		Drag = 4,
 		Lifetime = NumberRange.new(0.2, 0.35),
-		Size = seq({ { 0, 0.45 * sc, 0.15 * sc }, { 1, 0.2 * sc } }),
+		Size = seq({ { 0, 0.45 * ds, 0.15 * ds }, { 1, 0.2 * ds } }),
 		Transparency = seq({ { 0, 0 }, { 0.7, 0.2 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		Brightness = 4,
@@ -1010,7 +1015,7 @@ function Effect.Play(ctx)
 		Enabled = false,
 		Speed = NumberRange.new(0),
 		Lifetime = NumberRange.new(0.3, 0.45),
-		Size = seq({ { 0, 1 * sc }, { 0.4, 1.8 * sc, 0.3 * sc }, { 1, 1.5 * sc } }),
+		Size = seq({ { 0, 1 * ds }, { 0.4, 1.8 * ds, 0.3 * ds }, { 1, 1.5 * ds } }),
 		Transparency = seq({ { 0, 0.2 }, { 0.6, 0.35 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		Brightness = 2.5,
@@ -1031,7 +1036,7 @@ function Effect.Play(ctx)
 	local dashHaze = beam(streakHead, streakTail, { -- the soft white streak round it
 		Texture = ASSETS.SoftTrail,
 		TextureMode = Enum.TextureMode.Wrap,
-		TextureLength = 6 * sc,
+		TextureLength = 6 * ds,
 		TextureSpeed = -0.8,
 		Color = ColorSequence.new(p.Color),
 		LightEmission = 0.6,
@@ -1963,9 +1968,9 @@ function Effect.Play(ctx)
 		local lineK = track({ { tLaunch - 0.01, 0 }, { tLaunch + 0.01, 1 }, { tImpact, 1 }, { tImpact + 0.15, 0 } }, clock)
 		dashLine.Enabled = lineK > 0.01
 		dashHaze.Enabled = dashLine.Enabled
-		dashLine.Width0, dashLine.Width1 = 0.14 * sc, 0.1 * sc
+		dashLine.Width0, dashLine.Width1 = 0.14 * ds, 0.1 * ds
 		dashLine.Transparency = seq({ { 0, 1 - lineK }, { 1, 1 - 0.5 * lineK } })
-		dashHaze.Width0, dashHaze.Width1 = 0.9 * sc, 0.5 * sc
+		dashHaze.Width0, dashHaze.Width1 = 0.9 * ds, 0.5 * ds
 		dashHaze.Transparency = seq({ { 0, 1 - 0.65 * lineK }, { 1, 1 - 0.15 * lineK } })
 		-- rainbow ground streak: a bright prism (white centre, rainbow rails), then a thin
 		-- orange line

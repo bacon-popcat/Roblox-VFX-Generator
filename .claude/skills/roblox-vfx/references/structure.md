@@ -220,7 +220,7 @@ smoke is gone by ~5.2 s.
    over the left, then (0.6 s) one that shoots very high, loops over itself and dives in.
 2. 1.10 s: spiky white ball at the target, chromatic ground ring + wind dome at the caster;
    1.30 s black void frame (2 frames); 1.33 s prismatic launch (white mass + tall chromatic
-   rays) and the dash: it rushes ~78% of the way, then grinds in. Its head (`shotHead`) is a
+   rays) and the dash (sized by `DashScale`, 1.6x): it rushes ~78% of the way, then grinds in. Its head (`shotHead`) is a
    flickering spiky white ball with a white splash fanned back off it, a dark smoke wedge
    with rainbow slivers on its edges and black debris; a thin bright line and a soft white
    haze run back to the caster, and glowing white orbs hang along the path. Tunnel rings and
