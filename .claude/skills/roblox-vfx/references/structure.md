@@ -220,11 +220,13 @@ smoke is gone by ~5.2 s.
    sparkle stars and prismatic flares spray round the caster on each salvo. A steep arch
    over the left, then (0.6 s) one that shoots very high, loops over itself and dives in.
 2. 1.10 s: spiky white ball at the target, chromatic ground ring + wind dome at the caster;
-   1.30 s black void frame (2 frames); 1.33 s prismatic launch (white mass + tall chromatic
-   rays) and the dash (sized by `DashScale`, 1.6x): it rushes ~78% of the way, then grinds in. Its head (`shotHead`) is a
-   flickering spiky white ball with a white splash fanned back off it, a dark smoke wedge
-   with rainbow slivers on its edges and black debris; a thin bright line and a soft white
-   haze run back to the caster, and glowing white orbs hang along the path. Tunnel rings and
+   1.30 s black void frame (2 frames); 1.33 s prismatic launch (white mass + radial chromatic
+   rays) and the dash (sized by `DashScale`, 1.6x): it rushes ~78% of the way, then grinds
+   in (tracked on the far clip: ~48% of the path 0.18 s after the launch, ~70% at 0.28 s,
+   ~86% at 0.38 s). Its head is a white ball of crescent strokes spinning round a hot core,
+   with a dark smoke wedge (`shotHead`) with rainbow slivers on its edges and black debris; a
+   thin bright line and a soft white haze run back to the caster, and fading crescent
+   afterimages hang along the path. Tunnel rings and
    a rainbow ground streak drawn behind the head: wide with a white centre for ~0.15 s after
    the launch, then a thin twin line that turns orange. Dark shell, bokeh, sparkle stars,
    black ink scribbles and chromatic wisps at the caster (wisps at the size measured on the
@@ -246,6 +248,30 @@ smoke is gone by ~5.2 s.
    flares, rising motes, leaves, rocks, puffs, smoke, wind rings.
 4. `FinaleTime`: a 4-point cross that shrinks to a dot with a ground flash and a blast;
    arched smoke hooks (`cs_smoke_hook`) and floor smoke linger.
+Particle inventory (checked against both 0.25x reference clips and a 0.25x Studio capture,
+2026-10-21; re-check every layer here after any change). Each line is what the reference
+shows -> what we use:
+- projectile trails: wobbly smoky white ribbons ~0.5 stud wide (low streaks ~1.5), dark
+  smoke edges, glitter -> three camera-facing Trails per projectile (`WireWidth` 0.36; at
+  0.18 the capture showed hairlines).
+- projectile heads: small bright 4-point stars; the low streak's chromatic -> Star / ChromWisp.
+- charge dome: crescent strokes swirling round a hemisphere -> spinning `DashSwirl` quads (a
+  Wispy Sphere puff read as a blob).
+- void: a black disc ~3 caster heights across, 2 frames -> DarkDisc, 9-10 x caster scale.
+- launch: white mass with radial rainbow rays -> ImpactFlash + SunRays turned randomly (world-up
+  and squashed they read as a crown of upright spikes).
+- dash head: white ball of curled crescent strokes, dark smoke wedge behind -> spinning
+  `DashSwirl` + Glow core + `shotHead` wedge (a Starburst ball with a spike splash did not match).
+- ground streak: thin twin rainbow line under a soft white streak -> RainbowStreak beam + line.
+- impact: jagged white flash with red/blue fringes, dark ink heart -> `cs_impact_flash` x3 +
+  Glowing Black Energy.
+- pillar: wide soft translucent column of long continuous vertical streaks round a dark
+  smoky core -> PillarCore (soft, 0.6-0.75 of the width), PillarLines stretched once (wrapped
+  every 18 studs they broke into dotted dashes), PillarDark.
+- burn spikes: tall glassy white blades leaning out, crisp -> JaggedShard fans (Squash 0.35,
+  barely glowing so they don't stack into a white blob).
+- halos: thin crisp rings, the top one about as wide as the base ring -> HaloThin / NeonRing.
+- finale: a crisp thin 4-point cross high on the pillar -> Star + thin bars (Squash -0.97).
 Camera shake (`ctx.Shake`, `Shake`/`ShakeScale`): 2.2 deg at the launch, 11 deg on the impact
 (~6 deg peak measured once it adds up with distance falloff), a 1.8 deg rumble through the
 burn, 5.5 deg on the finale.
@@ -718,13 +744,35 @@ tools/vfx/clip.mjs help`). Every time it prints or labels is effect seconds (rea
    the ground or the caster around the effect).
    A 0.25x slow-motion recording is far easier to read than 1x; measure real timing from the
    1x one.
-   **Highly detailed or fast effects (explosions, slashes, flashes, impacts, anything whose
-   onset is under ~0.5 s) are analysed every 10 ms of real time**, start to finish. A 1x
-   60 fps video only has a frame every ~16.7 ms, so use the slow-motion recording: `clip.mjs
-   read --speed 0.25` on it stores every frame (at 60 fps, 4.2 ms of real time each; at most
-   300 frames, so read the onset as its own short `--from/--to` stretch) and labels each with
-   its real-time offset, and `span --count 16` over 0.15 s gives ~10 ms steps. Slower effects
-   can use ~25-50 ms through the onset and ~100 ms through steady phases and the fade.
+   **Analyse every reference very closely: about every 15 ms of real time (10-20 ms), start
+   to finish**, not only the onset. A 1x 60 fps video only has a frame every ~16.7 ms, so use
+   the slow-motion recording: `clip.mjs read --speed 0.25` on it stores every frame (at 60
+   fps, 4.2 ms of real time each; at most 300 frames, so read long effects as several short
+   `--from/--to` stretches) and labels each with its real-time offset; `span --count 16` over
+   0.25 s gives ~15 ms steps. Crop the frames (`ffmpeg -ss <t> -frames:v 1 -vf crop=...`) to
+   see a layer's shape when the sheet is too small to read it.
+   **Particle inventory: make sure every particle we use matches the reference's shape and
+   type.** For each layer the frames show, write down its shape (crescent strokes, soft glow,
+   spike or blade, smoke puff, flipbook boil, continuous streak, dotted streak, ring, star,
+   line), whether it faces the camera, lies flat or stretches along its motion, and whether
+   it glows or is solid. Then check the texture, `Orientation`, `Squash`, `LightEmission` and
+   `TextureMode` we use give that same shape: never swap in a different shape class (a
+   spiky ball for a ball of crescent strokes, a puff for a ring of strokes, an upright
+   squashed flare for a radial burst, a wrapped beam texture that turns long streaks into
+   dashes). Keep the inventory in the effect's section of this file (see "Chromatic strike")
+   and re-check it against the reference and our capture after every change.
+   **Track how the particles move from frame to frame.** Compare each frame with the ones
+   before it, following the same particle or group: where it spawns, the path it takes
+   (straight, arcing, spiralling, drifting), how far it goes per frame (speed, and whether it
+   slows: drag; or falls: acceleration), how it spins (`RotSpeed`), how it grows or shrinks
+   (the `Size` sequence) and when it fades (`Transparency`, `Lifetime`). For a moving source
+   (a projectile, a dash head) record its position along the path at several times and fit
+   the easing (ChromaticStrike's dash: ~48% of the path 0.18 s after the launch, ~70% at
+   0.28 s, ~86% at 0.38 s, `1 - (1 - t)^1.5`). For trails, note which end appears first and
+   which end disappears first (ChromaticStrike's trails erase from the caster end).
+   **Analyse our own capture the same way**: record it at the reference's speed (0.25x),
+   read it with `clip.mjs read`, and step both at the same effect times, layer by layer:
+   shape, type, size, motion and timing.
 2. Build the effect, then capture the same moments with VFXScrub and a fixed camera at
    the reference's elevation, save them named by effect time (`0.10.png`) and put them side
    by side with `node tools/vfx/clip.mjs compare <clip dir> --captures <folder>` (clip R left,

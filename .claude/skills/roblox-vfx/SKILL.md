@@ -75,7 +75,10 @@ require `MeshFactory` or `VFXScrub` (edit-time tools), nor `ForgeBridge` or Forg
    VFXScrub) and judge the captures with `references/review.md`: from close and from the
    player's camera, with the colour check (`tools/vfx/clip.mjs tone`). To match a reference
    video, read it with `tools/vfx/clip.mjs` ("Matching a reference video" in
-   `references/structure.md`).
+   `references/structure.md`): step it about every 15 ms of real time from start to finish,
+   keep a particle inventory so every layer's shape and type (texture, orientation, glow)
+   matches the reference's, track how each particle moves from frame to frame (path, speed,
+   drag, spin, growth, fade), and analyse our own capture the same way.
 8. **Report** in 2-3 sentences: what layers the effect has and which Defaults to
    tweak first. Mention any new meshes you published.
 
