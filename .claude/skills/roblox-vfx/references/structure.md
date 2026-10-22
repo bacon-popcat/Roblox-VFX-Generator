@@ -205,7 +205,8 @@ overrun of the ~50 guideline to match the reference); burst particles ~194.
 
 `ChromaticStrike`: a white, prismatic ranged strike, rebuilt from reference videos (1x from
 two angles, then 0.25x from far and from behind the caster; the reference's blue variant was
-not copied). `ImpactScale` (1.15) sizes the target eruption on top of `Scale`. `ctx.CFrame` is the target; the caster stands `CasterDistance` (32) studs along
+not copied). `ImpactScale` (1.15) sizes the target eruption on top of `Scale`. `WidthScale` (1.35) spreads it sideways
+(emitter volumes, smoke jets, base and floor rings) without making it taller. `ctx.CFrame` is the target; the caster stands `CasterDistance` (32) studs along
 its LookVector, or pass the runtime-only override `Caster` (a BasePart). `Scale` (2.5) sizes
 the target eruption; caster bursts, projectiles and the dash use 0.56x of it. Plain Luau, one
 per-frame loop (`ctx.Wait(1/240)`) running a time-sorted event list. Play returns at ~3.95 s;
@@ -287,6 +288,9 @@ shows -> what we use:
   through the burn and 4 per surge. Placed still in a box they read as stickers.
 - no black ink claw slashes: the reference has none (they read as a black crescent behind
   the centre).
+- centre see-through: every layer in the middle is translucent (spikes 0.3-0.6, prismatic
+  blobs small at 0.5-0.65, pillar lines dim); stacked opaque or glowing layers turned it
+  into a white cloud.
 - halos: thin crisp rings, the top one about as wide as the base ring -> HaloThin / NeonRing.
 - finale: a crisp thin 4-point cross high on the pillar -> Star + thin bars (Squash -0.97).
 Camera shake (`ctx.Shake`, `Shake`/`ShakeScale`): 2.2 deg at the launch, 11 deg on the impact

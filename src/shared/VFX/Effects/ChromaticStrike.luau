@@ -269,6 +269,7 @@ Effect.Defaults = {
 	VignetteLeft = Color3.fromRGB(180, 40, 140), -- magenta screen edge on the big flashes
 	VignetteRight = Color3.fromRGB(40, 160, 170), -- teal screen edge
 	Scale = 2.5, -- sizes the target eruption; caster bursts, wires and dash use 0.56x of it
+	WidthScale = 1.35, -- spreads the eruption sideways (volumes, jets, base rings) without making it taller
 	ImpactScale = 1.15, -- the target eruption on top of Scale (bigger than the caster's side)
 	DashScale = 1.6, -- the dash head, its dark tail and its line, on top of the 0.56x
 	CasterDistance = 32, -- studs from the target to the caster (without a `Caster` override)
@@ -284,7 +285,7 @@ Effect.Defaults = {
 	LeafCount = 22,
 	RockCount = 30,
 	FlakeCount = 24, -- dark chips tumbling out of the impact
-	CenterSpikeRate = 70, -- translucent white crystal spikes standing in the centre / s while it burns
+	CenterSpikeRate = 50, -- translucent white crystal spikes standing in the centre / s while it burns
 	CenterStarRate = 40, -- white 4-point stars flashing in the centre / s while it burns
 	CrownCount = 30, -- thin white energy spikes shooting up round the base (more through the burn)
 	CoreSpikeCount = 28, -- white spikes bursting out of the centre in every direction (more per surge and through the burn)
@@ -304,6 +305,7 @@ Effect.Linger = 1.5 -- smoke disc puffs and plumes outlive the loop (up to ~1.5 
 function Effect.Play(ctx)
 	local p = ctx.Params
 	local s = p.Scale * p.ImpactScale -- target eruption
+	local ws = s * p.WidthScale -- the eruption's sideways spread
 	local sc = p.Scale * 0.56 -- caster bursts, wires, dash and the target's pre-hits (measured ~0.56x)
 	local ink = p.InkColor
 
@@ -373,22 +375,22 @@ function Effect.Play(ctx)
 			viewRight = r.Unit
 		end
 	end
-	local spikeLeft = attachment(base, CFrame.new(target - viewRight * 1.5 * s + UP * 4.5 * s))
-	local spikeRight = attachment(base, CFrame.new(target + viewRight * 1.5 * s + UP * 4.5 * s))
+	local spikeLeft = attachment(base, CFrame.new(target - viewRight * 1.5 * ws + UP * 4.5 * s))
+	local spikeRight = attachment(base, CFrame.new(target + viewRight * 1.5 * ws + UP * 4.5 * s))
 	local glitchPart = ctx.Anchor(CFrame.new(target + UP * 6 * s)) -- box volume over the burn
-	glitchPart.Size = Vector3.new(14, 10, 14) * s
+	glitchPart.Size = Vector3.new(14 * ws, 10 * s, 14 * ws)
 	local spikePart = ctx.Anchor(CFrame.new(target + UP * 3 * s))
 	local centerPart = ctx.Anchor(CFrame.new(target + UP * 2.2 * s)) -- the centre cluster (disc)
-	centerPart.Size = Vector3.new(7, 0.2, 7) * s
+	centerPart.Size = Vector3.new(7, 0.2, 7) * ws
 	local centerStarPart = ctx.Anchor(CFrame.new(target + UP * 3.5 * s)) -- the centre's star volume (box)
 	centerStarPart.Size = Vector3.new(6, 6, 6) * s
 	local crownPart = ctx.Anchor(CFrame.new(target + UP * 0.5 * s)) -- disc the spike crown rises from
-	crownPart.Size = Vector3.new(11, 0.2, 11) * s
-	spikePart.Size = Vector3.new(18, 0.2, 18) * s
+	crownPart.Size = Vector3.new(11, 0.2, 11) * ws
+	spikePart.Size = Vector3.new(18, 0.2, 18) * ws
 	local smokePart = ctx.Anchor(CFrame.new(target + UP * 2 * s))
-	smokePart.Size = Vector3.new(36, 0.2, 36) * s
+	smokePart.Size = Vector3.new(36, 0.2, 36) * ws
 	local plumePart = ctx.Anchor(CFrame.new(target + UP * 5 * s))
-	plumePart.Size = Vector3.new(26, 0.2, 26) * s
+	plumePart.Size = Vector3.new(26, 0.2, 26) * ws
 
 	------------------------------------------------------------------ shot heads
 	-- The dash head's trail, as in the reference: a dark smoke wedge trailing it with
@@ -1182,7 +1184,7 @@ function Effect.Play(ctx)
 		TextureMode = Enum.TextureMode.Stretch,
 		TextureSpeed = 0.4,
 		Color = ColorSequence.new(p.Color),
-		Brightness = 2,
+		Brightness = 1.3,
 		Width0 = 0,
 		Width1 = 0,
 		Segments = 12,
@@ -1232,13 +1234,13 @@ function Effect.Play(ctx)
 	-- ring radius = size * 0.75 for thick ring 3 (NeonRing), size * 0.86 for HaloThin
 	local ringBase = ringEmitter(ringLowAt, { -- crisp base ring, contracting
 		Lifetime = NumberRange.new(1),
-		Size = seq({ { 0, 7 * s }, { 0.08, 9 * s }, { 0.5, 7.5 * s }, { 1, 4.5 * s } }),
+		Size = seq({ { 0, 7 * ws }, { 0.08, 9 * ws }, { 0.5, 7.5 * ws }, { 1, 4.5 * ws } }),
 		Transparency = seq({ { 0, 0 }, { 0.7, 0.15 }, { 1, 1 } }),
 	})
 	local ringBaseOuter = ringEmitter(ringLowAt, { -- fainter outer base ring
 		Texture = ASSETS.BandRing,
 		Lifetime = NumberRange.new(0.45),
-		Size = seq({ { 0, 12 * s }, { 1, 15 * s } }),
+		Size = seq({ { 0, 12 * ws }, { 1, 15 * ws } }),
 		Transparency = seq({ { 0, 0.45 }, { 1, 1 } }),
 	})
 	local ringPulse = ringEmitter(ringLowAt, { -- base ring pulse 2: expands to a hairline
@@ -1308,10 +1310,11 @@ function Effect.Play(ctx)
 		Speed = NumberRange.new(2, 6),
 		EmissionDirection = Enum.NormalId.Top,
 		Lifetime = NumberRange.new(0.12, 0.22),
-		Size = seq({ { 0, 2.2 * s }, { 0.3, 3.8 * s }, { 1, 3 * s } }),
-		Transparency = seq({ { 0, 0.1 }, { 0.7, 0.3 }, { 1, 1 } }),
+		-- small and faint: big bright white blobs filled the centre with a white cloud
+		Size = seq({ { 0, 1.3 * s }, { 0.3, 2.3 * s }, { 1, 1.8 * s } }),
+		Transparency = seq({ { 0, 0.5 }, { 0.7, 0.65 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
-		Brightness = 2,
+		Brightness = 1.4,
 		ZOffset = 2,
 	})
 	-- RGB-split bolts that spike out of the centre (reference burn): each shoots out fast,
@@ -1363,7 +1366,7 @@ function Effect.Play(ctx)
 		Lifetime = NumberRange.new(0.18, 0.32),
 		Size = seq({ { 0, 1 * s, 0.3 * s }, { 0.2, 3.5 * s, 1 * s }, { 1, 2.8 * s, 0.8 * s } }),
 		Squash = NumberSequence.new(1.4), -- thin
-		Transparency = seq({ { 0, 0.1 }, { 0.6, 0.3 }, { 1, 1 } }),
+		Transparency = seq({ { 0, 0.35 }, { 0.6, 0.5 }, { 1, 1 } }),
 		LightEmission = 0.2, -- mostly solid: glowing spikes stack into a white blob
 		Brightness = 2,
 		ZOffset = 3,
@@ -1433,7 +1436,7 @@ function Effect.Play(ctx)
 		Lifetime = NumberRange.new(0.15, 0.3),
 		Size = seq({ { 0, 2 * s, 0.5 * s }, { 0.2, 6 * s, 1.5 * s }, { 1, 5 * s, 1.2 * s } }),
 		Squash = NumberSequence.new(1.6), -- very thin
-		Transparency = seq({ { 0, 0 }, { 0.6, 0.2 }, { 1, 1 } }),
+		Transparency = seq({ { 0, 0.3 }, { 0.6, 0.45 }, { 1, 1 } }),
 		LightEmission = 0.4,
 		Brightness = 2.5,
 		ZOffset = 2.5,
@@ -1639,7 +1642,7 @@ function Effect.Play(ctx)
 		EmissionDirection = Enum.NormalId.Top,
 		Speed = NumberRange.new(0.01),
 		Lifetime = NumberRange.new(0.7, 0.9),
-		Size = seq({ { 0, 8 * s }, { 1, 20 * s } }),
+		Size = seq({ { 0, 8 * ws }, { 1, 20 * ws } }),
 		Transparency = seq({ { 0, 0.4 }, { 0.5, 0.6 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-90, 90),
@@ -1680,7 +1683,7 @@ function Effect.Play(ctx)
 		Color = ColorSequence.new(Color3.fromRGB(200, 200, 206)),
 		LightEmission = 0,
 		Brightness = 1,
-		Speed = NumberRange.new(45 * s, 70 * s),
+		Speed = NumberRange.new(45 * ws, 70 * ws),
 		Drag = 7,
 		Lifetime = NumberRange.new(0.3, 0.5),
 		Size = seq({ { 0, 2 * s, 0.5 * s }, { 0.4, 4.5 * s, 1 * s }, { 1, 5.5 * s, 1 * s } }),
@@ -1696,7 +1699,7 @@ function Effect.Play(ctx)
 		Color = ColorSequence.new(Color3.fromRGB(190, 190, 197)),
 		LightEmission = 0,
 		Brightness = 1,
-		Speed = NumberRange.new(30 * s, 50 * s),
+		Speed = NumberRange.new(30 * ws, 50 * ws),
 		Drag = 5,
 		Acceleration = Vector3.new(0, 3 * s, 0),
 		Lifetime = NumberRange.new(0.6, 0.9),
@@ -1714,7 +1717,7 @@ function Effect.Play(ctx)
 		EmissionDirection = Enum.NormalId.Top,
 		Speed = NumberRange.new(0.01),
 		Lifetime = NumberRange.new(0.3),
-		Size = seq({ { 0, 2 * s }, { 0.4, 15 * s }, { 1, 20 * s } }),
+		Size = seq({ { 0, 2 * ws }, { 0.4, 15 * ws }, { 1, 20 * ws } }),
 		Transparency = seq({ { 0, 0 }, { 0.5, 0.3 }, { 1, 1 } }),
 		Brightness = 4,
 	})
@@ -1990,7 +1993,7 @@ function Effect.Play(ctx)
 		burst(burn + 0.04, crown, math.max(1, math.ceil(p.CrownCount / 9)))
 		burst(burn + 0.05, coreSpikes, math.max(1, math.ceil(p.CoreSpikeCount / 14)))
 		if burn < tFinale - 0.4 then
-			burst(burn + 0.02, blobs, 2)
+			burst(burn + 0.02, blobs, 1)
 		end
 		burn += 0.07
 	end
