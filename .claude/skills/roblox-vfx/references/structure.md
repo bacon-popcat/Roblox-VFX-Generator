@@ -281,6 +281,12 @@ shows -> what we use:
   Transparency 0.45-0.6, LightEmission 0.25, `CenterSpikeRate`) and `centerStars` (Star,
   `CenterStarRate`). The pillar core stays faint and the floor smoke does not glow: soft
   glows over the centre washed it into a white haze that hid the spikes.
+- RGB bolts: thin, a little see-through rainbow-split bolts that spike out of the centre
+  fast, mostly sideways, and are gone in a few frames -> `cs_rgb_bolt` VelocityParallel from
+  the centre (Speed 60-100 x scale, Drag 20, Lifetime 0.05-0.09, additive), 2-3 at a time
+  through the burn and 4 per surge. Placed still in a box they read as stickers.
+- no black ink claw slashes: the reference has none (they read as a black crescent behind
+  the centre).
 - halos: thin crisp rings, the top one about as wide as the base ring -> HaloThin / NeonRing.
 - finale: a crisp thin 4-point cross high on the pillar -> Star + thin bars (Squash -0.97).
 Camera shake (`ctx.Shake`, `Shake`/`ShakeScale`): 2.2 deg at the launch, 11 deg on the impact
