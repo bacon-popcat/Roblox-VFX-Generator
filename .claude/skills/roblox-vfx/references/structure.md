@@ -205,12 +205,14 @@ overrun of the ~50 guideline to match the reference); burst particles ~194.
 
 `ChromaticStrike`: a white, prismatic ranged strike, rebuilt from reference videos (1x from
 two angles, then 0.25x from far and from behind the caster; the reference's blue variant was
-not copied). `ImpactScale` (1.15) sizes the target eruption on top of `Scale`. `ctx.CFrame` is the target; the caster stands `CasterDistance` (32) studs along
+not copied). `ImpactScale` (1.15) sizes the target eruption on top of `Scale`. `WidthScale` (1.35) spreads it sideways
+(emitter volumes, smoke jets, base and floor rings) without making it taller. `ctx.CFrame` is the target; the caster stands `CasterDistance` (32) studs along
 its LookVector, or pass the runtime-only override `Caster` (a BasePart). `Scale` (2.5) sizes
 the target eruption; caster bursts, projectiles and the dash use 0.56x of it. Plain Luau, one
 per-frame loop (`ctx.Wait(1/240)`) running a time-sorted event list. Play returns at ~3.95 s;
 smoke is gone by ~5.2 s.
-1. 0.14-1.25 s: three white projectiles and two low smoky streaks (WIRES). Each is a locked
+1. 0.13-1.25 s: six projectiles in two bursts of three (WIRES): four white sky shots and two
+   low smoky streaks. Each is a locked
    4-point star head flown along a Catmull-Rom spline, drawing three camera-facing Trails (a
    white core, a soft white haze `cs_soft_trail` and a dark smoke edge) that stay from the
    caster until they fade. Each trail's width pinches and swells with the distance flown, so
@@ -252,9 +254,14 @@ smoke is gone by ~5.2 s.
 Particle inventory (checked against both 0.25x reference clips and a 0.25x Studio capture,
 2026-10-21; re-check every layer here after any change). Each line is what the reference
 shows -> what we use:
-- projectile trails: wobbly smoky white ribbons ~0.5 stud wide (low streaks ~1.5), dark
-  smoke edges, glitter -> three camera-facing Trails per projectile (`WireWidth` 0.36; at
-  0.18 the capture showed hairlines).
+- projectiles: six, in two caster bursts of three (0.13-0.15 s and 0.5-0.54 s): each burst a
+  shot over the left, a low smoky streak and a shot over the right; the second burst's
+  right shot is the tallest (star glint at its apex). One caster burst per three.
+- projectile trails: wobbly smoky white ribbons ~0.5 stud wide (low streak ~1.5) with a black
+  outline, glitter -> three camera-facing Trails per projectile (`WireWidth` 0.36; at 0.18 the
+  capture showed hairlines). The outline is a near-opaque black ribbon ~1.35x the haze's
+  width, placed 0.3 x scale behind the white (away from the camera) so it always draws
+  behind: Trails have no ZOffset.
 - projectile heads: small bright 4-point stars; the low streak's chromatic -> Star / ChromWisp.
 - charge dome: crescent strokes swirling round a hemisphere -> spinning `DashSwirl` quads (a
   Wispy Sphere puff read as a blob).
@@ -263,7 +270,9 @@ shows -> what we use:
   and squashed they read as a crown of upright spikes).
 - dash head: the front of a fireball: a round white front of curled strokes with white
   flame tongues streaming back from it, dark smoke wedge behind -> churning `DashSwirl` + Glow
-  core + `lava_streak` tongues locked to the head (VelocityParallel, emitted backward) +
+  core + `lava_streak` tongues locked to the head (VelocityParallel, emitted backward), with a
+  black outline (a dark Glow disc just bigger than the ball and dark, wider copies of the
+  tongues behind them; a dark SoftTrail beam behind the line's haze) +
   `shotHead` wedge (a Starburst ball with a spike splash did not match; a fast-spinning
   crescent ball alone read as a disc).
 - ground streak: thin twin rainbow line under a soft white streak -> RainbowStreak beam + line.
@@ -287,13 +296,16 @@ shows -> what we use:
   through the burn and 4 per surge. Placed still in a box they read as stickers.
 - no black ink claw slashes: the reference has none (they read as a black crescent behind
   the centre).
+- centre see-through: every layer in the middle is translucent (spikes 0.3-0.6, prismatic
+  blobs small at 0.5-0.65, pillar lines dim); stacked opaque or glowing layers turned it
+  into a white cloud.
 - halos: thin crisp rings, the top one about as wide as the base ring -> HaloThin / NeonRing.
 - finale: a crisp thin 4-point cross high on the pillar -> Star + thin bars (Squash -0.97).
 Camera shake (`ctx.Shake`, `Shake`/`ShakeScale`): 2.2 deg at the launch, 11 deg on the impact
 (~6 deg peak measured once it adds up with distance falloff), a 1.8 deg rumble through the
 burn, 5.5 deg on the finale.
 Budget: a deliberate overrun to match the reference (the user raised it): ~190 instances
-(5 projectiles x 3 Trails, ~95 emitters) and ~700 burst particles plus rate channels. Lower
+(6 projectiles x 3 Trails, ~95 emitters) and ~700 burst particles plus rate channels. Lower
 `SmudgeRate`, `SmokeRate`, `SpikeRate`,
 `SparkCount`, `SpeckCount`, `BokehCount`, `StreakCount`, `PuffCount` and `MoteRate` for
 crowds; `Vignette` and `Shake` should be on only for the caster's own client.
