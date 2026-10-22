@@ -279,7 +279,7 @@ Effect.Defaults = {
 	SparkCount = 16, -- caster spark bursts (the later bursts are fractions of it)
 	SpeckCount = 16, -- black shrapnel at the impact (the pre-hits use fractions of it)
 	BokehCount = 10, -- white dots flying out inside the caster's shell
-	SpikeRate = 95, -- sets the crystal spikes per 0.07 s step (SpikeRate * 0.07, split over two fans)
+	SpikeRate = 45, -- sets the crystal spikes per 0.07 s step (SpikeRate * 0.07, split over two fans)
 	SmokeRate = 75, -- ground smoke puffs / s while the pillar burns
 	LeafCount = 22,
 	RockCount = 30,
@@ -1121,7 +1121,7 @@ function Effect.Play(ctx)
 	local pillarCore = beam(pillarTop, pillarBottom, {
 		Texture = ASSETS.PillarCore,
 		Color = ColorSequence.new(p.Color),
-		Brightness = 5,
+		Brightness = 3.5,
 		Width0 = 0,
 		Width1 = 0,
 		Segments = 12,
@@ -1224,12 +1224,12 @@ function Effect.Play(ctx)
 			SpreadAngle = Vector2.new(180, 180),
 			Lifetime = NumberRange.new(0.15, 0.32),
 			Size = seq({ { 0, 1.5 * s, 0.5 * s }, { 0.15, 5 * s, 1.6 * s }, { 0.7, 4.5 * s, 1.5 * s }, { 1, 0 } }),
-			Transparency = seq({ { 0, 0.1 }, { 0.7, 0.25 }, { 1, 1 } }),
+			Transparency = seq({ { 0, 0.3 }, { 0.7, 0.45 }, { 1, 1 } }),
 			Rotation = lean,
 			Squash = NumberSequence.new(0.8), -- thin sharp blades, not wide glass panes
 			-- solid, not additive: overlapping additive spikes add up to a white blob
-			LightEmission = 0.25,
-			Brightness = 2.5,
+			LightEmission = 0.1,
+			Brightness = 1.6,
 			ZOffset = 1,
 			TimeScale = ctx.TimeScale,
 		})
@@ -1307,9 +1307,9 @@ function Effect.Play(ctx)
 		Lifetime = NumberRange.new(0.18, 0.32),
 		Size = seq({ { 0, 1 * s, 0.3 * s }, { 0.2, 3.5 * s, 1 * s }, { 1, 2.8 * s, 0.8 * s } }),
 		Squash = NumberSequence.new(1.4), -- thin
-		Transparency = seq({ { 0, 0 }, { 0.6, 0.15 }, { 1, 1 } }),
-		LightEmission = 0.7,
-		Brightness = 3,
+		Transparency = seq({ { 0, 0.1 }, { 0.6, 0.3 }, { 1, 1 } }),
+		LightEmission = 0.2, -- mostly solid: glowing spikes stack into a white blob
+		Brightness = 2,
 		ZOffset = 3,
 	})
 	local coreDebris = emitter(coreAt, {
@@ -1340,9 +1340,9 @@ function Effect.Play(ctx)
 		Lifetime = NumberRange.new(0.15, 0.3),
 		Size = seq({ { 0, 2 * s, 0.5 * s }, { 0.2, 6 * s, 1.5 * s }, { 1, 5 * s, 1.2 * s } }),
 		Squash = NumberSequence.new(1.6), -- very thin
-		Transparency = seq({ { 0, 0 }, { 0.6, 0.15 }, { 1, 1 } }),
-		LightEmission = 0.8,
-		Brightness = 3,
+		Transparency = seq({ { 0, 0 }, { 0.6, 0.2 }, { 1, 1 } }),
+		LightEmission = 0.4,
+		Brightness = 2.5,
 		ZOffset = 2.5,
 	})
 	local flakes = emitter(impactAt, { -- small dark chips tumbling down
@@ -1905,7 +1905,7 @@ function Effect.Play(ctx)
 		burst(burn + 0.01, spikesRight, math.ceil(n / 2))
 		burst(burn + 0.03, chromSpikes, math.max(1, math.ceil(n / 2)))
 		burst(burn + 0.04, crown, math.max(1, math.ceil(p.CrownCount / 9)))
-		burst(burn + 0.05, coreSpikes, math.max(1, math.ceil(p.CoreSpikeCount / 7)))
+		burst(burn + 0.05, coreSpikes, math.max(1, math.ceil(p.CoreSpikeCount / 14)))
 		if burn < tFinale - 0.4 then
 			burst(burn + 0.02, blobs, 2)
 		end
