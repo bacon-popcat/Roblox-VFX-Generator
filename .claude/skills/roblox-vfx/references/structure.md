@@ -236,8 +236,10 @@ smoke is gone by ~5.2 s.
    ring, more crown spikes, chips and white smoke), a few rainbow spikes, RGB glitch
    bolts (`cs_rgb_bolt`) drawn additive and see-through (light refracting through glass:
    the baked black edges drop out; drawn solid they read as cartoon zigzag decals) with thin
-   rainbow streaks beside them, a crown of thin white energy spikes shooting up round the base
-   (at the hit, each surge and through the burn), dark chips flung out, a thin swirling floor smoke (thick smoke turned the burn into a white wall), 4-point star flashes every ~0.06 s plus five big cross stars, blade
+   rainbow streaks beside them, a dense urchin of thin white spikes bursting out of the centre over dark
+   churning chunks, a crown of thin white energy spikes shooting up round the base
+   (at the hit, each surge and through the burn), dark chips flung out, a thin swirling floor smoke drawn behind the centre (`ZOffset` < 0; the blast smoke is
+   clear while still in the middle), since thick smoke turned the burn into a white wall, 4-point star flashes every ~0.06 s plus five big cross stars, blade
    flares, rising motes, leaves, rocks, puffs, smoke, wind rings.
 4. `FinaleTime`: a 4-point cross that shrinks to a dot with a ground flash and a blast;
    arched smoke hooks (`cs_smoke_hook`) and floor smoke linger.

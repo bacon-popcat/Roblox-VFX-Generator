@@ -284,7 +284,8 @@ Effect.Defaults = {
 	LeafCount = 22,
 	RockCount = 30,
 	FlakeCount = 24, -- dark chips tumbling out of the impact
-	CrownCount = 18, -- thin white energy spikes shooting up round the base (more through the burn)
+	CrownCount = 30, -- thin white energy spikes shooting up round the base (more through the burn)
+	CoreSpikeCount = 28, -- white spikes bursting out of the centre in every direction (more per surge and through the burn)
 	PuffCount = 16, -- opaque grey puffs bursting out of the impact
 	StreakCount = 56, -- white blast streaks flying out of the impact
 	MoteRate = 60, -- white glints rising through the burn / s
@@ -1294,6 +1295,39 @@ function Effect.Play(ctx)
 	-- the crown: thin white energy spikes shooting straight up out of a disc round the base,
 	-- leaning a little outward, that stop under drag and stand for a moment (the reference's
 	-- upright jagged white spikes inside the rings)
+	-- the centre: a dense urchin of thin white spikes bursting out in every direction and
+	-- stopping close in, over dark chunks churning in the middle
+	local coreAt = attachment(base, CFrame.new(target + UP * 3 * s))
+	local coreSpikes = emitter(coreAt, {
+		Texture = ASSETS.JaggedShard,
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		SpreadAngle = Vector2.new(180, 180),
+		Speed = NumberRange.new(15 * s, 32 * s),
+		Drag = 12,
+		Lifetime = NumberRange.new(0.18, 0.32),
+		Size = seq({ { 0, 1 * s, 0.3 * s }, { 0.2, 3.5 * s, 1 * s }, { 1, 2.8 * s, 0.8 * s } }),
+		Squash = NumberSequence.new(1.4), -- thin
+		Transparency = seq({ { 0, 0 }, { 0.6, 0.15 }, { 1, 1 } }),
+		LightEmission = 0.7,
+		Brightness = 3,
+		ZOffset = 3,
+	})
+	local coreDebris = emitter(coreAt, {
+		Texture = ASSETS.Rocks,
+		FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
+		FlipbookFramerate = NumberRange.new(0),
+		FlipbookStartRandom = true,
+		Color = ColorSequence.new(Color3.fromRGB(40, 40, 46)),
+		LightEmission = 0,
+		SpreadAngle = Vector2.new(180, 180),
+		Speed = NumberRange.new(2 * s, 6 * s),
+		Drag = 3,
+		Lifetime = NumberRange.new(0.4, 0.7),
+		Size = sizeRange(0.4 * s, 0.9 * s),
+		Rotation = NumberRange.new(0, 360),
+		RotSpeed = NumberRange.new(-200, 200),
+		ZOffset = 3.2,
+	})
 	local crown = emitter(crownPart, {
 		Texture = ASSETS.JaggedShard,
 		Shape = Enum.ParticleEmitterShape.Disc,
@@ -1409,6 +1443,7 @@ function Effect.Play(ctx)
 		Transparency = seq({ { 0, 1 }, { 0.15, 0.83 }, { 0.6, 0.89 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-45, 45), -- swirling
+		ZOffset = -3, -- behind the spikes and the core, so it never covers the centre
 		TimeScale = ctx.TimeScale,
 	})
 	local plumes = emitter(plumePart, { -- crown of arched smoke plumes / wind wisps
@@ -1473,9 +1508,10 @@ function Effect.Play(ctx)
 		Drag = 4,
 		Lifetime = NumberRange.new(0.5, 0.7),
 		Size = seq({ { 0, 2.5 * s, 0.8 * s }, { 1, 4.5 * s, 1.5 * s } }),
-		Transparency = seq({ { 0, 0.4 }, { 0.6, 0.55 }, { 1, 1 } }),
+		Transparency = seq({ { 0, 0.7 }, { 0.2, 0.5 }, { 0.6, 0.6 }, { 1, 1 } }), -- faint while still in the middle
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-30, 30),
+		ZOffset = -2,
 	})
 	local rainbowRays = emitter(groundAt, { -- long rainbow lens-flare streaks shooting out low
 		Texture = ASSETS.ChromLine,
@@ -1566,8 +1602,9 @@ function Effect.Play(ctx)
 		Lifetime = NumberRange.new(0.3, 0.5),
 		Size = seq({ { 0, 2 * s, 0.5 * s }, { 0.4, 4.5 * s, 1 * s }, { 1, 5.5 * s, 1 * s } }),
 		Squash = NumberSequence.new(1.4), -- long along the flight
-		Transparency = seq({ { 0, 0.45 }, { 0.5, 0.6 }, { 1, 1 } }),
-		ZOffset = 1.5,
+		-- clear at the centre: it shows once it has flown out
+		Transparency = seq({ { 0, 0.9 }, { 0.2, 0.5 }, { 0.5, 0.6 }, { 1, 1 } }),
+		ZOffset = -1,
 	})
 	local blastSmoke = emitter(jetAt, {
 		Texture = ASSETS.Smoke,
@@ -1582,10 +1619,11 @@ function Effect.Play(ctx)
 		Lifetime = NumberRange.new(0.6, 0.9),
 		Size = seq({ { 0, 2.3 * s, 0.6 * s }, { 0.3, 5.2 * s, 1.1 * s }, { 1, 7.5 * s, 1.7 * s } }),
 		Squash = NumberSequence.new(-0.3), -- a little wider than tall
-		Transparency = seq({ { 0, 0.62 }, { 0.4, 0.72 }, { 1, 1 } }), -- a veil, not a wall
+		-- a veil, not a wall, and clear while it is still in the middle
+		Transparency = seq({ { 0, 1 }, { 0.15, 0.66 }, { 0.4, 0.72 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-40, 40),
-		ZOffset = 1.2,
+		ZOffset = -1.5,
 	})
 	local groundFlash = emitter(groundAt, { -- crisp white ring racing out across the floor
 		Texture = ASSETS.HaloThin,
@@ -1823,6 +1861,8 @@ function Effect.Play(ctx)
 		ctx.Emit(blastJets, 16)
 		ctx.Emit(blastSmoke, 11)
 		ctx.Emit(crown, p.CrownCount)
+		ctx.Emit(coreSpikes, p.CoreSpikeCount)
+		ctx.Emit(coreDebris, 10)
 	end)
 	burst(tImpact + 0.1, flakes, p.FlakeCount)
 	at(tImpact + 0.1, function() -- the wide V flare as the pillar forms
@@ -1848,6 +1888,8 @@ function Effect.Play(ctx)
 			burst(time, coreStar, 1)
 			burst(time + 0.01, groundFlash, 1)
 			burst(time + 0.02, crown, math.ceil(p.CrownCount / 2))
+			burst(time + 0.01, coreSpikes, math.ceil(p.CoreSpikeCount / 2))
+			burst(time + 0.02, coreDebris, 4)
 			burst(time + 0.03, blastJets, 6)
 			burst(time + 0.04, blastSmoke, 4)
 			burst(time + 0.05, flakes, math.ceil(p.FlakeCount / 3))
@@ -1862,6 +1904,7 @@ function Effect.Play(ctx)
 		burst(burn + 0.01, spikesRight, math.ceil(n / 2))
 		burst(burn + 0.03, chromSpikes, math.max(1, math.ceil(n / 2)))
 		burst(burn + 0.04, crown, math.max(1, math.ceil(p.CrownCount / 9)))
+		burst(burn + 0.05, coreSpikes, math.max(1, math.ceil(p.CoreSpikeCount / 7)))
 		if burn < tFinale - 0.4 then
 			burst(burn + 0.02, blobs, 2)
 		end
