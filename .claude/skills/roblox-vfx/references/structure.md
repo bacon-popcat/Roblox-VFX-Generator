@@ -270,15 +270,16 @@ shows -> what we use:
 - impact: jagged white flash with red/blue fringes, dark ink heart -> `cs_impact_flash` x3 +
   Glowing Black Energy.
 - pillar: wide soft translucent column of long continuous vertical streaks round a dark
-  smoky core -> PillarCore (soft, 0.6-0.75 of the width), PillarLines stretched once (wrapped
+  smoky core -> PillarCore (faint, 0.6-0.75 of the width), PillarLines stretched once (wrapped
   every 18 studs they broke into dotted dashes), PillarDark.
 - burn spikes: tall glassy white blades leaning out, crisp -> JaggedShard fans (Squash 0.35,
   barely glowing so they don't stack into a white blob).
 - centre while burning: a dense cluster of translucent white crystal spikes standing up,
-  many sizes, overlapping like ice, with white 4-point stars flashing all through it ->
-  `centerSpikes` (JaggedShard, FacingCameraWorldUp, Squash 0.5, Transparency 0.3-0.5,
-  LightEmission 0.25, `CenterSpikeRate`) and `centerStars` (Star, `CenterStarRate`) in the
-  middle only.
+  many sizes, overlapping like ice, with white 4-point stars flashing all through it and
+  little soft glow -> `centerSpikes` (JaggedShard, FacingCameraWorldUp, Squash 0.5,
+  Transparency 0.3-0.5, LightEmission 0.25, `CenterSpikeRate`) and `centerStars` (Star,
+  `CenterStarRate`). The pillar core stays faint and the floor smoke does not glow: soft
+  glows over the centre washed it into a white haze that hid the spikes.
 - halos: thin crisp rings, the top one about as wide as the base ring -> HaloThin / NeonRing.
 - finale: a crisp thin 4-point cross high on the pillar -> Star + thin bars (Squash -0.97).
 Camera shake (`ctx.Shake`, `Shake`/`ShakeScale`): 2.2 deg at the launch, 11 deg on the impact

@@ -1166,11 +1166,13 @@ function Effect.Play(ctx)
 	local pillarCore = beam(pillarTop, pillarBottom, {
 		Texture = ASSETS.PillarCore,
 		Color = ColorSequence.new(p.Color),
-		Brightness = 2.2, -- a soft translucent column, not a laser
+		-- a faint translucent column, not a laser: wide and bright it washed the centre out
+		-- into a white haze that hid the spikes
+		Brightness = 1.3,
 		Width0 = 0,
 		Width1 = 0,
 		Segments = 12,
-		Transparency = seq({ { 0, 0.75 }, { 0.6, 0.5 }, { 1, 0.4 } }),
+		Transparency = seq({ { 0, 0.85 }, { 0.6, 0.7 }, { 1, 0.65 } }),
 		Enabled = false,
 	})
 	local pillarLines = beam(pillarTop, pillarBottom, {
@@ -1515,7 +1517,7 @@ function Effect.Play(ctx)
 		Shape = Enum.ParticleEmitterShape.Disc,
 		ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
 		Color = ColorSequence.new(p.SmokeColor),
-		LightEmission = 0.25,
+		LightEmission = 0, -- grey smoke, not a glowing haze
 		Rate = p.SmokeRate,
 		Enabled = false,
 		Speed = NumberRange.new(1, 3),
