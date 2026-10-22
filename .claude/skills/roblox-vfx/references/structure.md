@@ -205,7 +205,7 @@ overrun of the ~50 guideline to match the reference); burst particles ~194.
 
 `ChromaticStrike`: a white, prismatic ranged strike, rebuilt from reference videos (1x from
 two angles, then 0.25x from far and from behind the caster; the reference's blue variant was
-not copied). `ctx.CFrame` is the target; the caster stands `CasterDistance` (32) studs along
+not copied). `ImpactScale` (1.3) sizes the target eruption on top of `Scale`. `ctx.CFrame` is the target; the caster stands `CasterDistance` (32) studs along
 its LookVector, or pass the runtime-only override `Caster` (a BasePart). `Scale` (2.5) sizes
 the target eruption; caster bursts, projectiles and the dash use 0.56x of it. Plain Luau, one
 per-frame loop (`ctx.Wait(1/240)`) running a time-sorted event list. Play returns at ~3.95 s;
@@ -232,9 +232,12 @@ smoke is gone by ~5.2 s.
    and magenta/teal edge vignette (camera-locked particles), light pillar, dark shockwave,
    base ring, and a white smoke blast: soft jets and billows sprayed low and flat in every
    direction (again on each surge). The burn runs to `FinaleTime` (3.7 s): rising thin halos
-   (`cs_halo_thin`), crystal spike fans with three surges, a few small rainbow spikes, small
-   black-edged RGB glitch scribbles (`cs_rgb_bolt`; at full size they read as cartoon
-   zigzags), 4-point star flashes every ~0.06 s plus five big cross stars, blade
+   (`cs_halo_thin`), crystal spike fans with three surges (each a core pop, a ground flash
+   ring, more flung glass shards, flakes and white smoke), a few rainbow spikes, RGB glitch
+   bolts (`cs_rgb_bolt`) drawn additive and see-through (light refracting through glass:
+   the baked black edges drop out; drawn solid they read as cartoon zigzag decals) with thin
+   rainbow streaks beside them, big translucent glass shards and white flakes flung out of
+   the impact, a dense swirling floor smoke, 4-point star flashes every ~0.06 s plus five big cross stars, blade
    flares, rising motes, leaves, rocks, puffs, smoke, wind rings.
 4. `FinaleTime`: a 4-point cross that shrinks to a dot with a ground flash and a blast;
    arched smoke hooks (`cs_smoke_hook`) and floor smoke linger.

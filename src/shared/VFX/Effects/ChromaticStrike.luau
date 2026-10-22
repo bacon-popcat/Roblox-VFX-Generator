@@ -269,6 +269,7 @@ Effect.Defaults = {
 	VignetteLeft = Color3.fromRGB(180, 40, 140), -- magenta screen edge on the big flashes
 	VignetteRight = Color3.fromRGB(40, 160, 170), -- teal screen edge
 	Scale = 2.5, -- sizes the target eruption; caster bursts, wires and dash use 0.56x of it
+	ImpactScale = 1.3, -- the target eruption on top of Scale (bigger than the caster's side)
 	DashScale = 1.6, -- the dash head, its dark tail and its line, on top of the 0.56x
 	CasterDistance = 32, -- studs from the target to the caster (without a `Caster` override)
 	ImpactTime = 1.85, -- effect time of the giant impact flash (dash lands)
@@ -278,13 +279,15 @@ Effect.Defaults = {
 	SparkCount = 16, -- caster spark bursts (the later bursts are fractions of it)
 	SpeckCount = 16, -- black shrapnel at the impact (the pre-hits use fractions of it)
 	BokehCount = 10, -- white dots flying out inside the caster's shell
-	SpikeRate = 75, -- sets the crystal spikes per 0.07 s step (SpikeRate * 0.07, split over two fans)
-	SmokeRate = 100, -- ground smoke puffs / s while the pillar burns
+	SpikeRate = 95, -- sets the crystal spikes per 0.07 s step (SpikeRate * 0.07, split over two fans)
+	SmokeRate = 150, -- ground smoke puffs / s while the pillar burns
 	LeafCount = 22,
-	RockCount = 20,
-	PuffCount = 16, -- opaque grey puffs bursting out of the impact
-	StreakCount = 36, -- white blast streaks flying out of the impact
-	MoteRate = 45, -- white glints rising through the burn / s
+	RockCount = 30,
+	FlakeCount = 24, -- white glass flakes tumbling out of the impact
+	ShardCount = 16, -- big translucent glass shards flung out of the impact (half again per surge)
+	PuffCount = 24, -- opaque grey puffs bursting out of the impact
+	StreakCount = 56, -- white blast streaks flying out of the impact
+	MoteRate = 60, -- white glints rising through the burn / s
 	PlumeCount = 12, -- arched smoke hooks in total
 	Vignette = true,
 	Shake = true, -- camera shake on the launch, the impact, the burn and the finale
@@ -297,8 +300,8 @@ Effect.Linger = 1.5 -- smoke disc puffs and plumes outlive the loop (up to ~1.5 
 
 function Effect.Play(ctx)
 	local p = ctx.Params
-	local s = p.Scale -- target eruption
-	local sc = s * 0.56 -- caster bursts, wires, dash and the target's pre-hits (measured ~0.56x)
+	local s = p.Scale * p.ImpactScale -- target eruption
+	local sc = p.Scale * 0.56 -- caster bursts, wires, dash and the target's pre-hits (measured ~0.56x)
 	local ink = p.InkColor
 
 	------------------------------------------------------------------ layout
@@ -374,7 +377,7 @@ function Effect.Play(ctx)
 	local spikePart = ctx.Anchor(CFrame.new(target + UP * 3 * s))
 	spikePart.Size = Vector3.new(18, 0.2, 18) * s
 	local smokePart = ctx.Anchor(CFrame.new(target + UP * 2 * s))
-	smokePart.Size = Vector3.new(30, 0.2, 30) * s
+	smokePart.Size = Vector3.new(36, 0.2, 36) * s
 	local plumePart = ctx.Anchor(CFrame.new(target + UP * 5 * s))
 	plumePart.Size = Vector3.new(26, 0.2, 26) * s
 
@@ -1252,23 +1255,64 @@ function Effect.Play(ctx)
 		Speed = NumberRange.new(2, 6),
 		EmissionDirection = Enum.NormalId.Top,
 		Lifetime = NumberRange.new(0.12, 0.22),
-		Size = seq({ { 0, 1.5 * s }, { 0.3, 2.5 * s }, { 1, 2 * s } }),
+		Size = seq({ { 0, 2.2 * s }, { 0.3, 3.8 * s }, { 1, 3 * s } }),
 		Transparency = seq({ { 0, 0.1 }, { 0.7, 0.3 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		Brightness = 2,
 		ZOffset = 2,
 	})
-	local glitch = emitter(glitchPart, { -- black-edged RGB-split zigzag bolts (colour baked)
+	-- RGB-split zigzag bolts: light refracting through the glass, so they are additive (the
+	-- texture's baked black edges add nothing and drop out) and see-through, never solid decals
+	local glitch = emitter(glitchPart, {
 		Texture = ASSETS.RgbBolt,
 		Shape = Enum.ParticleEmitterShape.Box,
 		Speed = NumberRange.new(0),
-		Lifetime = NumberRange.new(0.08, 0.14),
-		Size = sizeRange(0.9 * s, 1.6 * s), -- small scribbles in the burst, not big zigzags
-		Transparency = seq({ { 0, 0.15 }, { 0.7, 0.25 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.08, 0.16),
+		Size = sizeRange(1.8 * s, 3.2 * s),
+		Transparency = seq({ { 0, 0.3 }, { 0.6, 0.45 }, { 1, 1 } }),
 		Rotation = NumberRange.new(-70, 70),
-		LightEmission = 0,
-		Brightness = 1.5,
+		LightEmission = 1,
+		Brightness = 2.5,
 		ZOffset = 3,
+	})
+	local prismStreaks = emitter(glitchPart, { -- thin rainbow lines glancing off the shards
+		Texture = ASSETS.ChromLine,
+		Shape = Enum.ParticleEmitterShape.Box,
+		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
+		Speed = NumberRange.new(0),
+		Lifetime = NumberRange.new(0.1, 0.2),
+		Size = seq({ { 0, 2.5 * s }, { 1, 3.5 * s } }),
+		Squash = NumberSequence.new(1.5), -- tall and thin
+		Transparency = seq({ { 0, 0.2 }, { 0.6, 0.35 }, { 1, 1 } }),
+		Rotation = NumberRange.new(-35, 35),
+		Brightness = 2.5,
+		ZOffset = 2.8,
+	})
+	local glassShards = emitter(impactAt, { -- big translucent glass blades flung out of the impact
+		Texture = ASSETS.JaggedShard,
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		SpreadAngle = Vector2.new(180, 180),
+		Speed = NumberRange.new(40 * s, 70 * s),
+		Drag = 6,
+		Lifetime = NumberRange.new(0.35, 0.6),
+		Size = seq({ { 0, 1.5 * s, 0.5 * s }, { 0.2, 3.5 * s, 1 * s }, { 1, 2.5 * s, 0.8 * s } }),
+		Transparency = seq({ { 0, 0.2 }, { 0.6, 0.45 }, { 1, 1 } }),
+		LightEmission = 0.5,
+		Brightness = 2.5,
+		ZOffset = 2.5,
+	})
+	local flakes = emitter(impactAt, { -- small white glass flakes tumbling down
+		Texture = ASSETS.Speck,
+		SpreadAngle = Vector2.new(180, 180),
+		Speed = NumberRange.new(15 * s, 30 * s),
+		Drag = 2,
+		Acceleration = Vector3.new(0, -8 * s, 0),
+		Lifetime = NumberRange.new(0.8, 1.3),
+		Size = sizeRange(0.2 * s, 0.45 * s),
+		Rotation = NumberRange.new(0, 360),
+		RotSpeed = NumberRange.new(-300, 300),
+		LightEmission = 0.3,
+		Brightness = 1.5,
 	})
 	-- 4-point star flashes popping all over the burn, a few big ones
 	local starFlash = emitter(glitchPart, {
@@ -1350,11 +1394,11 @@ function Effect.Play(ctx)
 		Speed = NumberRange.new(1, 3),
 		EmissionDirection = Enum.NormalId.Top,
 		Lifetime = NumberRange.new(1, 1.4),
-		Size = seq({ { 0, 3 * s, 1 * s }, { 1, 6 * s, 2 * s } }),
+		Size = seq({ { 0, 4 * s, 1.2 * s }, { 1, 8 * s, 2.5 * s } }),
 		Squash = NumberSequence.new(-0.5), -- flat, hugging the floor
-		Transparency = seq({ { 0, 1 }, { 0.15, 0.72 }, { 0.6, 0.8 }, { 1, 1 } }),
+		Transparency = seq({ { 0, 1 }, { 0.15, 0.58 }, { 0.6, 0.7 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
-		RotSpeed = NumberRange.new(-20, 20),
+		RotSpeed = NumberRange.new(-45, 45), -- swirling
 		TimeScale = ctx.TimeScale,
 	})
 	local plumes = emitter(plumePart, { -- crown of arched smoke plumes / wind wisps
@@ -1765,10 +1809,12 @@ function Effect.Play(ctx)
 		ctx.Emit(inkCore, 6)
 	end)
 	burst(tImpact + 0.05, groundWave, 1)
-	at(tImpact + 0.02, function() -- the white smoke blast
-		ctx.Emit(blastJets, 18)
-		ctx.Emit(blastSmoke, 22)
+	at(tImpact + 0.02, function() -- the white smoke blast and flying glass
+		ctx.Emit(blastJets, 24)
+		ctx.Emit(blastSmoke, 28)
+		ctx.Emit(glassShards, p.ShardCount)
 	end)
+	burst(tImpact + 0.1, flakes, p.FlakeCount)
 	at(tImpact + 0.1, function() -- the wide V flare as the pillar forms
 		ctx.Emit(wingWhite, 1)
 		ctx.Emit(wingBlue, 1)
@@ -1788,9 +1834,14 @@ function Effect.Play(ctx)
 		burst(time, spikesLeft, 6)
 		burst(time + 0.01, spikesRight, 6)
 		burst(time + 0.02, blastStreaks, math.ceil(p.StreakCount / 3))
-		if time > tImpact + 0.1 then -- each surge sprays more white smoke
-			burst(time + 0.03, blastJets, 8)
-			burst(time + 0.04, blastSmoke, 10)
+		if time > tImpact + 0.1 then -- each surge: a pop, more glass and white smoke
+			burst(time, coreStar, 1)
+			burst(time + 0.01, groundFlash, 1)
+			burst(time + 0.02, glassShards, math.ceil(p.ShardCount / 2))
+			burst(time + 0.03, blastJets, 12)
+			burst(time + 0.04, blastSmoke, 14)
+			burst(time + 0.05, flakes, math.ceil(p.FlakeCount / 3))
+			burst(time + 0.03, glitch, 2)
 		end
 	end
 	-- crystal spikes, rainbow tips and prismatic patches: bursts every ~0.07 s
@@ -1812,7 +1863,8 @@ function Effect.Play(ctx)
 	local burnLen = tFinale - tImpact
 	for i = 0, 13 do -- RGB glitch bolts flicker through the burn, often in pairs
 		local time = tImpact + 0.15 + i * (burnLen - 0.3) / 13
-		burst(time, glitch, 1)
+		burst(time, glitch, i % 3 == 0 and 2 or 1)
+		burst(time + 0.02, prismStreaks, 2)
 	end
 	for i, wire in WIRES do -- a big star flash at a projectile's apex
 		if wire.Glint then
@@ -1902,7 +1954,7 @@ function Effect.Play(ctx)
 			ctx.Shake(2.2 * k, 0.4, { Roughness = 15, Position = caster })
 		end)
 		at(tImpact, function()
-			ctx.Shake(11 * k, 1.4, { Roughness = 9, Position = target })
+			ctx.Shake(13 * k, 1.5, { Roughness = 9, Position = target })
 		end)
 		at(tImpact + 0.3, function()
 			ctx.Shake(1.8 * k, tFinale - tImpact - 0.3, { Roughness = 22, FadeIn = 0.2, Position = target })
