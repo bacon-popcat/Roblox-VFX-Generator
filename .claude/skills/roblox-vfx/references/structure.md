@@ -214,7 +214,8 @@ smoke is gone by ~5.2 s.
    4-point star head flown along a Catmull-Rom spline, drawing three camera-facing Trails (a
    white core, a soft white haze `cs_soft_trail` and a dark smoke edge) that stay from the
    caster until they fade. Each trail's width pinches and swells with the distance flown, so
-   it reads as a twisting smoky ribbon. They replaced a chain of beam segments, which kinked
+   it reads as a twisting smoky ribbon. As a trail fades its Lifetime shrinks, so it erases
+   from the caster end toward the target, as in the reference. They replaced a chain of beam segments, which kinked
    and banded at every joint. The low streaks are chunky smoky plumes with chromatic heads;
    sparkle stars and prismatic flares spray round the caster on each salvo. A steep arch
    over the left, then (0.6 s) one that shoots very high, loops over itself and dives in.
@@ -224,11 +225,13 @@ smoke is gone by ~5.2 s.
    flickering spiky white ball with a white splash fanned back off it, a dark smoke wedge
    with rainbow slivers on its edges and black debris; a thin bright line and a soft white
    haze run back to the caster, and glowing white orbs hang along the path. Tunnel rings and
-   a bright rainbow ground streak (white centre, drawn behind the head) that fades to a thin
-   orange twin line. Dark shell, bokeh, sparkle stars and small prismatic glints at the
-   caster (the cloudy wisps and black ink lump were shrunk after a playtest).
+   a rainbow ground streak drawn behind the head: wide with a white centre for ~0.15 s after
+   the launch, then a thin twin line that turns orange. Dark shell, bokeh, sparkle stars,
+   black ink scribbles and chromatic wisps at the caster (wisps at the size measured on the
+   behind-the-caster clip).
 3. `ImpactTime` 1.85 s: white-hot core star, jagged V-wing flash (custom `cs_impact_flash`,
-   white over red/blue copies for the fringe), blast streaks, a ground flash ring, screen wash
+   white over red/blue copies for the fringe), a churning black ink heart in the middle
+   (Glowing Black Energy, drawn in front of the white glow), blast streaks, a ground flash ring, screen wash
    and magenta/teal edge vignette (camera-locked particles), light pillar, dark shockwave,
    base ring, and a white smoke blast: soft jets and billows sprayed low and flat in every
    direction (again on each surge). The burn runs to `FinaleTime` (3.7 s): rising thin halos
