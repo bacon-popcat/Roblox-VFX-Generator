@@ -59,6 +59,7 @@ local ASSETS = {
 	Rocks = "rbxassetid://14305019062", -- FlipbookTextures/Random Rocks (Grid4x4, one rock per cell)
 	WireBeam = "rbxassetid://134298856602125", -- MigratedBeams/BeamThinJaggedStreak (wavy white line)
 	RainbowStreak = "rbxassetid://134095631127258", -- MigratedBeams/BeamChromaticStreak (twin rainbow rails)
+	LavaStreak = "rbxassetid://138131925212643", -- lava_streak (custom, LavaEruption): straight flame tongue, soft root, sharp tip
 	DashSwirl = "rbxassetid://17388445727", -- StaticVFXTextures/Crescent32 (layered crescent strokes)
 	PillarCore = "rbxassetid://7135001284", -- MigratedBeams/BeamStretchedGlowColumn
 	PillarLines = "rbxassetid://6091329339", -- MigratedBeams/BeamGlowingStreakLines
@@ -283,6 +284,8 @@ Effect.Defaults = {
 	LeafCount = 22,
 	RockCount = 30,
 	FlakeCount = 24, -- dark chips tumbling out of the impact
+	CenterSpikeRate = 70, -- translucent white crystal spikes standing in the centre / s while it burns
+	CenterStarRate = 40, -- white 4-point stars flashing in the centre / s while it burns
 	CrownCount = 30, -- thin white energy spikes shooting up round the base (more through the burn)
 	CoreSpikeCount = 28, -- white spikes bursting out of the centre in every direction (more per surge and through the burn)
 	PuffCount = 16, -- opaque grey puffs bursting out of the impact
@@ -375,6 +378,10 @@ function Effect.Play(ctx)
 	local glitchPart = ctx.Anchor(CFrame.new(target + UP * 6 * s)) -- box volume over the burn
 	glitchPart.Size = Vector3.new(14, 10, 14) * s
 	local spikePart = ctx.Anchor(CFrame.new(target + UP * 3 * s))
+	local centerPart = ctx.Anchor(CFrame.new(target + UP * 2.2 * s)) -- the centre cluster (disc)
+	centerPart.Size = Vector3.new(7, 0.2, 7) * s
+	local centerStarPart = ctx.Anchor(CFrame.new(target + UP * 3.5 * s)) -- the centre's star volume (box)
+	centerStarPart.Size = Vector3.new(6, 6, 6) * s
 	local crownPart = ctx.Anchor(CFrame.new(target + UP * 0.5 * s)) -- disc the spike crown rises from
 	crownPart.Size = Vector3.new(11, 0.2, 11) * s
 	spikePart.Size = Vector3.new(18, 0.2, 18) * s
@@ -985,10 +992,10 @@ function Effect.Play(ctx)
 		Enabled = false,
 		Speed = NumberRange.new(0),
 		Lifetime = NumberRange.new(0.06, 0.1),
-		Size = seq({ { 0, 1.5 * ds, 0.3 * ds }, { 0.5, 2.2 * ds, 0.3 * ds }, { 1, 1.9 * ds } }),
+		Size = seq({ { 0, 1.3 * ds, 0.25 * ds }, { 0.5, 1.9 * ds, 0.25 * ds }, { 1, 1.7 * ds } }),
 		Transparency = seq({ { 0, 0 }, { 0.6, 0.15 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
-		RotSpeed = NumberRange.new(-1400, -900),
+		RotSpeed = NumberRange.new(-500, -300), -- churning, not a spinning disc
 		Brightness = 3,
 		ZOffset = 1.6,
 		TimeScale = ctx.TimeScale,
@@ -1007,7 +1014,31 @@ function Effect.Play(ctx)
 		ZOffset = 1.4,
 		TimeScale = ctx.TimeScale,
 	})
-	-- EmissionDirection Top = the attachment's +Y, which headAt points back at the caster
+	-- EmissionDirection Top = the attachment's +Y, which headAt points back at the caster.
+	-- The head is the front of a fireball: white flame tongues rooted on the round front and
+	-- streaming back from it, tips trailing (locked to the head, so they stay attached while
+	-- it rushes forward and only stretch back by their own speed)
+	local headLicks = emitter(headAt, {
+		Texture = ASSETS.LavaStreak,
+		LockedToPart = true,
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		EmissionDirection = Enum.NormalId.Top,
+		SpreadAngle = Vector2.new(28, 28),
+		Rate = 90,
+		Enabled = false,
+		Speed = NumberRange.new(4 * ds, 8 * ds),
+		Drag = 6,
+		Lifetime = NumberRange.new(0.08, 0.14),
+		Size = seq({ { 0, 0.8 * ds, 0.2 * ds }, { 0.4, 2.4 * ds, 0.4 * ds }, { 1, 2.8 * ds } }),
+		Squash = NumberSequence.new(0.8), -- long tapering tongues
+		Rotation = NumberRange.new(-90), -- VelocityParallel runs the texture's X along the velocity
+		Color = colors({ { 0, WHITE }, { 1, Color3.fromRGB(165, 165, 172) } }),
+		LightEmission = 0.6,
+		Brightness = 2.5,
+		Transparency = seq({ { 0, 0.1 }, { 0.6, 0.3 }, { 1, 1 } }),
+		ZOffset = 1.5,
+		TimeScale = ctx.TimeScale,
+	})
 	local dashKit = shotHead(headAt, Enum.NormalId.Top, ds)
 	-- the dash's wedge lives longer, so its dark tail stretches further behind the head
 	dashKit.Wedge.Lifetime = NumberRange.new(0.22, 0.38)
@@ -1135,11 +1166,13 @@ function Effect.Play(ctx)
 	local pillarCore = beam(pillarTop, pillarBottom, {
 		Texture = ASSETS.PillarCore,
 		Color = ColorSequence.new(p.Color),
-		Brightness = 2.2, -- a soft translucent column, not a laser
+		-- a faint translucent column, not a laser: wide and bright it washed the centre out
+		-- into a white haze that hid the spikes
+		Brightness = 1.3,
 		Width0 = 0,
 		Width1 = 0,
 		Segments = 12,
-		Transparency = seq({ { 0, 0.75 }, { 0.6, 0.5 }, { 1, 0.4 } }),
+		Transparency = seq({ { 0, 0.85 }, { 0.6, 0.7 }, { 1, 0.65 } }),
 		Enabled = false,
 	})
 	local pillarLines = beam(pillarTop, pillarBottom, {
@@ -1343,6 +1376,43 @@ function Effect.Play(ctx)
 		RotSpeed = NumberRange.new(-200, 200),
 		ZOffset = 3.2,
 	})
+	-- the centre while it burns (reference close-ups): a dense cluster of translucent white
+	-- crystal spikes standing up and leaning a little, of many sizes, overlapping like ice,
+	-- and white 4-point stars flashing all through it. Translucent and barely glowing, so the
+	-- overlaps read as layered glass, not a white blob.
+	local centerSpikes = emitter(centerPart, {
+		Texture = ASSETS.JaggedShard,
+		Shape = Enum.ParticleEmitterShape.Disc,
+		ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
+		EmissionDirection = Enum.NormalId.Top,
+		Rate = p.CenterSpikeRate,
+		Enabled = false,
+		Speed = NumberRange.new(0.5 * s, 2 * s),
+		Drag = 4,
+		Lifetime = NumberRange.new(0.2, 0.4),
+		Size = seq({ { 0, 1 * s, 0.5 * s }, { 0.15, 4 * s, 2 * s }, { 1, 3.5 * s, 1.8 * s } }),
+		Squash = NumberSequence.new(0.5), -- tall, sharp
+		Transparency = seq({ { 0, 0.5 }, { 0.15, 0.3 }, { 0.8, 0.45 }, { 1, 1 } }),
+		Rotation = NumberRange.new(-25, 25),
+		LightEmission = 0.25,
+		Brightness = 2,
+		ZOffset = 2.6,
+		TimeScale = ctx.TimeScale,
+	})
+	local centerStars = emitter(centerStarPart, {
+		Texture = ASSETS.Star,
+		Shape = Enum.ParticleEmitterShape.Box,
+		Rate = p.CenterStarRate,
+		Enabled = false,
+		Speed = NumberRange.new(0),
+		Lifetime = NumberRange.new(0.08, 0.16),
+		Size = seq({ { 0, 0.3 * s }, { 0.3, 2.4 * s, 1 * s }, { 1, 0 } }),
+		Rotation = NumberRange.new(-10, 10),
+		Brightness = 6,
+		ZOffset = 4.2,
+		TimeScale = ctx.TimeScale,
+	})
 	local crown = emitter(crownPart, {
 		Texture = ASSETS.JaggedShard,
 		Shape = Enum.ParticleEmitterShape.Disc,
@@ -1447,7 +1517,7 @@ function Effect.Play(ctx)
 		Shape = Enum.ParticleEmitterShape.Disc,
 		ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
 		Color = ColorSequence.new(p.SmokeColor),
-		LightEmission = 0.25,
+		LightEmission = 0, -- grey smoke, not a glowing haze
 		Rate = p.SmokeRate,
 		Enabled = false,
 		Speed = NumberRange.new(1, 3),
@@ -2075,7 +2145,7 @@ function Effect.Play(ctx)
 			streakTail.WorldCFrame = CFrame.new(caster + UP * 2 * sc)
 			-- the ground streak is drawn behind the head as it goes
 			railFront.WorldCFrame = CFrame.fromMatrix(caster:Lerp(target, along) + UP * 0.08, dashDir, right)
-			for _, e in { headBall, headCore, headFlares, pathOrbs } do
+			for _, e in { headBall, headCore, headLicks, headFlares, pathOrbs } do
 				e.Enabled = true
 			end
 			enableKit(dashKit, true)
@@ -2083,7 +2153,7 @@ function Effect.Play(ctx)
 			if dashT > 1 then
 				railFront.WorldCFrame = CFrame.fromMatrix(target + UP * 0.08, dashDir, right)
 			end
-			for _, e in { headBall, headCore, headFlares, pathOrbs } do
+			for _, e in { headBall, headCore, headLicks, headFlares, pathOrbs } do
 				e.Enabled = false
 			end
 			enableKit(dashKit, false)
@@ -2131,6 +2201,8 @@ function Effect.Play(ctx)
 
 		smoke.Enabled = clock >= tImpact + 0.1 and clock < tFinale + 0.1
 		motes.Enabled = clock >= tImpact + 0.1 and clock < tFinale - 0.1
+		centerSpikes.Enabled = clock >= tImpact + 0.05 and clock < tFinale - 0.1
+		centerStars.Enabled = clock >= tImpact + 0.05 and clock < tFinale - 0.05
 		light.Brightness = p.LightBrightness * track(lightKeys, clock)
 
 		-- vignette
