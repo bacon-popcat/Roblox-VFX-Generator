@@ -169,22 +169,24 @@ See `src/shared/VFX/Effects/LavaEruption.luau`. ~3.65 s of flame, then the crack
    red-orange from 0.3 s.
 2. Onset ~0.7 s: a spiky flash and a flare line along the crack, a spike row, a splash, and
    within ~0.035 s a dense curtain of solid tongues (Fire Tower flipbooks: hot roots, orange,
-   deep red tops; LightEmission 0.3, Brightness 4) 1.0 F wide, the centre band 1.45x taller,
-   over a boiling base of drawn fire bursts with a white-hot core low in the middle. Wind
+   deep red tops; LightEmission 0.3, Brightness 3) ~0.5 F wide, the centre band ~1.4x taller,
+   over a boiling base of drawn fire bursts, with a soft yellow core glow low in the middle. Wind
    arcs from ~0.72 s: thin, peach, flat ellipses 1.3-1.6 F across (plus a raised, tilted
    layer), rising as they spin, gone by ~1.25 s.
-3. Burn: the curtain is 0.75 F wide and sways (two mixed sines,
+3. Burn: the curtain is ~0.46 F wide and sways (two mixed sines,
    `0.75 sin(5.7t) + 0.25 sin(10.1t + 1.3)`, pushing every live tongue sideways), with dark
-   charcoal tongues at its edges, curls, flecks, embers, fire-tinted smoke rising off its top,
-   and a hot orange line along the crack.
+   charcoal tongues at its edges, curls, flecks, embers,
+   and a hot orange line along the crack. The centre loops a ~0.49 s pulse: a bright blob, a
+   darker flame burning up through it (an arch), then a tall teardrop and a small V.
 4. Die-down ~2.85-3.65 s: the curtain narrows to a bundle ~0.2 F wide while it stays tall.
    Stop emitting early and shrink lifetimes so nothing lingers; the crack cools to dark.
 5. Kept from Oscar's playtests: `Scale = 2.5` (fissure ~50 studs); tongues rush
    (`TONGUE_RUSH = 1.6`× faster, living 1/1.6 as long; the per-frame loop rewrites their
    `Lifetime`, so the factor is applied there too); `FlameRate = 100`; wide tongues
    (`Squash` 0.3→0.6) so the wall has no gaps; the opening wall rushes up 2.8x faster and is
-   2.5x thicker for ~0.25 s. The fixed beam sheets (veil, column, `FaceCamera = false`) were
-   replaced by flipbook fire (`explosions.md`): a fire body is a boiling mass of sheets.
+   2.5x thicker for ~0.25 s; the heart pulse timing. The scrolling beam veils were replaced
+   by flipbook fire (`explosions.md`): a fire body is a boiling mass of sheets. The central
+   column and its glow stay fixed beams (`FaceCamera = false`): they are light, not body.
 
 ## Ground slam / earth ability
 Duration 0.6-1.2 (the crater stays ~2.8 s). See `examples/GroundSlam.luau`.

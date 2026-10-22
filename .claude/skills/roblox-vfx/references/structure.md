@@ -169,16 +169,21 @@ fade by ~2.7 s.
 (along its RightVector). Plain Luau, no Forge. `WallLength` sizes the crack (F = 20 studs
 at Scale 1); the curtain, wind, column and smoke use the body size B = 0.72 F. `Scale`
 (default 2.5) sizes everything. Play returns when the crack has faded, at ~4.35 s. Matched
-frame by frame against two reference camera angles.
+frame by frame against two reference camera angles (agy-graded), then given the
+Roqer guidance on top without touching the pulse timing.
 1. 0.04-0.6 s precursor: one wide burst of orange and dark streaks, grey rocks, upright
-   flame bursts (gone by ~0.45 s), 4 bold orange rings (custom `lava_ring`), dark smoke and
-   embers. The crack (Top-face SurfaceGuis: a branched dark crack, a lumpy lava line and a
+   flame bursts (gone by ~0.45 s), 4 bold orange rings (custom `lava_ring`), a grey smoke veil
+   (the drawn DustPuff sheet, self-lit, never more solid than 0.5) and embers. The crack (Top-face SurfaceGuis: a branched dark crack, a lumpy lava line and a
    red pool) heats up from 0.3 s.
-2. 0.69 s (`EruptTime`): a spike row, a low radial starburst of wedge flares (custom
-   `lava_wedge`) and a curtain of flame tongues up within ~0.04 s (the opening burst rushes
-   up faster and stands ~20% taller). Three tongue bands follow the curtain width: the
-   sides reach ~0.65 B, the centre band ~0.95 B. A soft flame body, two faint beam veils,
-   wind arcs that rise as they spin, and the hot line along the whole crack come with it.
+2. 0.69 s (`EruptTime`): a spiky flash squashed wide along the crack with a white glint
+   (gone by ~0.12 s), a spike row, a low radial starburst of wedge flares (custom
+   `lava_wedge`) and a curtain of solid-colour flame tongues (LightEmission 0.3,
+   Brightness 3) up within ~0.04 s (the opening burst rushes up faster and stands ~20%
+   taller). Three tongue bands follow the curtain width: the sides reach ~0.65 B, the
+   centre band ~0.95 B. A soft flame body, a boiling base of drawn fire-burst sheets behind
+   the tongues (it replaced two scrolling beam veils), wind arcs that rise as they spin,
+   and the hot line along the whole crack come with it. The light pops and its range
+   spreads 0.6x -> 1x over 0.3 s while it fades.
 3. From 0.80 s the centre loops a ~0.49 s pulse (measured on 60 fps strips of both videos):
    a bright soft blob swells at the base (`lava_glow`), then a darker red flame burns up
    through it (custom `lava_hollow2`, unlit, emitted as bursts at 0.85, 1.34, 1.83, 2.32,
