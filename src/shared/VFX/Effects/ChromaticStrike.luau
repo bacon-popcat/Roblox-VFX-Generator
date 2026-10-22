@@ -667,6 +667,12 @@ function Effect.Play(ctx)
 		-- the white core and haze fade first, leaving the dark edge to erode last.
 		-- Trail transparency runs from the head (0) to the oldest part (1).
 		local whiteK = math.clamp((t - wire.FadeAt + 0.25) / 0.22, 0, 1)
+		-- the reference erases each trail from the caster end toward the target (0.85-1.1 s):
+		-- shortening the Lifetime drops the oldest points first
+		local keep = (life + 0.05) * (1 - fadeK) / timeScale
+		for _, l in slot.Layers do
+			l.Trail.Lifetime = math.max(keep, 0.01)
+		end
 		slot.Core.Trail.Transparency = seq({ { 0, whiteK }, { 1, 0.45 + 0.55 * whiteK } })
 		slot.Haze.Trail.Transparency = seq({ { 0, 0.4 + 0.6 * whiteK }, { 1, 0.75 + 0.25 * whiteK } })
 		slot.Ink.Trail.Transparency = seq({ { 0, 0.3 + 0.7 * fadeK }, { 1, 0.5 + 0.5 * fadeK } })
@@ -847,7 +853,7 @@ function Effect.Play(ctx)
 		Speed = NumberRange.new(1, 4),
 		SpreadAngle = Vector2.new(180, 180),
 		Lifetime = NumberRange.new(0.15, 0.3),
-		Size = sizeRange(0.4 * sc, 0.8 * sc),
+		Size = sizeRange(0.7 * sc, 1.4 * sc),
 		Rotation = NumberRange.new(0, 360),
 		ZOffset = 3,
 	})
@@ -858,7 +864,8 @@ function Effect.Play(ctx)
 		Speed = NumberRange.new(1, 3),
 		SpreadAngle = Vector2.new(180, 180),
 		Lifetime = NumberRange.new(0.2, 0.35),
-		Size = seq({ { 0, 0.4 * sc, 0.12 * sc }, { 0.3, 0.7 * sc, 0.2 * sc }, { 1, 0.5 * sc, 0.15 * sc } }),
+		-- reference size: the white blobs with blue/orange fringes round the caster (1.5-1.85 s)
+		Size = seq({ { 0, 0.8 * sc, 0.25 * sc }, { 0.3, 1.4 * sc, 0.45 * sc }, { 1, 1 * sc, 0.3 * sc } }),
 		Transparency = seq({ { 0, 0.1 }, { 0.7, 0.25 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-120, 120),
@@ -945,6 +952,26 @@ function Effect.Play(ctx)
 		Lifetime = NumberRange.new(0.25, 0.45),
 		Size = sizeRange(0.12, 0.28),
 		Rotation = NumberRange.new(0, 360),
+	})
+	-- the impact's dark heart: a churning black ink mass in the middle of the white spikes
+	-- (reference 1.88-2.0 s), drawn in front of the white glow so it reads
+	local inkHeartAt = attachment(targetPart, CFrame.new(target + UP * 2.5 * s))
+	local inkHeart = emitter(inkHeartAt, {
+		Texture = ASSETS.BlackEnergy,
+		FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
+		FlipbookMode = Enum.ParticleFlipbookMode.Loop,
+		FlipbookFramerate = NumberRange.new(18, 24),
+		FlipbookStartRandom = true,
+		Color = ColorSequence.new(ink),
+		LightEmission = 0,
+		Speed = NumberRange.new(0.5, 2),
+		SpreadAngle = Vector2.new(180, 180),
+		Lifetime = NumberRange.new(0.3, 0.45),
+		Size = seq({ { 0, 2.6 * s }, { 1, 3.6 * s } }),
+		Transparency = seq({ { 0, 0.1 }, { 0.6, 0.25 }, { 1, 1 } }),
+		Rotation = NumberRange.new(0, 360),
+		RotSpeed = NumberRange.new(-60, 60),
+		ZOffset = 4.5,
 	})
 	local inkCore = emitter(targetAt, { -- dark smudge aura / black core at the target
 		Texture = ASSETS.Smoke,
@@ -1819,7 +1846,7 @@ function Effect.Play(ctx)
 		burst(tLaunch + 0.2 + i * 0.07, specks, 4)
 	end
 	for i = 0, 4 do
-		burst(tLaunch + 0.25 + i * 0.05, shards, 4)
+		burst(tLaunch + 0.25 + i * 0.05, shards, 6)
 		burst(tLaunch + 0.25 + i * 0.05, prismStars, 3)
 	end
 	at(tLaunch + 0.02, function()
@@ -1844,7 +1871,7 @@ function Effect.Play(ctx)
 	-- impact
 	at(tImpact, function()
 		-- solid white body under the spikes (the target glow, blown up)
-		targetGlow.Size = seq({ { 0, 6 * s }, { 0.5, 4 * s }, { 1, 2.5 * s } })
+		targetGlow.Size = seq({ { 0, 4.5 * s }, { 0.5, 3 * s }, { 1, 2 * s } }) -- leaves room for the dark heart
 		targetGlow.Lifetime = NumberRange.new(0.15)
 		ctx.Emit(targetGlow, 1)
 		ctx.Emit(flashRed, 1)
@@ -1856,6 +1883,7 @@ function Effect.Play(ctx)
 		inkCore.Size = seq({ { 0, 1.5 * s }, { 1, 2.2 * s } })
 		inkCore.Lifetime = NumberRange.new(0.35, 0.5)
 		ctx.Emit(inkCore, 6)
+		ctx.Emit(inkHeart, 3)
 	end)
 	burst(tImpact + 0.05, groundWave, 1)
 	at(tImpact + 0.02, function() -- the white smoke blast and the spike crown
@@ -1913,6 +1941,7 @@ function Effect.Play(ctx)
 	end
 	for i = 0, 5 do -- dark ink core at the target's feet while it burns
 		burst(tImpact + 0.12 + i * 0.12, inkCore, 2)
+		burst(tImpact + 0.06 + i * 0.1, inkHeart, i < 3 and 2 or 1)
 	end
 	-- glitch ribbons
 	local burnLen = tFinale - tImpact
@@ -2082,7 +2111,7 @@ function Effect.Play(ctx)
 		-- rainbow ground streak: a bright prism (white centre, rainbow rails), then a thin
 		-- orange line
 		local railW = track({
-			{ tLaunch - 0.01, 0 }, { tLaunch + 0.02, 5 * sc }, { tLaunch + 0.3, 4 * sc },
+			{ tLaunch - 0.01, 0 }, { tLaunch + 0.02, 3 * sc }, { tLaunch + 0.12, 1.6 * sc }, { tLaunch + 0.3, 1.3 * sc },
 			{ tImpact + 0.05, 0.9 }, { tImpact + 0.6, 0.6 }, { tImpact + 0.7, 0 },
 		}, clock)
 		rail.Enabled = railW > 0.01
@@ -2093,7 +2122,9 @@ function Effect.Play(ctx)
 		local railT = track({ { tLaunch + 0.05, 0 }, { tImpact, 0.15 }, { tImpact + 0.3, 0.55 }, { tImpact + 0.7, 1 } }, clock)
 		rail.Transparency = NumberSequence.new(railT)
 		railCore.Enabled = rail.Enabled
-		railCore.Width0, railCore.Width1 = railW * 0.35, railW * 0.35
+		-- the white centre only while the rail is still wide at the launch
+		local coreK = track({ { tLaunch + 0.05, 1 }, { tLaunch + 0.2, 0 } }, clock)
+		railCore.Width0, railCore.Width1 = railW * 0.35 * coreK, railW * 0.35 * coreK
 		railCore.Transparency = seq({ { 0, 1 }, { 0.15, math.min(1, railT + 0.1) }, { 1, math.min(1, railT + 0.1) } })
 
 		-- pillar (flickers while it burns)
