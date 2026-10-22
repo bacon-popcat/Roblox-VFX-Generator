@@ -284,6 +284,8 @@ Effect.Defaults = {
 	LeafCount = 22,
 	RockCount = 30,
 	FlakeCount = 24, -- dark chips tumbling out of the impact
+	CenterSpikeRate = 70, -- translucent white crystal spikes standing in the centre / s while it burns
+	CenterStarRate = 40, -- white 4-point stars flashing in the centre / s while it burns
 	CrownCount = 30, -- thin white energy spikes shooting up round the base (more through the burn)
 	CoreSpikeCount = 28, -- white spikes bursting out of the centre in every direction (more per surge and through the burn)
 	PuffCount = 16, -- opaque grey puffs bursting out of the impact
@@ -376,6 +378,10 @@ function Effect.Play(ctx)
 	local glitchPart = ctx.Anchor(CFrame.new(target + UP * 6 * s)) -- box volume over the burn
 	glitchPart.Size = Vector3.new(14, 10, 14) * s
 	local spikePart = ctx.Anchor(CFrame.new(target + UP * 3 * s))
+	local centerPart = ctx.Anchor(CFrame.new(target + UP * 2.2 * s)) -- the centre cluster (disc)
+	centerPart.Size = Vector3.new(7, 0.2, 7) * s
+	local centerStarPart = ctx.Anchor(CFrame.new(target + UP * 3.5 * s)) -- the centre's star volume (box)
+	centerStarPart.Size = Vector3.new(6, 6, 6) * s
 	local crownPart = ctx.Anchor(CFrame.new(target + UP * 0.5 * s)) -- disc the spike crown rises from
 	crownPart.Size = Vector3.new(11, 0.2, 11) * s
 	spikePart.Size = Vector3.new(18, 0.2, 18) * s
@@ -1368,6 +1374,43 @@ function Effect.Play(ctx)
 		RotSpeed = NumberRange.new(-200, 200),
 		ZOffset = 3.2,
 	})
+	-- the centre while it burns (reference close-ups): a dense cluster of translucent white
+	-- crystal spikes standing up and leaning a little, of many sizes, overlapping like ice,
+	-- and white 4-point stars flashing all through it. Translucent and barely glowing, so the
+	-- overlaps read as layered glass, not a white blob.
+	local centerSpikes = emitter(centerPart, {
+		Texture = ASSETS.JaggedShard,
+		Shape = Enum.ParticleEmitterShape.Disc,
+		ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
+		EmissionDirection = Enum.NormalId.Top,
+		Rate = p.CenterSpikeRate,
+		Enabled = false,
+		Speed = NumberRange.new(0.5 * s, 2 * s),
+		Drag = 4,
+		Lifetime = NumberRange.new(0.2, 0.4),
+		Size = seq({ { 0, 1 * s, 0.5 * s }, { 0.15, 4 * s, 2 * s }, { 1, 3.5 * s, 1.8 * s } }),
+		Squash = NumberSequence.new(0.5), -- tall, sharp
+		Transparency = seq({ { 0, 0.5 }, { 0.15, 0.3 }, { 0.8, 0.45 }, { 1, 1 } }),
+		Rotation = NumberRange.new(-25, 25),
+		LightEmission = 0.25,
+		Brightness = 2,
+		ZOffset = 2.6,
+		TimeScale = ctx.TimeScale,
+	})
+	local centerStars = emitter(centerStarPart, {
+		Texture = ASSETS.Star,
+		Shape = Enum.ParticleEmitterShape.Box,
+		Rate = p.CenterStarRate,
+		Enabled = false,
+		Speed = NumberRange.new(0),
+		Lifetime = NumberRange.new(0.08, 0.16),
+		Size = seq({ { 0, 0.3 * s }, { 0.3, 2.4 * s, 1 * s }, { 1, 0 } }),
+		Rotation = NumberRange.new(-10, 10),
+		Brightness = 6,
+		ZOffset = 4.2,
+		TimeScale = ctx.TimeScale,
+	})
 	local crown = emitter(crownPart, {
 		Texture = ASSETS.JaggedShard,
 		Shape = Enum.ParticleEmitterShape.Disc,
@@ -2156,6 +2199,8 @@ function Effect.Play(ctx)
 
 		smoke.Enabled = clock >= tImpact + 0.1 and clock < tFinale + 0.1
 		motes.Enabled = clock >= tImpact + 0.1 and clock < tFinale - 0.1
+		centerSpikes.Enabled = clock >= tImpact + 0.05 and clock < tFinale - 0.1
+		centerStars.Enabled = clock >= tImpact + 0.05 and clock < tFinale - 0.05
 		light.Brightness = p.LightBrightness * track(lightKeys, clock)
 
 		-- vignette
