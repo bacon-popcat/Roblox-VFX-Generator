@@ -710,7 +710,11 @@ effect on a virtual clock with Roblox stubs that type-check every property, at 1
 and reports errors (mapped to file:line), bad property names, types, enums and sequences,
 Linger that cuts particles off, PointLight ranges over 60, instances left outside
 `ctx.Folder`, and particle/instance counts. It doesn't render, so look in Studio too. Add an
-override case to `CASES` in `run.mjs` for an effect with runtime-only keys.
+override case to `CASES` in `run.mjs` for an effect with runtime-only keys. Add `--examples` to
+also run the skill's `examples/` as if they were in `Effects/` (a real effect of the same name
+wins). Without the `luau` CLI, `luau-lsp analyze --definitions=<globalTypes.d.luau>
+--sourcemap=sourcemap.json <files>` still catches syntax and type errors (not property names
+inside `Layers` spec tables).
 
 1. With `rojo serve` connected, press Play in Studio. The harness adds a button for every
    ModuleScript in `Effects` and a target part 12 studs in front of you.

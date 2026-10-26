@@ -6,6 +6,7 @@
 //
 //   node tools/luau-test/run.mjs                 every effect, at 1x and 0.25x
 //   node tools/luau-test/run.mjs LavaEruption    one effect
+//   node tools/luau-test/run.mjs --examples      also the roblox-vfx skill's examples/
 //
 // It catches errors, bad property names/types/enums, malformed sequences, Linger that cuts
 // particles off, and instances left outside ctx.Folder. It does not render: look at the
@@ -26,13 +27,25 @@ const CASES = {
   MagnetPull: [["MagnetPull", "{ BlackHole = false }", "BlackHole off"]],
 };
 
-const only = process.argv.slice(2);
+const args = process.argv.slice(2);
+const withExamples = args.includes("--examples");
+const only = args.filter((a) => a !== "--examples");
 const modules = [];
 for (const file of fs.readdirSync(vfx).filter((f) => f.endsWith(".luau"))) {
   modules.push([`Shared.VFX.${path.basename(file, ".luau")}`, path.join(vfx, file)]);
 }
-const effectNames = fs.readdirSync(path.join(vfx, "Effects")).filter((f) => f.endsWith(".luau")).map((f) => path.basename(f, ".luau")).sort();
-for (const name of effectNames) modules.push([`Shared.VFX.Effects.${name}`, path.join(vfx, "Effects", `${name}.luau`)]);
+const effectFiles = new Map();
+for (const f of fs.readdirSync(path.join(vfx, "Effects")).filter((f) => f.endsWith(".luau"))) effectFiles.set(path.basename(f, ".luau"), path.join(vfx, "Effects", f));
+// The skill's examples run as if they were in Effects/ (a real effect of the same name wins).
+if (withExamples) {
+  const examples = path.join(root, ".claude", "skills", "roblox-vfx", "examples");
+  for (const f of fs.readdirSync(examples).filter((f) => f.endsWith(".luau"))) {
+    const name = path.basename(f, ".luau");
+    if (!effectFiles.has(name)) effectFiles.set(name, path.join(examples, f));
+  }
+}
+const effectNames = [...effectFiles.keys()].sort();
+for (const name of effectNames) modules.push([`Shared.VFX.Effects.${name}`, effectFiles.get(name)]);
 
 const cases = [];
 for (const name of effectNames) {
