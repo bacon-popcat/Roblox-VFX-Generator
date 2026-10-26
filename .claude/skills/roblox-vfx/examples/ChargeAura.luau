@@ -40,8 +40,8 @@ Effect.Defaults = {
 	MoteRate = 30,
 	SparkRate = 6,
 	Release = true, -- end with a pop (false = just fade out)
-	LightBrightness = 4,
-	LightRange = 12,
+	LightBrightness = 2, -- at 4 the light washed the whole floor purple
+	LightRange = 10,
 }
 
 Effect.Linger = 2.05 -- the last sigil copies (Lifetime 2) emitted just before the stop
@@ -226,8 +226,12 @@ function Effect.Play(ctx)
 		emitter.TimeScale = ctx.TimeScale
 		emitter.Enabled = true
 	end
-	-- prime the stack so the orb is there in the first frame, not after one Rate interval
+	-- prime the stack and the sigils so they're there from the first frame, not after one
+	-- Rate interval (a Rate 1 sigil would otherwise first appear a second in)
 	for _, emitter in orb do
+		ctx.Emit(emitter, 1)
+	end
+	for _, emitter in sigils do
 		ctx.Emit(emitter, 1)
 	end
 	ctx.Tween(light, 0.4, { Brightness = p.LightBrightness, Range = p.LightRange * s })

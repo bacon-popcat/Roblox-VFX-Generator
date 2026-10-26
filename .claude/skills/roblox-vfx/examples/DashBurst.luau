@@ -53,10 +53,11 @@ function Effect.Play(ctx)
 	local startFrame = CFrame.lookAt(startGround, startGround + look)
 	local endFrame = CFrame.lookAt(endGround, endGround + look)
 
-	local startAtt = Layers.Attachment(ctx.Anchor(startFrame))
-	local endAtt = Layers.Attachment(ctx.Anchor(endFrame))
+	-- dust starts a little above the floor, or half of every puff is hidden under it
+	local startAtt = Layers.Attachment(ctx.Anchor(startFrame + Vector3.new(0, 0.8 * s, 0)))
+	local endAtt = Layers.Attachment(ctx.Anchor(endFrame + Vector3.new(0, 0.8 * s, 0)))
 	-- the ring lies upright across the dash and is shed backwards
-	local ringAtt = Layers.Attachment(startAtt.Parent, CFrame.new(0, p.BodyHeight * s, 0))
+	local ringAtt = Layers.Attachment(startAtt.Parent, CFrame.new(0, (p.BodyHeight - 0.8) * s, 0))
 
 	local function dust(att, color, direction)
 		return Layers.Emitter(att, {
@@ -71,7 +72,7 @@ function Effect.Play(ctx)
 			LightEmission = 0,
 			Brightness = 1.5,
 			Color = color,
-			Size = { { 0, 1.5 * s }, { 1, 4 * s } },
+			Size = { { 0, 2.5 * s }, { 1, 5 * s } },
 			Transparency = { { 0, 0.5 }, { 0.2, 0.3 }, { 1, 1 } },
 		})
 	end
@@ -112,8 +113,8 @@ function Effect.Play(ctx)
 	local body = ctx.Anchor(startFrame + Vector3.new(0, p.BodyHeight * s, 0))
 	local coreA = Layers.Attachment(body, CFrame.new(0, 0.3 * s, 0))
 	local coreB = Layers.Attachment(body, CFrame.new(0, -0.3 * s, 0))
-	local wispA = Layers.Attachment(body, CFrame.new(0, 1.4 * s, 0))
-	local wispB = Layers.Attachment(body, CFrame.new(0, -1.4 * s, 0))
+	local wispA = Layers.Attachment(body, CFrame.new(0, 1 * s, 0))
+	local wispB = Layers.Attachment(body, CFrame.new(0, -1 * s, 0))
 	local core = Instance.new("Trail")
 	Layers.Apply(core, {
 		Attachment0 = coreA,
@@ -133,14 +134,14 @@ function Effect.Play(ctx)
 		Attachment0 = wispA,
 		Attachment1 = wispB,
 		Texture = ASSETS.WispTrail,
-		Lifetime = 0.3 / timeScale, -- wide soft wisp, longer
+		Lifetime = 0.18 / timeScale, -- wide soft wisp; shorter than the dash, so it visibly thins out behind
 		MinLength = 0.05,
 		FaceCamera = true,
-		LightEmission = 0.65,
-		Brightness = 1.5,
-		Color = { { 0, p.Color }, { 1, p.DeepColor } },
-		Transparency = { { 0, 0.3 }, { 1, 1 } },
-		WidthScale = { { 0, 0.5 }, { 0.3, 1 }, { 1, 0 } },
+		LightEmission = 1, -- a dim, opaque wisp read as a solid tan plank in Studio
+		Brightness = 3,
+		Color = { { 0, p.HotColor }, { 0.3, p.Color }, { 1, p.DeepColor } },
+		Transparency = { { 0, 0.4 }, { 0.5, 0.75 }, { 1, 1 } },
+		WidthScale = { { 0, 1 }, { 0.5, 0.45 }, { 1, 0 } },
 	})
 	wisp.Parent = body
 	local bodyAtt = Layers.Attachment(body)

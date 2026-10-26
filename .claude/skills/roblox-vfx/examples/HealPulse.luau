@@ -97,7 +97,7 @@ function Effect.Play(ctx)
 		LightEmission = 1,
 		Brightness = 3,
 		Color = { { 0, p.HotColor }, { 1, p.Color } },
-		Size = { { 0, 0 }, { 0.2, 0.6 * s }, { 1, 0 } },
+		Size = { { 0, 0 }, { 0.2, 1.1 * s }, { 1, 0 } },
 	})
 	-- Shape "Disc" emits over the parent part's footprint: give the ground anchor that size
 	groundAtt.Parent.Size = Vector3.new(p.RingSize * 0.6 * s, 0.1, p.RingSize * 0.6 * s)
@@ -112,8 +112,8 @@ function Effect.Play(ctx)
 			Speed = 0.5 * s,
 			SpreadAngle = 180,
 			LightEmission = 1,
-			Brightness = 2,
-			Color = { { 0, p.HotColor }, { 1, p.Color } },
+			Brightness = 1.5,
+			Color = { { 0, p.Color }, { 1, p.DeepColor } }, -- overlapping additive motes blow out to white if they start hot
 			Size = { { 0, 0.7 * s }, { 1, 0 } },
 		})
 		local speck = Layers.Dim(mote, 1, { Texture = ASSETS.Speck, Size = { { 0, 0.25 * s }, { 1, 0 } } })
@@ -134,7 +134,7 @@ function Effect.Play(ctx)
 	local light = Layers.Light(chestAtt, { Color = p.Color })
 
 	local function spiral()
-		local radius = 1.6 * s
+		local radius = 2.8 * s -- outside the body: at 1.6 the strands were hidden inside an R15 torso
 		local age = 0
 		while age < p.SpiralTime do
 			age += ctx.Wait(1 / 60)
@@ -145,7 +145,7 @@ function Effect.Play(ctx)
 			local eased = 1 - (1 - t) * (1 - t) -- quick start, slows near the top
 			for _, strand in strands do
 				local angle = strand.Phase + eased * 2.5 * math.pi
-				local r = radius * (1 - 0.4 * t) -- tightens as it climbs
+				local r = radius * (1 - 0.45 * t) -- tightens as it climbs
 				strand.Att.Position = Vector3.new(math.cos(angle) * r, eased * p.Height * s, math.sin(angle) * r)
 				ctx.Emit(strand.Mote, 1)
 				if math.random() < 0.5 then

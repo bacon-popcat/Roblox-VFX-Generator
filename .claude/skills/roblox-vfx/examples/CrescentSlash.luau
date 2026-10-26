@@ -2,12 +2,13 @@
 -- A sword swing drawn without a mesh: a pivot part swept through Arc degrees (Quart Out)
 -- carrying two ribbons between attachments at the blade's inner and outer radius (a thin
 -- hot core and a wide dark-edged wisp), sparks shed from the blade tip one burst per frame
--- so the eye follows the swing, a crescent sprite flash across the arc, and black ink
--- flecks. Roll tilts the whole swing for a diagonal cut.
--- Layers: core ribbon, wisp ribbon, ink ribbon, tip sparks + black twins, crescent flash,
--- dim crescent, ink flecks.
+-- so the eye follows the swing, and black ink flecks. Roll tilts the whole swing for a
+-- diagonal cut. The ribbons draw the crescent themselves: a flat crescent flipbook laid
+-- over them read as stepped panels in Studio, so there is none.
+-- Layers: core ribbon, wisp ribbon, ink ribbon, tip sparks + black twins, ink flecks.
 --
--- ctx.CFrame = the swing's centre (the caster's chest), LookVector = forward.
+-- ctx.CFrame = the swing's centre (the caster's chest), LookVector = forward. With Roll the
+-- low end of the swing dips OuterRadius * sin(Roll) studs: keep that above the floor.
 
 local VFX = script.Parent.Parent
 local Layers = require(VFX:WaitForChild("Layers"))
@@ -16,8 +17,6 @@ local Layers = require(VFX:WaitForChild("Layers"))
 local ASSETS = {
 	CoreTrail = "rbxassetid://10614304526", -- StaticVFXTextures/Sideways Spec 41 (thin needle)
 	WispTrail = "rbxassetid://13280046773", -- MigratedBeams/BeamSoftBlurredStreaks
-	Crescent = { Id = "rbxassetid://13580352351", Grid = 4 }, -- FlipbookTextures/Glowing Slash
-	DarkCrescent = { Id = "rbxassetid://104673447334638", Grid = 4 }, -- FlipbookTextures/Wide Dark Slash
 	Speck = "rbxassetid://16879822194", -- StaticVFXTextures/Spec31
 	Flecks = "rbxassetid://6893847210", -- StaticVFXTextures/Sideways Spec 50 (tapered spike)
 }
@@ -34,7 +33,7 @@ Effect.Defaults = {
 	OuterRadius = 7, -- studs to the tip
 	Arc = 160, -- degrees swept
 	SwingTime = 0.14, -- seconds for the sweep
-	Roll = -25, -- degrees: tilts the swing plane (0 = flat, 90 = vertical)
+	Roll = -15, -- degrees: tilts the swing plane (0 = flat, 90 = vertical)
 	SparkCount = 3, -- per frame from the tip
 	Ink = true, -- black ribbon and flecks
 }
@@ -122,28 +121,6 @@ function Effect.Play(ctx)
 	})
 	local blackSparks = Layers.Black(sparks, 0.1)
 
-	-- the crescent sprite lies flat in the swing plane, its arc facing forward
-	local spriteAtt = Layers.Attachment(ctx.Anchor(plane * CFrame.new(0, 0, -outer * 0.45)))
-	local crescent = Layers.Emitter(spriteAtt, {
-		Flat = true,
-		Texture = ASSETS.Crescent,
-		Lifetime = 0.2,
-		Rotation = 90, -- the sheet's arc opens away from the centre; turn with the texture
-		LightEmission = 0.3,
-		Brightness = 4,
-		ZOffset = 1,
-		Color = { { 0, p.HotColor }, { 1, p.Color } },
-		Size = { { 0, outer * 1.6 }, { 1, outer * 1.9 } },
-	})
-	local dimCrescent = Layers.Twin(crescent, {
-		Texture = ASSETS.DarkCrescent,
-		LightEmission = 0,
-		Brightness = 1,
-		ZOffset = 0.5,
-		Color = p.DeepColor,
-		Lifetime = 0.26,
-		Size = { { 0, outer * 1.8 }, { 1, outer * 2.1 } },
-	})
 	local flecks = Layers.Emitter(tip, {
 		Texture = ASSETS.Flecks,
 		Orientation = "VelocityParallel",
@@ -157,9 +134,6 @@ function Effect.Play(ctx)
 		Color = p.InkColor,
 		Size = { { 0, 0.5 * s }, { 1, 0 } },
 	})
-
-	ctx.Emit(dimCrescent, 1)
-	ctx.Emit(crescent, 1)
 
 	-- sweep one step per rendered frame (Quart Out), shedding from the tip as it goes.
 	-- Moving the pivot twice in one frame wouldn't move the spawn point, so emit once per Wait.

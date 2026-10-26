@@ -42,7 +42,7 @@ Effect.Defaults = {
 	LightRange = 14,
 }
 
-Effect.Linger = 0.65 -- the soft trail (0.45 s) and hit streaks/specks fade after the hit
+Effect.Linger = 0.5 -- light (0.4 s), specks (0.4 s) and hit streaks (0.3 s) after the hit
 
 -- Quadratic Bezier point and its tangent at t.
 local function bezier(a, b, c, t)
@@ -97,10 +97,10 @@ function Effect.Play(ctx)
 	-- the head travels on its own part; trails hang between attachments either side of it
 	local headPart = ctx.Anchor(CFrame.new(start))
 	local head = Layers.Attachment(headPart)
-	local sharpA = Layers.Attachment(headPart, CFrame.new(0, 0.2 * s, 0))
-	local sharpB = Layers.Attachment(headPart, CFrame.new(0, -0.2 * s, 0))
-	local softA = Layers.Attachment(headPart, CFrame.new(0, 0.6 * s, 0))
-	local softB = Layers.Attachment(headPart, CFrame.new(0, -0.6 * s, 0))
+	local sharpA = Layers.Attachment(headPart, CFrame.new(0, 0.4 * s, 0))
+	local sharpB = Layers.Attachment(headPart, CFrame.new(0, -0.4 * s, 0))
+	local softA = Layers.Attachment(headPart, CFrame.new(0, 1.2 * s, 0))
+	local softB = Layers.Attachment(headPart, CFrame.new(0, -1.2 * s, 0))
 
 	local glow = Layers.Emitter(head, {
 		Texture = ASSETS.SoftGlow,
@@ -160,7 +160,7 @@ function Effect.Play(ctx)
 		Attachment1 = softB,
 		Texture = ASSETS.SoftTrail,
 		TextureMode = "Wrap",
-		Lifetime = 0.45 / timeScale,
+		Lifetime = 0.2 / timeScale, -- ~18 studs at Speed 90: a few heads long, not back to the thrower
 		MinLength = 0.05,
 		FaceCamera = true,
 		LightEmission = 0.2,
@@ -184,7 +184,7 @@ function Effect.Play(ctx)
 		Brightness = 8,
 		ZOffset = 3,
 		Color = { { 0, p.HotColor }, { 1, p.Color } },
-		Size = { { 0, 0.5 * R }, { 0.3, 2.4 * R }, { 1, 2.6 * R } },
+		Size = { { 0, 0.5 * R }, { 0.3, 1.8 * R }, { 1, 2 * R } },
 		Transparency = { { 0, 0 }, { 0.6, 0.1 }, { 1, 1 } },
 	})
 	local stars = Layers.Emitter(hitAtt, {
