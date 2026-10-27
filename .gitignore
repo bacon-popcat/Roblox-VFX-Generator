@@ -7,10 +7,12 @@
 
 sourcemap.json
 .vscode/
+.claudian/
+.obsidian/
 # Blender auto-backups
 *.blend1
 
 # Reference clips stored by tools/vfx/clip.mjs
-.vfx-clips/
+.vfx-clrips/
 __pycache__/
 tools/luau-test/.bundle.luau

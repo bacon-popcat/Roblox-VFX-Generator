@@ -285,26 +285,26 @@ Effect.Defaults = {
 	VignetteLeft = Color3.fromRGB(180, 40, 140), -- magenta screen edge on the big flashes
 	VignetteRight = Color3.fromRGB(40, 160, 170), -- teal screen edge
 	Scale = 2.5, -- sizes the target eruption; caster bursts, wires and dash use 0.56x of it
-	WidthScale = 1.35, -- spreads the eruption sideways (volumes, jets, base rings) without making it taller
+	WidthScale = 1.5, -- spreads the eruption sideways (volumes, jets, base rings) without making it taller
 	ImpactScale = 1.15, -- the target eruption on top of Scale (bigger than the caster's side)
 	DashScale = 1.6, -- the dash head, its dark tail and its line, on top of the 0.56x
 	CasterDistance = 32, -- studs from the target to the caster (without a `Caster` override)
 	ImpactTime = 1.85, -- effect time of the giant impact flash (dash lands)
-	FinaleTime = 3.7, -- the pillar collapses into the 4-point cross (a long burn: ~1.85 s)
+	FinaleTime = 3.0, -- collapse after a ~1.15 s burn; smoke carries the release
 	WireWidth = 0.36, -- trail core width (x caster scale); haze and dark edge are a few times wider
 	SmudgeRate = 70, -- smoke smudge puffs / s per wire tip while it travels
 	SparkCount = 16, -- caster spark bursts (the later bursts are fractions of it)
 	SpeckCount = 16, -- black shrapnel at the impact (the pre-hits use fractions of it)
 	BokehCount = 10, -- white dots flying out inside the caster's shell
-	SpikeRate = 60, -- sets the crystal spikes per 0.07 s step (SpikeRate * 0.07, split over two fans)
+	SpikeRate = 38, -- sets the crystal spikes per 0.07 s step (SpikeRate * 0.07, split over two fans)
 	SmokeRate = 75, -- ground smoke puffs / s while the pillar burns
 	LeafCount = 22,
-	RockCount = 30,
+	RockCount = 18,
 	FlakeCount = 24, -- dark chips tumbling out of the impact
-	CenterSpikeRate = 50, -- translucent white crystal spikes standing in the centre / s while it burns
-	CenterStarRate = 40, -- white 4-point stars flashing in the centre / s while it burns
-	CrownCount = 30, -- thin white energy spikes shooting up round the base (more through the burn)
-	CoreSpikeCount = 28, -- white spikes bursting out of the centre in every direction (more per surge and through the burn)
+	CenterSpikeRate = 28, -- translucent white crystal spikes standing in the centre / s while it burns
+	CenterStarRate = 16, -- white 4-point stars flashing in the centre / s while it burns
+	CrownCount = 20, -- thin white energy spikes shooting up round the base (more through the burn)
+	CoreSpikeCount = 18, -- white spikes bursting out of the centre in every direction (more per surge and through the burn)
 	PuffCount = 16, -- opaque grey puffs bursting out of the impact
 	StreakCount = 56, -- white blast streaks flying out of the impact
 	MoteRate = 60, -- white glints rising through the burn / s
@@ -378,7 +378,7 @@ function Effect.Play(ctx)
 	local impactAt = attachment(base, CFrame.new(target + UP * 5 * s)) -- impact flash centre
 	local groundAt = attachment(base, CFrame.new(target + UP * 0.25))
 	local ringLowAt = attachment(base, CFrame.new(target + UP * 1.7 * s))
-	local ringHighAt = attachment(base, CFrame.new(target + UP * 5.4 * s)) -- mid halo ~13.5 studs, rises to ~22
+	local ringHighAt = attachment(base, CFrame.new(target + UP * 7.2 * s)) -- upper halo clears the shard crown before rising
 	local flareAt = attachment(base, CFrame.new(target + UP * 5.5 * s)) -- moved per flare
 	local crossAt = attachment(base, CFrame.new(target + UP * 7.6 * s))
 
@@ -404,9 +404,7 @@ function Effect.Play(ctx)
 	crownPart.Size = Vector3.new(11, 0.2, 11) * ws
 	spikePart.Size = Vector3.new(18, 0.2, 18) * ws
 	local smokePart = ctx.Anchor(CFrame.new(target + UP * 2 * s))
-	smokePart.Size = Vector3.new(36, 0.2, 36) * ws
-	local plumePart = ctx.Anchor(CFrame.new(target + UP * 5 * s))
-	plumePart.Size = Vector3.new(26, 0.2, 26) * ws
+	smokePart.Size = Vector3.new(22, 0.2, 22) * ws
 
 	------------------------------------------------------------------ shot heads
 	-- The dash head's trail, as in the reference: a dark smoke wedge trailing it with
@@ -1218,17 +1216,17 @@ function Effect.Play(ctx)
 			Texture = ASSETS.ImpactFlash,
 			Color = ColorSequence.new(color),
 			Speed = NumberRange.new(0),
-			Lifetime = NumberRange.new(0.12),
+			Lifetime = NumberRange.new(0.065),
 			Size = seq({ { 0, size * 0.75 }, { 0.25, size }, { 1, size * 1.05 } }),
 			Transparency = seq({ { 0, 0 }, { 0.5, 0.05 }, { 1, 1 } }),
-			Rotation = NumberRange.new(-6, 6),
+			Rotation = NumberRange.new(0), -- aligned white/RGB copies read as one fringed silhouette
 			Brightness = brightness,
 			ZOffset = 4,
 		})
 	end
-	local flashRed = flashEmitter(p.FringeRed, 11.6 * s, 0.7)
-	local flashBlue = flashEmitter(p.FringeBlue, 11.3 * s, 0.7)
-	local flashWhite = flashEmitter(p.Color, 10.8 * s, 2)
+	local flashRed = flashEmitter(p.FringeRed, 10.3 * s, 0.7)
+	local flashBlue = flashEmitter(p.FringeBlue, 9.8 * s, 0.7)
+	local flashWhite = flashEmitter(p.Color, 8.8 * s, 1.5)
 	-- the wider, fainter V flare 0.1 s later: its own emitters (Size changes resize live particles)
 	local wingBlue = flashEmitter(p.FringeBlue, 9.5 * s, 1.3)
 	local wingWhite = flashEmitter(p.Color, 9 * s, 2)
@@ -1258,7 +1256,8 @@ function Effect.Play(ctx)
 		TextureMode = Enum.TextureMode.Stretch,
 		TextureSpeed = 0.4,
 		Color = ColorSequence.new(p.Color),
-		Brightness = 1.3,
+		Transparency = seq({ {0, 0.65}, {0.6, 0.35}, {1, 0.2} }),
+		Brightness = 1.1,
 		Width0 = 0,
 		Width1 = 0,
 		Segments = 12,
@@ -1306,16 +1305,18 @@ function Effect.Play(ctx)
 		return e
 	end
 	-- ring radius = size * 0.75 for thick ring 3 (NeonRing), size * 0.86 for HaloThin
-	local ringBase = ringEmitter(ringLowAt, { -- crisp base ring, contracting
+	local ringBase = ringEmitter(ringLowAt, { -- thin base contour, not a glowing floor disc
+		Texture = ASSETS.HaloThin,
+		Brightness = 1.7,
 		Lifetime = NumberRange.new(1),
 		Size = seq({ { 0, 7 * ws }, { 0.08, 9 * ws }, { 0.5, 7.5 * ws }, { 1, 4.5 * ws } }),
 		Transparency = seq({ { 0, 0 }, { 0.7, 0.15 }, { 1, 1 } }),
 	})
 	local ringBaseOuter = ringEmitter(ringLowAt, { -- fainter outer base ring
-		Texture = ASSETS.BandRing,
-		Lifetime = NumberRange.new(0.45),
-		Size = seq({ { 0, 12 * ws }, { 1, 15 * ws } }),
-		Transparency = seq({ { 0, 0.45 }, { 1, 1 } }),
+		Texture = ASSETS.HaloThin,
+		Lifetime = NumberRange.new(0.35),
+		Size = seq({ { 0, 9 * ws }, { 1, 11 * ws } }),
+		Transparency = seq({ { 0, 0.7 }, { 1, 1 } }),
 	})
 	local ringPulse = ringEmitter(ringLowAt, { -- base ring pulse 2: expands to a hairline
 		Lifetime = NumberRange.new(0.2),
@@ -1325,19 +1326,19 @@ function Effect.Play(ctx)
 	})
 	local ringUp = ringEmitter(ringHighAt, { -- upper halo, rising
 		Texture = ASSETS.HaloThin,
-		Brightness = 3.5,
-		Speed = NumberRange.new(10 * s),
-		Lifetime = NumberRange.new(0.5),
-		Size = seq({ { 0, 5 * s }, { 0.2, 6.3 * s }, { 1, 7.2 * s } }),
+		Brightness = 2.2,
+		Speed = NumberRange.new(12 * s),
+		Lifetime = NumberRange.new(0.55),
+		Size = seq({ { 0, 7 * s }, { 0.2, 8.8 * s }, { 1, 10 * s } }),
 		Transparency = seq({ { 0, 0.05 }, { 0.6, 0.15 }, { 1, 1 } }),
 	})
 	local ringUpOuter = ringEmitter(ringHighAt, { -- thinner, wider halo above it
 		Texture = ASSETS.HaloThin,
-		Brightness = 2.5,
-		Speed = NumberRange.new(11 * s),
-		Lifetime = NumberRange.new(0.45),
-		Size = seq({ { 0, 7.8 * s }, { 1, 9.4 * s } }),
-		Transparency = seq({ { 0, 0.3 }, { 0.6, 0.45 }, { 1, 1 } }),
+		Brightness = 1.6,
+		Speed = NumberRange.new(13 * s),
+		Lifetime = NumberRange.new(0.5),
+		Size = seq({ { 0, 9.5 * s }, { 1, 12 * s } }),
+		Transparency = seq({ { 0, 0.62 }, { 0.6, 0.8 }, { 1, 1 } }),
 	})
 
 	local function spikeFan(at, lean)
@@ -1346,15 +1347,15 @@ function Effect.Play(ctx)
 			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
 			Speed = NumberRange.new(0.5, 2),
 			SpreadAngle = Vector2.new(180, 180),
-			Lifetime = NumberRange.new(0.15, 0.32),
-			Size = seq({ { 0, 1.5 * s, 0.5 * s }, { 0.15, 5 * s, 1.6 * s }, { 0.7, 4.5 * s, 1.5 * s }, { 1, 0 } }),
+			Lifetime = NumberRange.new(0.24, 0.42),
+			Size = seq({ { 0, 1.5 * s, 0.5 * s }, { 0.15, 8 * s, 2 * s }, { 0.7, 6.8 * s, 1.7 * s }, { 1, 0 } }),
 			Transparency = seq({ { 0, 0.4 }, { 0.7, 0.55 }, { 1, 1 } }),
 			Rotation = lean,
 			-- thin translucent slivers: at a low Squash the shard reads as a thick soft arrowhead
 			Squash = NumberSequence.new(1.8),
 			-- solid, not additive: overlapping additive spikes add up to a white blob
-			LightEmission = 0.1,
-			Brightness = 1.6,
+			LightEmission = 0,
+			Brightness = 1.1,
 			ZOffset = 1,
 			TimeScale = ctx.TimeScale,
 		})
@@ -1377,18 +1378,19 @@ function Effect.Play(ctx)
 		ZOffset = 1.5,
 		TimeScale = ctx.TimeScale,
 	})
-	local blobs = emitter(spikePart, { -- prismatic patches flickering in the burst
+	local blobs = emitter(glitchPart, { -- prismatic patches flickering in the burst
 		Texture = ASSETS.ChromWisp2,
-		Shape = Enum.ParticleEmitterShape.Disc,
+		Shape = Enum.ParticleEmitterShape.Box,
 		ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
 		Speed = NumberRange.new(2, 6),
 		EmissionDirection = Enum.NormalId.Top,
 		Lifetime = NumberRange.new(0.12, 0.22),
-		-- small and faint: big bright white blobs filled the centre with a white cloud
-		Size = seq({ { 0, 1.3 * s }, { 0.3, 2.3 * s }, { 1, 1.8 * s } }),
-		Transparency = seq({ { 0, 0.5 }, { 0.7, 0.65 }, { 1, 1 } }),
+		-- Solid prismatic patches keep their baked spectrum outside the hot core.
+		Size = seq({ { 0, 2 * s }, { 0.3, 6 * s }, { 1, 4.5 * s } }),
+		Transparency = seq({ { 0, 0.25 }, { 0.7, 0.45 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
-		Brightness = 1.4,
+		LightEmission = 0,
+		Brightness = 1.25,
 		ZOffset = 2,
 	})
 	-- RGB-split bolts that spike out of the centre (reference burn): each shoots out fast,
@@ -1397,19 +1399,19 @@ function Effect.Play(ctx)
 	-- baked black edges drop out.
 	local boltAt = attachment(base, CFrame.new(target + UP * 3.5 * s))
 	local glitch = emitter(boltAt, {
-		Texture = ASSETS.RgbBolt,
+		Texture = ASSETS.ChromWisp,
 		Orientation = Enum.ParticleOrientation.VelocityParallel,
 		EmissionDirection = Enum.NormalId.Front,
 		SpreadAngle = Vector2.new(35, 180), -- fanned all round, tilted up to 35 deg
 		Speed = NumberRange.new(60 * s, 100 * s),
 		Drag = 20,
 		Lifetime = NumberRange.new(0.05, 0.09),
-		Size = seq({ { 0, 0.6 * s, 0.2 * s }, { 0.3, 4 * s, 1 * s }, { 1, 4.5 * s, 1 * s } }),
-		Squash = NumberSequence.new(0.6), -- long and thin along the flight
+		Size = seq({ { 0, 0.4 * s, 0.15 * s }, { 0.3, 2.4 * s, 0.7 * s }, { 1, 3 * s, 0.8 * s } }),
+		Squash = NumberSequence.new(1.5), -- fine spectral fragments, not outlined zigzags
 		Rotation = NumberRange.new(-90), -- VelocityParallel runs the texture's X along the velocity
 		Transparency = seq({ { 0, 0.25 }, { 0.6, 0.4 }, { 1, 1 } }),
-		LightEmission = 1,
-		Brightness = 2.5,
+		LightEmission = 0,
+		Brightness = 1.15,
 		ZOffset = 3,
 	})
 	local prismStreaks = emitter(glitchPart, { -- thin rainbow lines glancing off the shards
@@ -1434,6 +1436,7 @@ function Effect.Play(ctx)
 	local coreSpikes = emitter(coreAt, {
 		Texture = ASSETS.JaggedShard,
 		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		Rotation = NumberRange.new(-90), -- shard tip leads its outward velocity
 		SpreadAngle = Vector2.new(180, 180),
 		Speed = NumberRange.new(15 * s, 32 * s),
 		Drag = 12,
@@ -1494,7 +1497,7 @@ function Effect.Play(ctx)
 		Lifetime = NumberRange.new(0.08, 0.16),
 		Size = seq({ { 0, 0.3 * s }, { 0.3, 2.4 * s, 1 * s }, { 1, 0 } }),
 		Rotation = NumberRange.new(-10, 10),
-		Brightness = 6,
+		Brightness = 2.5,
 		ZOffset = 4.2,
 		TimeScale = ctx.TimeScale,
 	})
@@ -1503,6 +1506,7 @@ function Effect.Play(ctx)
 		Shape = Enum.ParticleEmitterShape.Disc,
 		ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
 		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		Rotation = NumberRange.new(-90), -- upright crown rather than crosswise blades
 		EmissionDirection = Enum.NormalId.Top,
 		SpreadAngle = Vector2.new(22, 22),
 		Speed = NumberRange.new(30 * s, 60 * s),
@@ -1536,15 +1540,15 @@ function Effect.Play(ctx)
 		Lifetime = NumberRange.new(0.06, 0.12),
 		Size = seq({ { 0, 0.5 * s, 0.2 * s }, { 0.3, 2.2 * s, 0.9 * s }, { 1, 0 } }),
 		Rotation = NumberRange.new(-10, 10),
-		Brightness = 8,
+		Brightness = 2.5,
 		ZOffset = 4,
 	})
 	local bigStar = emitter(flareAt, {
 		Texture = ASSETS.Star,
 		Speed = NumberRange.new(0),
 		Lifetime = NumberRange.new(0.14),
-		Size = seq({ { 0, 2 * s }, { 0.25, 9 * s }, { 1, 0 } }),
-		Brightness = 10,
+		Size = seq({ { 0, 2 * s }, { 0.25, 6.5 * s }, { 1, 0 } }),
+		Brightness = 3,
 		ZOffset = 6,
 	})
 	local flare = emitter(flareAt, { -- horizontal chromatic blade flares (moved per flare)
@@ -1573,7 +1577,7 @@ function Effect.Play(ctx)
 		Lifetime = NumberRange.new(0.15),
 		Size = seq({ { 0, 12 * s }, { 0.33, 2.8 * s }, { 0.66, 0.5 * s }, { 1, 0 } }),
 		Transparency = seq({ { 0, 0 }, { 0.66, 0 }, { 1, 1 } }),
-		Brightness = 4,
+		Brightness = 2,
 		ZOffset = 5,
 	})
 	local bar = emitter(crossAt, { -- thick soft white bars of the finale cross (emitted twice)
@@ -1583,7 +1587,7 @@ function Effect.Play(ctx)
 		Size = seq({ { 0, 11 * s }, { 0.5, 7 * s }, { 1, 1.5 * s } }),
 		Squash = NumberSequence.new(-0.97), -- thin arms: the reference's cross is a crisp star
 		Transparency = seq({ { 0, 0 }, { 0.6, 0.1 }, { 1, 1 } }),
-		Brightness = 4,
+		Brightness = 1.2,
 		ZOffset = 5,
 	})
 	local barV = emitter(crossAt, { -- the cross's shorter vertical bar
@@ -1594,7 +1598,7 @@ function Effect.Play(ctx)
 		Squash = NumberSequence.new(-0.93),
 		Transparency = seq({ { 0, 0 }, { 0.6, 0.1 }, { 1, 1 } }),
 		Rotation = NumberRange.new(90),
-		Brightness = 4,
+		Brightness = 1.2,
 		ZOffset = 5,
 	})
 	local smoke = emitter(smokePart, { -- grey-white smoke spreading across the floor
@@ -1610,27 +1614,34 @@ function Effect.Play(ctx)
 		Lifetime = NumberRange.new(1, 1.4),
 		Size = seq({ { 0, 4.6 * s, 1.4 * s }, { 1, 9.2 * s, 2.8 * s } }),
 		Squash = NumberSequence.new(-0.5), -- flat, hugging the floor
-		Transparency = seq({ { 0, 1 }, { 0.15, 0.83 }, { 0.6, 0.89 }, { 1, 1 } }),
+		Transparency = seq({ { 0, 1 }, { 0.15, 0.72 }, { 0.6, 0.85 }, { 1, 1 } }),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-45, 45), -- swirling
 		ZOffset = -3, -- behind the spikes and the core, so it never covers the centre
 		TimeScale = ctx.TimeScale,
 	})
-	local plumes = emitter(plumePart, { -- crown of arched smoke plumes / wind wisps
-		Texture = ASSETS.SmokeHook,
-		Shape = Enum.ParticleEmitterShape.Disc,
-		ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
-		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
-		Color = ColorSequence.new(p.SmokeColor:Lerp(WHITE, 0.4)),
-		LightEmission = 0.4,
-		Speed = NumberRange.new(1, 2.5),
-		EmissionDirection = Enum.NormalId.Top,
-		Lifetime = NumberRange.new(0.8, 1.1),
-		Size = seq({ { 0, 2.6 * s, 0.6 * s }, { 1, 3.2 * s, 0.7 * s } }),
-		Squash = NumberSequence.new(0.15), -- the hook texture is 1:2 tall; wide, soft sheets
-		Transparency = seq({ { 0, 1 }, { 0.15, 0.45 }, { 0.6, 0.6 }, { 1, 1 } }),
-		Rotation = NumberRange.new(-12, 12),
-	})
+	-- World-space smoke curls rise and dissolve without repeated hook billboards.
+	local plumeRibbons = {}
+	for i = 1, math.clamp(math.floor(p.PlumeCount), 0, 8) do
+		local angle = i * 2.39996
+		local radial = Vector3.new(math.cos(angle), 0, math.sin(angle))
+		local a0 = attachment(base, CFrame.new(target))
+		local a1 = attachment(base, CFrame.new(target))
+		local ribbon = beam(a0, a1, {
+			Texture = ASSETS.SoftTrail,
+			TextureMode = Enum.TextureMode.Stretch,
+			Color = ColorSequence.new(p.SmokeColor:Lerp(WHITE, 0.18)),
+			LightEmission = 0, Brightness = 1,
+			Width0 = 0, Width1 = 0,
+			Transparency = NumberSequence.new(1),
+			Segments = 28, Enabled = false,
+		})
+		table.insert(plumeRibbons, {
+			Beam = ribbon, A0 = a0, A1 = a1, Radial = radial,
+			Delay = (i % 4) * 0.07, Life = 0.95 + (i % 3) * 0.11,
+			Height = 4.8 + (i % 4) * 0.8,
+		})
+	end
 	local leaves = emitter(groundAt, {
 		Texture = ASSETS.Leaf,
 		FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
@@ -1664,7 +1675,7 @@ function Effect.Play(ctx)
 		Drag = 3,
 		Acceleration = Vector3.new(0, -3 * s, 0),
 		Lifetime = NumberRange.new(1.2, 1.7),
-		Size = sizeRange(0.35 * s, 0.8 * s),
+		Size = sizeRange(0.18 * s, 0.45 * s),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-300, 300),
 	})
@@ -1790,10 +1801,10 @@ function Effect.Play(ctx)
 		Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
 		EmissionDirection = Enum.NormalId.Top,
 		Speed = NumberRange.new(0.01),
-		Lifetime = NumberRange.new(0.3),
-		Size = seq({ { 0, 2 * ws }, { 0.4, 15 * ws }, { 1, 20 * ws } }),
-		Transparency = seq({ { 0, 0 }, { 0.5, 0.3 }, { 1, 1 } }),
-		Brightness = 4,
+		Lifetime = NumberRange.new(0.18),
+		Size = seq({ { 0, 2 * ws }, { 0.4, 10 * ws }, { 1, 14 * ws } }),
+		Transparency = seq({ { 0, 0.2 }, { 0.5, 0.65 }, { 1, 1 } }),
+		Brightness = 1.5,
 	})
 	local motes = emitter(spikePart, { -- white glints rising through the burn
 		Texture = ASSETS.Sparkle,
@@ -2015,8 +2026,8 @@ function Effect.Play(ctx)
 		ctx.Emit(groundFlash, 1)
 		inkCore.Size = seq({ { 0, 1.5 * s }, { 1, 2.2 * s } })
 		inkCore.Lifetime = NumberRange.new(0.35, 0.5)
-		ctx.Emit(inkCore, 6)
-		ctx.Emit(inkHeart, 3)
+		ctx.Emit(inkCore, 3)
+		ctx.Emit(inkHeart, 2)
 	end)
 	burst(tImpact + 0.05, groundWave, 1)
 	at(tImpact + 0.02, function() -- the white smoke blast and the spike crown
@@ -2047,8 +2058,7 @@ function Effect.Play(ctx)
 		burst(time + 0.01, spikesRight, 6)
 		burst(time + 0.02, blastStreaks, math.ceil(p.StreakCount / 3))
 		if time > tImpact + 0.1 then -- each surge: a pop, more spikes and white smoke
-			burst(time, coreStar, 1)
-			burst(time + 0.01, groundFlash, 1)
+			-- Later surges add shards and smoke, not another full exposure flash.
 			burst(time + 0.02, crown, math.ceil(p.CrownCount / 2))
 			burst(time + 0.01, coreSpikes, math.ceil(p.CoreSpikeCount / 2))
 			burst(time + 0.02, coreDebris, 4)
@@ -2068,19 +2078,19 @@ function Effect.Play(ctx)
 		burst(burn + 0.04, crown, math.max(1, math.ceil(p.CrownCount / 9)))
 		burst(burn + 0.05, coreSpikes, math.max(1, math.ceil(p.CoreSpikeCount / 14)))
 		if burn < tFinale - 0.4 then
-			burst(burn + 0.02, blobs, 1)
+			burst(burn + 0.02, blobs, 2)
 		end
 		burn += 0.07
 	end
 	for i = 0, 5 do -- dark ink core at the target's feet while it burns
-		burst(tImpact + 0.12 + i * 0.12, inkCore, 2)
+		burst(tImpact + 0.12 + i * 0.12, inkCore, 1)
 		burst(tImpact + 0.06 + i * 0.1, inkHeart, i < 3 and 2 or 1)
 	end
 	-- glitch ribbons
 	local burnLen = tFinale - tImpact
 	for i = 0, 23 do -- RGB bolts spike out through the burn, often two or three at once
 		local time = tImpact + 0.08 + i * (burnLen - 0.25) / 23
-		burst(time, glitch, i % 3 == 0 and 3 or 2)
+		burst(time, glitch, i % 3 == 0 and 2 or 1)
 		burst(time + 0.02, prismStreaks, 2)
 	end
 	for i, wire in WIRES do -- a big star flash at a projectile's apex
@@ -2103,25 +2113,17 @@ function Effect.Play(ctx)
 	end
 	for i, frac in { 0.05, 0.28, 0.5, 0.72, 0.9 } do -- big cross stars
 		at(tImpact + frac * burnLen, function()
-			bigStar.Size = seq({ { 0, 2 * s }, { 0.25, 9 * s }, { 1, 0 } })
+			bigStar.Size = seq({ { 0, 2 * s }, { 0.25, 6.5 * s }, { 1, 0 } })
 			flareAt.WorldCFrame = CFrame.new(target + UP * (4 + i) * s + right * ((i % 2) * 2 - 1) * 2 * s)
 			ctx.Emit(bigStar, 1)
 		end)
 	end
-	-- upper halo waves
-	burst(tImpact + 0.2, ringUp, 1)
-	burst(tImpact + 0.55, ringUp, 1)
-	burst(tImpact + 0.6, ringUpOuter, 1)
-	burst(tImpact + 0.25, ringUpOuter, 1)
-	burst(tImpact + 0.9, ringUp, 1)
-	burst(tImpact + 1.3, ringUp, 1)
-	burst(tImpact + 1.35, ringUpOuter, 1)
-	burst(tImpact + 1.25, ringPulse, 1)
-	burst(tImpact + 0.95, ringUpOuter, 1)
-	burst(tFinale - 0.25, ringUp, 1)
-	burst(tFinale - 0.2, ringUpOuter, 1)
-	-- base ring pulse 2
-	burst(tFinale - 0.2, ringPulse, 1)
+	-- Three separated halo lifts; all are scheduled within the authored burn.
+	for _, fraction in { 0.12, 0.43, 0.76 } do
+		burst(tImpact + burnLen * fraction, ringUp, 1)
+		burst(tImpact + burnLen * fraction + 0.05, ringUpOuter, 1)
+	end
+	burst(tImpact + burnLen * 0.55, ringPulse, 1)
 	-- horizontal blade flares (and a vertical rainbow one with the second)
 	at(tImpact + 0.42, function()
 		flareAt.WorldCFrame = CFrame.new(target + UP * 5.5 * s)
@@ -2140,15 +2142,12 @@ function Effect.Play(ctx)
 		ctx.Emit(cross, 1)
 		ctx.Emit(bar, 1)
 		ctx.Emit(barV, 1)
-		ctx.Emit(groundFlash, 1)
 		ctx.Emit(blastStreaks, math.ceil(p.StreakCount / 2))
 		ctx.Emit(sparkles, 20)
 	end)
 	-- arched smoke plumes rising out of the smoke
-	local plumeStart = tImpact + 0.8
-	for i = 0, 5 do -- six bursts, all before the loop ends at FinaleTime + 0.25
-		burst(plumeStart + i * 0.12, plumes, math.max(1, math.ceil(p.PlumeCount / 6)))
-	end
+	local plumeStart = tImpact + burnLen * 0.55
+	-- Ribbon release uses the effect clock below.
 	burst(tFinale + 0.1, sparkles, 3)
 	burst(tImpact + 0.02, impactRays, 2)
 	for i = 0, 3 do
@@ -2194,7 +2193,7 @@ function Effect.Play(ctx)
 	}
 	local nextEvent = 1
 	local clock = 0
-	local endTime = burnEnd + 0.1
+	local endTime = math.max(burnEnd + 0.1, plumeStart + 1.6)
 	while clock < endTime do
 		while nextEvent <= #events and events[nextEvent][1] <= clock do
 			events[nextEvent][2]()
@@ -2280,6 +2279,26 @@ function Effect.Play(ctx)
 		centerSpikes.Enabled = clock >= tImpact + 0.05 and clock < tFinale - 0.1
 		centerStars.Enabled = clock >= tImpact + 0.05 and clock < tFinale - 0.05
 		light.Brightness = p.LightBrightness * track(lightKeys, clock)
+
+		for _, plume in plumeRibbons do
+			local age = (clock - plumeStart - plume.Delay) / plume.Life
+			local b = plume.Beam
+			b.Enabled = age > 0 and age < 1
+			if b.Enabled then
+				local spread = 1 - (1 - age) ^ 2
+				local radial = plume.Radial
+				local start = target + radial * (5 + 3 * spread) * ws + UP * (0.8 + age) * s
+				local finish = target + radial * (8 + 6 * spread) * ws + UP * plume.Height * s
+				plume.A0.WorldCFrame = alongFrame(start, (UP + radial * 0.25).Unit)
+				plume.A1.WorldCFrame = alongFrame(finish, (radial - UP * 0.7).Unit)
+				b.CurveSize0 = (5 + plume.Height * 0.5) * s
+				b.CurveSize1 = 2.8 * s
+				b.Width0 = (0.8 + 1.1 * spread) * s
+				b.Width1 = 0.12 * s
+				local alpha = track({ {0, 1}, {0.12, 0.7}, {0.45, 0.78}, {1, 1} }, age)
+				b.Transparency = seq({ {0, 1}, {0.18, alpha}, {0.65, math.min(1, alpha + 0.06)}, {1, 1} })
+			end
+		end
 
 		-- vignette
 		if vignettePart and camera then
